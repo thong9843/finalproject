@@ -1,7 +1,0 @@
-# .gitattributes
-# Tự động chuẩn hóa line endings
-
-* text=auto
-*.sh text eol=lf
-*.bat text eol=crlf
-*.cmd text eol=crlf
