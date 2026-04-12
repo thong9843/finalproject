@@ -1,6 +1,8 @@
 const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
+const swaggerUi = require('swagger-ui-express');
+const swaggerSpec = require('./swagger');
 
 const app = express();
 
@@ -36,6 +38,9 @@ app.use('/api/import', importRoutes);
 app.use('/api/chatbot', chatbotRoutes);
 app.use('/api/mous', mouRoutes);
 app.use('/api/structure', structureRoutes);
+
+// Swagger Documentation Route
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, { customSiteTitle: "VLU API Documentation" }));
 
 // Error Handling Middleware
 app.use((err, req, res, next) => {

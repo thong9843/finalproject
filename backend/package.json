@@ -17,6 +17,8 @@
     "multer": "^2.1.1",
     "mysql2": "^3.9.2",
     "openai": "^6.33.0",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^5.0.1",
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
