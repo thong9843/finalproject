@@ -93,6 +93,7 @@ exports.update = async (req, res) => {
         if (existing.length === 0) {
             return res.status(404).json({ message: 'Enterprise not found or unauthorized' });
         }
+        const oldStatus = existing[0].status;
 
         let collaboration_dateQueryPart = '';
         let queryParams = [name, tax_code, industry, address, email, phone, contact_title, contact_name, contact_position, past_collaboration, department_id || null, status];
