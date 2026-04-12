@@ -24,7 +24,7 @@ const Settings = () => {
                 <div className="md:col-span-1 space-y-6">
                     <Card className="shadow-sm border-t-4 border-vluRed">
                         <div className="flex flex-col flex-wrap items-center text-center">
-                            <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mb-3">
+                            <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mb-3">
                                 <UserOutlined className="text-3xl text-gray-400" />
                             </div>
                             <h3 className="text-lg font-bold text-gray-800">{user.full_name || 'Người dùng'}</h3>
@@ -56,7 +56,7 @@ const Settings = () => {
                                     <Input prefix={<UserOutlined />} placeholder="Nhập họ và tên" />
                                 </Form.Item>
                                 <Form.Item label="Email" name="email">
-                                    <Input prefix={<MailOutlined />} disabled className="bg-gray-50" />
+                                    <Input prefix={<MailOutlined />} disabled className="bg-white" />
                                 </Form.Item>
                             </div>
                             <Button type="primary" htmlType="submit" className="bg-vluRed">Lưu thay đổi</Button>

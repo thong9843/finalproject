@@ -37,6 +37,10 @@ const Sidebar = () => {
                     key: '/activities',
                     label: 'Quản lý theo hoạt động',
                 },
+                {
+                    key: '/mous',
+                    label: 'Biên bản ghi nhớ (MOU)',
+                },
             ]
         },
         {
@@ -57,6 +61,17 @@ const Sidebar = () => {
                     key: '/reports/activities',
                     label: 'Hoạt động hợp tác',
                 },
+            ]
+        },
+        {
+            key: 'system-settings',
+            icon: <SettingOutlined />,
+            label: 'Cấu hình hệ thống',
+            children: [
+                {
+                    key: '/activity-types',
+                    label: 'Loại hình hoạt động',
+                }
             ]
         },
     ];
@@ -85,7 +100,7 @@ const Sidebar = () => {
     };
 
     return (
-        <div className="w-64 bg-white h-screen fixed left-0 top-0 shadow-md flex flex-col pt-4">
+        <div className="w-64 bg-white h-screen fixed left-0 top-0 shadow-md flex flex-col pt-4 transition-colors duration-300">
             <div className="flex justify-center mb-6">
                 <img src="https://cdn.haitrieu.com/wp-content/uploads/2022/12/Logo-Dai-Hoc-Van-Lang-H.png" alt="VLU Logo" className="h-12" />
             </div>
@@ -95,7 +110,7 @@ const Sidebar = () => {
                     selectedKeys={[location.pathname]}
                     onClick={handleMenuClick}
                     items={items}
-                    className="border-r-0"
+                    className="border-r-0 transition-colors duration-300"
                     theme="light"
                 />
             </div>

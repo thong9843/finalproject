@@ -22,6 +22,8 @@ const studentRoutes = require('./routes/studentRoutes');
 const reportRoutes = require('./routes/reportRoutes');
 const importRoutes = require('./routes/importRoutes');
 const chatbotRoutes = require('./routes/chatbotRoutes');
+const mouRoutes = require('./routes/mouRoutes');
+const structureRoutes = require('./routes/structureRoutes');
 
 // Use Routes
 app.use('/api/auth', authRoutes);
@@ -32,6 +34,8 @@ app.use('/api/students', studentRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/import', importRoutes);
 app.use('/api/chatbot', chatbotRoutes);
+app.use('/api/mous', mouRoutes);
+app.use('/api/structure', structureRoutes);
 
 // Error Handling Middleware
 app.use((err, req, res, next) => {

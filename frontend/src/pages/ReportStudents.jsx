@@ -93,7 +93,7 @@ const ReportStudents = () => {
     };
 
     return (
-        <div>
+        <div className="p-6 bg-white min-h-screen">
             <div className="mb-6">
                 <h1 className="text-2xl font-bold text-gray-800">Sinh viên thực tập theo công ty</h1>
                 <p className="text-gray-400 text-sm">Biểu đồ thống kê phân bổ sinh viên tại các doanh nghiệp liên kết</p>
@@ -103,22 +103,22 @@ const ReportStudents = () => {
             <Row gutter={[16, 16]} className="mb-8">
                 <Col xs={12} sm={6}>
                     <Card className="rounded-xl border-none shadow-sm bg-gradient-to-br from-blue-50 to-white">
-                        <Statistic title="Tổng sinh viên" value={overview.total || 0} prefix={<TeamOutlined className="text-blue-500" />} valueStyle={{ fontWeight: 'bold' }} />
+                        <Statistic title={<span className="">Tổng sinh viên</span>} value={overview.total || 0} prefix={<TeamOutlined className="text-blue-500" />} valueStyle={{ fontWeight: 'bold' }} />
                     </Card>
                 </Col>
                 <Col xs={12} sm={6}>
                     <Card className="rounded-xl border-none shadow-sm bg-gradient-to-br from-green-50 to-white">
-                        <Statistic title="Đang thực tập" value={overview.active || 0} prefix={<CheckCircleOutlined className="text-green-500" />} valueStyle={{ color: '#3f8600', fontWeight: 'bold' }} />
+                        <Statistic title={<span className="">Đang thực tập</span>} value={overview.active || 0} prefix={<CheckCircleOutlined className="text-green-500" />} valueStyle={{ color: '#3f8600', fontWeight: 'bold' }} />
                     </Card>
                 </Col>
                 <Col xs={12} sm={6}>
                     <Card className="rounded-xl border-none shadow-sm bg-gradient-to-br from-orange-50 to-white">
-                        <Statistic title="Chờ phân công" value={overview.pending || 0} prefix={<ClockCircleOutlined className="text-orange-500" />} valueStyle={{ color: '#faad14', fontWeight: 'bold' }} />
+                        <Statistic title={<span className="">Chờ phân công</span>} value={overview.pending || 0} prefix={<ClockCircleOutlined className="text-orange-500" />} valueStyle={{ color: '#faad14', fontWeight: 'bold' }} />
                     </Card>
                 </Col>
                 <Col xs={12} sm={6}>
                     <Card className="rounded-xl border-none shadow-sm bg-gradient-to-br from-purple-50 to-white">
-                        <Statistic title="GPA Trung bình" value={overview.avgGpa || 0} prefix={<TrophyOutlined className="text-purple-500" />} valueStyle={{ color: '#722ed1', fontWeight: 'bold' }} />
+                        <Statistic title={<span className="">GPA Trung bình</span>} value={overview.avgGpa || 0} prefix={<TrophyOutlined className="text-purple-500" />} valueStyle={{ color: '#722ed1', fontWeight: 'bold' }} />
                     </Card>
                 </Col>
             </Row>
@@ -126,7 +126,7 @@ const ReportStudents = () => {
             {/* Charts */}
             <Row gutter={[20, 20]}>
                 <Col xs={24} lg={16}>
-                    <Card title="Số lượng sinh viên thực tập tại từng công ty" className="rounded-xl shadow-sm h-full">
+                    <Card title={<span className="">Số lượng sinh viên thực tập tại từng công ty</span>} className="rounded-xl shadow-sm h-full">
                         <div style={{ height: 400 }}>
                             {byEnterprise.length > 0 ? (
                                 <Bar data={barChartData} options={barOptions} />
@@ -137,7 +137,7 @@ const ReportStudents = () => {
                     </Card>
                 </Col>
                 <Col xs={24} lg={8}>
-                    <Card title="Phân bổ theo ngành học" className="rounded-xl shadow-sm h-full">
+                    <Card title={<span className="">Phân bổ theo ngành học</span>} className="rounded-xl shadow-sm h-full">
                         <div style={{ height: 400 }}>
                             {byMajor.length > 0 ? (
                                 <Doughnut data={doughnutData} options={doughnutOptions} />

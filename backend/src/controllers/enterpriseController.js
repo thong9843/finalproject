@@ -62,13 +62,13 @@ exports.getById = async (req, res) => {
 
 exports.create = async (req, res) => {
     try {
-        const { name, tax_code, industry, address, email, phone, status, faculty_id } = req.body;
+        const { name, tax_code, industry, address, email, phone, contact_title, contact_name, contact_position, past_collaboration, department_id, collaboration_date, status, faculty_id } = req.body;
         
         const finalFacultyId = req.user.role === 'ADMIN' ? faculty_id : req.user.faculty_id;
 
         const [result] = await pool.query(
-            'INSERT INTO enterprises (name, tax_code, industry, address, email, phone, status, faculty_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-            [name, tax_code, industry, address, email, phone, status || 'Tiềm năng', finalFacultyId]
+            'INSERT INTO enterprises (name, tax_code, industry, address, email, phone, contact_title, contact_name, contact_position, past_collaboration, department_id, collaboration_date, status, faculty_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            [name, tax_code, industry, address, email, phone, contact_title, contact_name, contact_position, past_collaboration, department_id || null, collaboration_date || null, status || 'Tiềm năng', finalFacultyId]
         );
         res.status(201).json({ id: result.insertId, message: 'Created successfully' });
     } catch (error) {
@@ -79,7 +79,7 @@ exports.create = async (req, res) => {
 exports.update = async (req, res) => {
     try {
         const id = req.params.id;
-        const { name, tax_code, industry, address, email, phone, status, faculty_id } = req.body;
+        const { name, tax_code, industry, address, email, phone, contact_title, contact_name, contact_position, past_collaboration, department_id, collaboration_date, status, faculty_id } = req.body;
 
         // Check ownership
         let checkQuery = 'SELECT status FROM enterprises WHERE id = ?';
@@ -94,14 +94,20 @@ exports.update = async (req, res) => {
             return res.status(404).json({ message: 'Enterprise not found or unauthorized' });
         }
 
-        const oldStatus = existing[0].status;
         let collaboration_dateQueryPart = '';
-        if (status === 'Đang triển khai' && oldStatus !== 'Đang triển khai') {
-            collaboration_dateQueryPart = ', collaboration_date = CURRENT_DATE()';
+        let queryParams = [name, tax_code, industry, address, email, phone, contact_title, contact_name, contact_position, past_collaboration, department_id || null, status];
+
+        if (collaboration_date !== undefined) {
+             collaboration_dateQueryPart = ', collaboration_date = ?';
+             queryParams.push(collaboration_date || null);
+        } else if (status === 'Đang triển khai' && oldStatus !== 'Đang triển khai') {
+             collaboration_dateQueryPart = ', collaboration_date = CURRENT_DATE()';
         }
 
-        const query = `UPDATE enterprises SET name=?, tax_code=?, industry=?, address=?, email=?, phone=?, status=? ${collaboration_dateQueryPart} WHERE id=?`;
-        await pool.query(query, [name, tax_code, industry, address, email, phone, status, id]);
+        queryParams.push(id);
+
+        const query = `UPDATE enterprises SET name=?, tax_code=?, industry=?, address=?, email=?, phone=?, contact_title=?, contact_name=?, contact_position=?, past_collaboration=?, department_id=?, status=? ${collaboration_dateQueryPart} WHERE id=?`;
+        await pool.query(query, queryParams);
         
         if (status !== oldStatus) {
             await pool.query(

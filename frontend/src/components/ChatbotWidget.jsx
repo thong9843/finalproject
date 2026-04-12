@@ -171,7 +171,7 @@ const ChatbotWidget = () => {
 
                     {/* Quick Questions (only show if few messages) */}
                     {messages.length <= 2 && (
-                        <div className="px-4 py-2 flex gap-2 flex-wrap flex-shrink-0 bg-gray-50 border-t border-gray-100">
+                        <div className="px-4 py-2 flex gap-2 flex-wrap flex-shrink-0 bg-white border-t border-gray-100">
                             {quickQuestions.map((q, i) => (
                                 <button 
                                     key={i}
@@ -195,7 +195,7 @@ const ChatbotWidget = () => {
                                 onKeyDown={handleKeyDown}
                                 placeholder="Nhập câu hỏi..."
                                 disabled={loading}
-                                className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-red-300 focus:ring-2 focus:ring-red-100 transition-all placeholder-gray-400"
+                                className="flex-1 bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-red-300 focus:ring-2 focus:ring-red-100 transition-all placeholder-gray-400"
                             />
                             <button
                                 onClick={handleSend}

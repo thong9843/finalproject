@@ -76,8 +76,8 @@ const CalendarView = () => {
         return (
             <ul className="m-0 p-0 list-none">
                 {listData.map((item) => (
-                    <li key={item.id} onClick={(e) => { e.stopPropagation(); openEditModal(item.activity); }} className="cursor-pointer truncate text-xs mb-1 hover:bg-gray-100 p-1 rounded">
-                        <Badge status={item.type} text={item.content} />
+                    <li key={item.id} onClick={(e) => { e.stopPropagation(); openEditModal(item.activity); }} className="cursor-pointer truncate text-xs mb-1 hover:bg-gray-100:bg-gray-700 p-1 rounded transition-colors text-slate-800">
+                        <Badge status={item.type} text={<span className="">{item.content}</span>} />
                     </li>
                 ))}
             </ul>
@@ -225,7 +225,7 @@ const CalendarView = () => {
                 </div>
             </div>
             <Spin spinning={loading}>
-                <div className="border rounded-lg p-4 shadow-sm">
+                <div className="border border-slate-200 bg-white rounded-lg p-4 shadow-sm">
                     <Calendar 
                         cellRender={cellRender} 
                         value={selectedDate}

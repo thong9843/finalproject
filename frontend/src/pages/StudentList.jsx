@@ -226,7 +226,7 @@ const StudentList = () => {
     ];
 
     return (
-        <div>
+        <div className="p-6 bg-white min-h-screen">
             {/* Header */}
             <div className="flex justify-between items-center mb-6">
                 <div>
@@ -287,7 +287,7 @@ const StudentList = () => {
 
             {/* Filter Tabs + Search */}
             <div className="flex justify-between items-center mb-4">
-                <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
+                <div className="flex gap-1 bg-white rounded-lg p-1 border border-transparent">
                     {tabs.map(tab => (
                         <button
                             key={tab.key}
@@ -295,7 +295,7 @@ const StudentList = () => {
                             className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all
                                 ${activeTab === tab.key 
                                     ? 'bg-white shadow-sm text-vluRed' 
-                                    : 'text-gray-500 hover:text-gray-800'}`}
+                                    : 'text-gray-500 hover:text-gray-800:text-gray-200'}`}
                         >
                             {tab.label}
                         </button>

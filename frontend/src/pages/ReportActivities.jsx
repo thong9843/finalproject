@@ -159,7 +159,7 @@ const ReportActivities = () => {
     };
 
     return (
-        <div>
+        <div className="p-6 bg-white min-h-screen">
             <div className="flex justify-between items-center mb-6">
                 <div>
                     <h1 className="text-2xl font-bold text-gray-800">Hoạt động hợp tác theo công ty</h1>
@@ -172,22 +172,22 @@ const ReportActivities = () => {
             <Row gutter={[16, 16]} className="mb-8">
                 <Col xs={12} sm={6}>
                     <Card className="rounded-xl border-none shadow-sm bg-gradient-to-br from-red-50 to-white">
-                        <Statistic title="Tổng hoạt động" value={overview.total || 0} prefix={<AppstoreOutlined className="text-vluRed" />} valueStyle={{ fontWeight: 'bold' }} />
+                        <Statistic title={<span className="">Tổng hoạt động</span>} value={overview.total || 0} prefix={<AppstoreOutlined className="text-vluRed" />} valueStyle={{ fontWeight: 'bold', color: 'inherit' }} />
                     </Card>
                 </Col>
                 <Col xs={12} sm={6}>
                     <Card className="rounded-xl border-none shadow-sm bg-gradient-to-br from-green-50 to-white">
-                        <Statistic title="Đang hoạt động" value={overview.active || 0} prefix={<SyncOutlined className="text-green-500" />} valueStyle={{ color: '#3f8600', fontWeight: 'bold' }} />
+                        <Statistic title={<span className="">Đang hoạt động</span>} value={overview.active || 0} prefix={<SyncOutlined className="text-green-500" />} valueStyle={{ color: '#3f8600', fontWeight: 'bold' }} />
                     </Card>
                 </Col>
                 <Col xs={12} sm={6}>
                     <Card className="rounded-xl border-none shadow-sm bg-gradient-to-br from-blue-50 to-white">
-                        <Statistic title="Hoàn thành" value={overview.completed || 0} prefix={<CheckCircleOutlined className="text-blue-500" />} valueStyle={{ color: '#1890ff', fontWeight: 'bold' }} />
+                        <Statistic title={<span className="">Hoàn thành</span>} value={overview.completed || 0} prefix={<CheckCircleOutlined className="text-blue-500" />} valueStyle={{ color: '#1890ff', fontWeight: 'bold' }} />
                     </Card>
                 </Col>
                 <Col xs={12} sm={6}>
                     <Card className="rounded-xl border-none shadow-sm bg-gradient-to-br from-purple-50 to-white">
-                        <Statistic title="Doanh nghiệp hợp tác" value={overview.enterprises || 0} prefix={<BankOutlined className="text-purple-500" />} valueStyle={{ color: '#722ed1', fontWeight: 'bold' }} />
+                        <Statistic title={<span className="">Doanh nghiệp hợp tác</span>} value={overview.enterprises || 0} prefix={<BankOutlined className="text-purple-500" />} valueStyle={{ color: '#722ed1', fontWeight: 'bold' }} />
                     </Card>
                 </Col>
             </Row>
@@ -195,7 +195,7 @@ const ReportActivities = () => {
             {/* Row 1: Bar + Pie */}
             <Row gutter={[20, 20]} className="mb-6">
                 <Col xs={24} lg={14}>
-                    <Card title="Hoạt động hợp tác theo từng công ty" className="rounded-xl shadow-sm h-full">
+                    <Card title={<span className="">Hoạt động hợp tác theo từng công ty</span>} className="rounded-xl shadow-sm h-full">
                         <div style={{ height: 350 }}>
                             {byEnterprise.length > 0 ? (
                                 <Bar data={barData} options={barOptions} />
@@ -206,7 +206,7 @@ const ReportActivities = () => {
                     </Card>
                 </Col>
                 <Col xs={24} lg={10}>
-                    <Card title="Cơ cấu loại hình hoạt động" className="rounded-xl shadow-sm h-full">
+                    <Card title={<span className="">Cơ cấu loại hình hoạt động</span>} className="rounded-xl shadow-sm h-full">
                         <div style={{ height: 350 }}>
                             {byType.length > 0 ? (
                                 <Pie data={pieData} options={pieOptions} />
@@ -221,7 +221,7 @@ const ReportActivities = () => {
             {/* Row 2: Line chart */}
             <Row gutter={[20, 20]}>
                 <Col xs={24}>
-                    <Card title={`Xu hướng hoạt động theo tháng (Năm ${new Date().getFullYear()})`} className="rounded-xl shadow-sm">
+                    <Card title={<span className="">{`Xu hướng hoạt động theo tháng (Năm ${new Date().getFullYear()})`}</span>} className="rounded-xl shadow-sm">
                         <div style={{ height: 300 }}>
                             <Line data={lineData} options={lineOptions} />
                         </div>

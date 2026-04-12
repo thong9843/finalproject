@@ -12,6 +12,8 @@ import ReportActivities from './pages/ReportActivities';
 import Layout from './components/Layout';
 import KanbanBoard from './pages/KanbanBoard';
 import CalendarView from './pages/CalendarView';
+import ActivityTypes from './pages/ActivityTypes';
+import MOUList from './pages/MOUList';
 import Cookies from 'js-cookie';
 
 const ProtectedRoute = ({ children }) => {
@@ -20,7 +22,7 @@ const ProtectedRoute = ({ children }) => {
     return children;
 };
 
-const App = () => {
+const AppConfig = ({ children }) => {
     return (
         <ConfigProvider
             theme={{
@@ -30,6 +32,14 @@ const App = () => {
                 },
             }}
         >
+            {children}
+        </ConfigProvider>
+    );
+};
+
+const App = () => {
+    return (
+        <AppConfig>
             <BrowserRouter>
                 <Routes>
                     <Route path="/login" element={<Login />} />
@@ -45,10 +55,12 @@ const App = () => {
                         <Route path="students" element={<StudentList />} />
                         <Route path="reports/students" element={<ReportStudents />} />
                         <Route path="reports/activities" element={<ReportActivities />} />
+                        <Route path="activity-types" element={<ActivityTypes />} />
+                        <Route path="mous" element={<MOUList />} />
                     </Route>
                 </Routes>
             </BrowserRouter>
-        </ConfigProvider>
+        </AppConfig>
     );
 };
 

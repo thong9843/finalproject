@@ -59,42 +59,42 @@ const Dashboard = () => {
     };
 
     return (
-        <div>
+        <div className="p-6 bg-white min-h-screen">
             <h1 className="text-2xl font-bold mb-6 text-gray-800">Tổng quan hệ thống</h1>
-            
+
             <Row gutter={[16, 16]} className="mb-8">
                 <Col xs={24} sm={12} lg={6}>
                     <Card className="shadow-sm border-l-4 border-vluRed">
-                        <Statistic title="Tổng doanh nghiệp" value={totals.totalEnterprises} prefix={<BankOutlined className="text-vluRed" />} />
+                        <Statistic title={<span className="text-gray-500">Tổng doanh nghiệp</span>} value={totals.totalEnterprises} prefix={<BankOutlined className="text-vluRed" />} valueStyle={{ color: 'inherit' }} />
                     </Card>
                 </Col>
                 <Col xs={24} sm={12} lg={6}>
                     <Card className="shadow-sm border-l-4 border-green-500">
-                        <Statistic title="Doanh nghiệp đang hợp tác" value={totals.collaboratingEnterprises} prefix={<CheckCircleOutlined className="text-green-500" />} />
+                        <Statistic title={<span className="text-gray-500">Doanh nghiệp đang hợp tác</span>} value={totals.collaboratingEnterprises} prefix={<CheckCircleOutlined className="text-green-500" />} valueStyle={{ color: 'inherit' }} />
                     </Card>
                 </Col>
                 <Col xs={24} sm={12} lg={6}>
                     <Card className="shadow-sm border-l-4 border-blue-500">
-                        <Statistic title="Tổng hoạt động năm nay" value={totals.activitiesThisYear} prefix={<AppstoreOutlined className="text-blue-500" />} />
+                        <Statistic title={<span className="text-gray-500">Tổng hoạt động năm nay</span>} value={totals.activitiesThisYear} prefix={<AppstoreOutlined className="text-blue-500" />} valueStyle={{ color: 'inherit' }} />
                     </Card>
                 </Col>
                 <Col xs={24} sm={12} lg={6}>
                     <Card className="shadow-sm border-l-4 border-purple-500">
-                        <Statistic title="Tổng sinh viên tham gia" value={totals.totalStudents} prefix={<TeamOutlined className="text-purple-500" />} />
+                        <Statistic title={<span className="text-gray-500">Tổng sinh viên tham gia</span>} value={totals.totalStudents} prefix={<TeamOutlined className="text-purple-500" />} valueStyle={{ color: 'inherit' }} />
                     </Card>
                 </Col>
             </Row>
 
             <Row gutter={[16, 16]} className="mb-6">
                 <Col xs={24} lg={12}>
-                    <Card title="Cơ cấu loại hình hoạt động" className="shadow-sm h-full item">
+                    <Card title={<span className="text-gray-800">Cơ cấu loại hình hoạt động</span>} className="shadow-sm h-full">
                         <div className="h-64 flex justify-center">
                             <Pie data={pieData} options={{ maintainAspectRatio: false }} />
                         </div>
                     </Card>
                 </Col>
                 <Col xs={24} lg={12}>
-                    <Card title="Số lượng doanh nghiệp theo Khoa" className="shadow-sm h-full">
+                    <Card title={<span className="text-gray-800">Số lượng doanh nghiệp theo Khoa</span>} className="shadow-sm h-full">
                         <div className="h-64">
                             <Bar data={barData} options={{ maintainAspectRatio: false }} />
                         </div>
