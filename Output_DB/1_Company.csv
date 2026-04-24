@@ -1,0 +1,71 @@
+﻿id,name,rep_title,rep_name,rep_role,rep_phone,rep_email,address_building,address_district,address_province,address_country,is_hcmc,id_fields,id_quymo
+1,AWS Vietnam,Ông,Vũ Nguyễn Cao Sơn,Giám đốc,,,"Tầng 36, tòa nhà Bitexco, 2 Đ. Hải Triều",Quận 1,TP. Hồ Chí Minh,Việt Nam,True,1,1
+2,AWS Việt Nam,Ông,Văn Hoàng Kha,Cloud Engineer,,khavan@amazon.com.vn,,,Hồ Chí Minh,Việt Nam,True,1,1
+3,CT TNHH MTV Phát triển Phần mềm Âu Lạc (Alta Software),Bà,Đinh Thị Tuyết Trinh,Human Resourse Manager,0903792329,trinh.dinh@alta.com.vn,86/33 Âu Cơ,Quận Tân Bình,TP. Hồ Chí Minh,Việt Nam,True,2,2
+4,Aliniex,Ông,Phạm Minh Vũ,CTO - Giám Đốc Kỹ thuật,0972043807,phamminhvu.drca@gmail.com,,,,Việt Nam,False,3,3
+5,Cty Elca,Ông,Trần Văn Hảo,Associate Expert,0949949696,haovtit@gmail.com,,,,Việt Nam,False,2,1
+6,Công ty 1Base,Bà,Nguyễn Thị Phương Tâm,Co-Founder,0979218068,tamntp@1base.vn,,,,Việt Nam,False,1,3
+7,Công ty 3Ps,Ông,Nguyễn Hải Hùng,Managing Director,0908687116,hung.nguyen@3pssolutions.com.vn,,,,Việt Nam,False,1,2
+8,Công Ty AIsotf,Ông,Trần Anh Tuấn,Giám đốc,0908947094,tuantranvnit@gmail.com,C15/31K Tân Kiên,Bình Chánh,TPHCM,Việt Nam,True,2,2
+9,Công ty Alila,Ông,Trần Đình Tuấn,CEO,,ceo@alila.vn,,,,Việt Nam,False,4,2
+10,Công ty Alta,Bà,Nguyễn Thị Vân Anh,HR & Administration Staff,0907617486,anh.nguyentv@alta.com.vn,,,,Việt Nam,False,2,2
+11,Công ty Aurora Tech,Ông,Nguyễn Quốc Trung,COO,0964408638,trung.nguyen@auroratech.vn,,,,Việt Nam,False,2,2
+12,Công ty CloudGO,Ông,Bùi Cao Học,Business Development Director,0935543543,hoc.bui@cloudpro.vn,,,,Việt Nam,False,1,2
+13,Công ty CMC TS Sài Gòn,Bà,Nguyễn Bích Phương,Employer Branding,0963 245 025,nbphuong@cmcglobal.vn,"No.19, KCX Tân Thuận",Quận 7,TP. Hồ Chí Minh,Việt Nam,True,1,1
+14,Công ty CP Giải Pháp Công Nghệ Sen Vàng,Anh,Trần Văn Thương,Tổng Giám Đốc,,thuong.tran@senvangsolutions.com,,,,Việt Nam,False,1,2
+15,Công ty Cánh Cam,Bà,Nguyễn Lâm Thị Minh Diệu,Chief Technology Officer,0937261481,minhdieu@canhcam,"156 Nguyễn Văn Thủ, P.Đakao",Quận 1,TP.Hồ Chí Minh,Việt Nam,True,1,2
+16,Công ty cổ phần Thương mại dịch vụ hóa chất 3A,Bà,Nguyễn Thị Xuân Nghi,,,idy.3a@outlook.com,,,,Việt Nam,False,4,2
+17,Công ty Cổ phần Viễn thông FPT,Anh,Nguyễn Chí Thành,Quản lý tuyển dụng,0794436088,thanhnc61@fpt.com,,,,Việt Nam,False,5,1
+18,DEK Technologies,Bà,Phan Huệ Mẫn,Talent Acquisition Specialist,0903941663,man.h.phan@dektech.com.au,121/137 Lê Lợi,Quận 1,TPHCM,Việt Nam,True,2,1
+19,Công ty Digitech,Bà,Trang Nguyễn,Trưởng phòng Marketing,0813804080,trangnth.vndigitech@gmail.com,,,,Việt Nam,False,1,2
+20,Digityze Asia,Ông,Đoàn Thái Kiên,CEO,0903983811,doanthaikien@gmail.com,,,,Việt Nam,False,1,2
+21,DXC Technology Việt Nam,Ông,Trần Anh Quân,Recruitment Head,0919666811,qtran33@dxc.com,,,Hồ Chí Minh,Việt Nam,True,1,1
+22,Công ty Dương Gia Phát,Ông,Dương Công Đông,Giám đốc,0983883456,mr.duongcongdong@gmail.com,,,,Việt Nam,False,4,2
+23,Công ty Dịch vụ Mobifone khu vực 2,Ông,Liên Tấn Phước,Phó Giám Đốc Trung tâm Công nghệ số,0933988999,phuoc.lt@mobifone.vn,,,Hồ Chí Minh,Việt Nam,True,5,1
+24,Công ty Engma,Ông,Đào Xuân Phong,Trưởng bộ phận tuyển dụng,0932143738,daoxuanphong@engma.com.vn,,,,Việt Nam,False,2,2
+25,Công ty Fisoft,Bà,Nguyễn Phương Nhi,Thư ký điều hành,0562820082,nhinp@fisoft.com.vn,,,,Việt Nam,False,2,1
+26,Hitachi Vantara,Bà,Lê Cẩm Diệp Bình,Director Resourse Management,0919389839,binh.le@hitachivantara.com,"Helios Building, Quang Trung Software City",Quận 12,TP. Hồ Chí Minh,Việt Nam,True,"2, 1",1
+27,Công ty KMS Technology,Ông,Trần Duy,Brand Manager,0912500325,duytran@kms-technology.com,"Số 2, đường Tản Viên, Phường 2",Quận Tân Bình,Thành phố Hồ Chí Minh,Việt Nam,True,2,1
+28,Công ty Kyanon Digital,Ông,Huỳnh Lê Tấn Tài,CEO,0975112112,tai.huynh@kyanon.digital,,,,Việt Nam,False,1,2
+29,Mobile ID,Bà,Lưu Thị Hoàng Quyên,Trưởng bộ phận tuyển dụng,0908583716,quyenlth@mobile-id.vn,,,,Việt Nam,False,2,2
+30,NAB Innovation Centre Vietnam,Ông,Trần Thanh Tùng,"Lead, Talent Acquisition",0908 448 748,tung.tran@nab.com.au,,,TP. Hồ Chí Minh,Việt Nam,True,"3, 1",1
+31,NamiQ AI,Ông,Lê Trọng Hùng,CEO,0939119795,hungle@i3-automation.com,,,,Việt Nam,False,1,3
+32,NashTech,Ông,Trần Ngọc Thịnh,Trưởng ban Tuyển dụng,,thinh.tranngoc1@nashtechglobal.com,"Etown Park, 364 Cộng Hòa",Quận Tân Bình,TP.HCM,Việt Nam,True,"2, 1",1
+33,Công ty OPSWAT,Bà,Vy Thái,Senior Talent Acquisition Manager,,vy.thai@opswat.com,,,,Việt Nam,False,1,1
+34,Công ty Payror,Ông,Nguyễn Đức Duy,Giám đốc,,duy.nguyen@payrro.com,,,,Việt Nam,False,3,2
+35,Công ty Pizitech,Ông,Lê Đức Toàn,Project Manager,0901339986,toanld@pizitech.com,"13 Đường 37, KĐT Vạn Phúc City",TP. Thủ Đức,TP.Hồ Chí Minh,Việt Nam,True,1,2
+36,Công ty Smart Services,Ông,Lê Minh Lộc,Trưởng bộ phận tuyển dụng,0937009737,loclm@smartservices.com.vn,,,,Việt Nam,False,1,2
+37,Công ty T4Tek,Ông,Nguyễn Hoàng Đạt,Trưởng nhóm kỹ thuật,0938281131,hr@t4tek.co,,,,Việt Nam,False,2,3
+38,Công ty TMA Solutions,Ông,Phan Nghĩa Hiệp,Phụ trách hợp tác với các trường đại học,0989019035,pnhiep@tma.com.vn,"Tòa nhà TMA, CVPMQT, Phường Tân Chánh Hiệp",Quận 12,TP. Hồ Chí Minh,Việt Nam,True,"2, 1",1
+39,CÔNG TY TNHH AGEST VIỆT NAM,Chị,Nguyễn Thị Hương,C&B Lead/Training Coord.,,,,,,Việt Nam,False,2,1
+40,Công ty TNHH AirCity,Anh,Nguyễn Đình Thành Đạt,Giám đốc điều hành,,datndt.aircity@gmail.com,,,,Việt Nam,False,4,3
+41,Công ty TNHH Beelieve,Ông,Trần Xuân Nguyên,Founder,,nguyentx@beelieve.vn,"L17-11, Tầng 17, toà nhà Vincom Center",Quận 1,TP. Hồ Chí Minh,Việt Nam,True,1,3
+42,Công ty TNHH Công nghệ Tin học C. P,Ông,Đoàn Hữu Huấn,Trưởng phòng kỹ thuật,0834402194,doan.huuhuan@compro.vn,,,,Việt Nam,False,2,2
+43,Công ty TNHH Giải Pháp Tiên Khanh,Ông,Phạm Văn Tiên,CEO,0909 22 10 13,tienpv@tks.com.vn,,,,Việt Nam,False,1,2
+44,Công ty TNHH Meta Art,Ông,Lâm Thanh Hoàng,CEO và Giám Đốc Kỹ Thuật,0934144498,hoang.lam@meta360.vn,,,,Việt Nam,False,1,3
+45,Công ty TNHH Mitek Việt Nam,Chị,Lê Thị Thanh Trúc,Talent Acquisition Manager,0908341706,truc.le@mii.com,,,,Việt Nam,False,2,2
+46,Công ty TNHH Thương mại dịch vụ Phương Quân,Ông,Nguyễn Quang Kỳ,Giám Đốc,0904585181,ky.nguyen@phuongquan.vn,,,,Việt Nam,False,4,2
+47,Công ty TNHH TMAI Sài Gòn,Bà,Hồ Trúc Mai,"Chủ biên, Tạp Chí ngày mới Sài Gòn",,hotrucmai@ngaymoisaigon.com,,,Hồ Chí Minh,Việt Nam,True,6,2
+48,Công ty TNHH VNResource,Ông,Thái Bình Quý,Tổng Giám đốc & Giám đốc tư vấn giải pháp phần mềm,(84 28) 7300 0044,binh.quythai@vnresource.vn,41/7 Phạm Ngũ Lão,Quận Gò Vấp,Tp. Hồ Chí Minh,Việt Nam,True,1,2
+49,Công ty TNHH Điện tử Sharp Việt Nam,Ông,Đặng Thanh Thắng,Trưởng bộ phận IT,0986687702,Dang.thang@sharp.co.jp,,,,Việt Nam,False,7,1
+50,Công ty Trần Lê Group,Ông,Trần Hoàng Hùng,Giám đốc,0917377999,hung@tranlegroup.com,32 Đường số 18,Bình Tân,Thành phố Hồ Chí Minh,Việt Nam,True,4,2
+51,Công ty Urban,Bà,Lương Thị Hồng Thúy,Giám đốc,0909260040,thuyluong.urban@gmail.com,,,,Việt Nam,False,4,2
+52,Công ty VNPT-IT2,Ông,Phạm Huy Hoàng,"Phó Tổng GĐ VNPT-IT, Giám đốc VNPT-IT2",0914296969,hoangph@vnpt.vn,,,,Việt Nam,False,"5, 1",1
+53,Công ty Vtimes,Ông,Nguyễn Việt Cường,Giám Đốc Kỹ Thuật,0908 050 425,jake.nguyen@vtimes.vn,,,,Việt Nam,False,1,2
+54,Wata Solutions,Bà,Nguyễn Lục,Giám đốc vận hành,0908679389,luc.nguyen@watasolutions.com,39B Trường Sơn,Quận Tân Bình,Hồ Chí Minh,Việt Nam,True,"2, 1",2
+55,Wisdom Robotics,Bà,Tai Linh,Trưởng bộ phận tuyển dụng,0972016212,hr@wisdomrobotics.org,,,,Việt Nam,False,7,2
+56,Công ty Wowi,Ông,Lê Minh Hải,Giám đốc,0798615992,wowivietnam.info@gmail.com,,,,Việt Nam,False,4,2
+57,Công ty Điện Điện Tử C&T,Ông,Võ Đình Tùng,"Lecturer, Mechanical Electrical Electronic Department",0908229309,vd.tung@hutech.edu.vn,,,,Việt Nam,False,7,2
+58,Công ty Chứng khoán ACB (ACBS),Bà,Nguyễn Thị Ngọc Anh,Phó Phòng Phát triển sản phẩm số,0907220014,alisa.nguyen828@gmail.com,,,TP. Hồ Chí Minh,Việt Nam,True,3,1
+59,MKSOL,Ông,Lê Ngọc Thạch,Giám đốc,0908550642,thachln@mks.com.vn,,,,Việt Nam,False,1,2
+60,TPS Software,Bà,Thanh Trúc,Bộ phận tuyển dụng,0933648071,truc.huynh@tpssoft.com,"Waseco Building Block C, 3rd Floor, 10 Phổ Quang",Quận Tân Bình,TP. Hồ Chí Minh,Việt Nam,True,2,2
+61,FPT Software,Bà,Nguyễn Thị Hiền,Talent Acquisition,,HienNT92@fpt.com,,,,Việt Nam,False,2,1
+62,Global CyberSoft – A Hitachi Consulting Company,Ông,Lê Hoàng Khang,Chuyên viên tuyển dụng,,khanghl@hitachiconsulting.com,,,,Việt Nam,False,"2, 1",1
+63,GMO-Z.Com Brand Security Vietnam,Ông,Phạm Chuẩn Duy,Giám đốc,0708752785,pcduy@brights.vn,"Tầng 8, Chung cư Hà Đô",Quận Tân Bình,TP. Hồ Chí Minh,Việt Nam,True,"2, 1",1
+64,Hiệp hội Phần mềm và Dịch vụ CNTT Việt Nam (VINASA),Bà,Nguyễn Thị Mạnh,HCMC Office Representative,0937 688 958,manhnt@vinasa.org.vn,97 Nguyễn Công Trứ,Quận 1,TP. HCM,Việt Nam,True,"2, 1",1
+65,IT-global,Ông,Nguyễn Minh Tân,Giám đốc,0987613161,tan.nm@vlu.edu.vn,2/1/15 đường 40,Thủ Đức,Hồ Chí Minh,Việt Nam,True,2,2
+66,Liên minh công nghệ số Việt Nam (VNITO Alliance),Ông,Ngô Văn Toàn,Phó Chủ tịch,0919142451,toan@psa.com.vn,,,,Việt Nam,False,1,2
+67,Ngân hàng ACB,Ông,Lý Triều Long,Phó GD Phòng Quản Lý & Phát Triển Ứng Dụng Khách Hàng Nội Bộ,0908030774,longlt01@acb.com.vn,,,,Việt Nam,False,3,1
+68,Saigontourist Cable Television Company (SCTV),Anh,Trần Minh Nghĩa,Deputy IT Manager,,nghia.tm@sctv.vn,,,Hồ Chí Minh,Việt Nam,True,5,1
+69,Tổng công ty Công nghệ và Giải pháp CMC (CMC TS),Ông,Nguyễn Trần Duy Bảo,Digital Transformation Expert,0932001626,mcse1989@gmail.com,,,,Việt Nam,False,1,1
+70,VietAI,Ông,Phan An,Head of Operations,0982786546,an@vietai.org,21 Nguyễn Trung Ngạn,Quận 1,Hồ Chí Minh,Việt Nam,True,1,2

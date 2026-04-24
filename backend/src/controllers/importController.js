@@ -25,7 +25,16 @@ function parseFileToJSON(buffer, originalname) {
     const workbook = XLSX.read(buffer, { type: 'buffer' });
     const sheetName = workbook.SheetNames[0];
     const sheet = workbook.Sheets[sheetName];
-    return XLSX.utils.sheet_to_json(sheet);
+    const rawRows = XLSX.utils.sheet_to_json(sheet);
+    
+    // Chuẩn hóa keys: xóa khoảng trắng 2 đầu và chuyển thành chữ thường để dễ mapping
+    return rawRows.map(row => {
+        const normalizedRow = {};
+        for (const key in row) {
+            normalizedRow[key.trim().toLowerCase()] = typeof row[key] === 'string' ? row[key].trim() : row[key];
+        }
+        return normalizedRow;
+    });
 }
 
 // Import Doanh nghiệp
@@ -41,25 +50,25 @@ const importEnterprises = async (req, res) => {
             try {
                 await conn.beginTransaction();
 
-                const name = r['Tên doanh nghiệp'] || r['name'] || r['ten_doanh_nghiep'];
-                const tax_code = r['Mã số thuế'] || r['tax_code'] || r['ma_so_thue'] || null;
-                const scaleStr = r['Quy mô'] || r['scale'] || '';
-                const fieldStr = r['Lĩnh vực'] || r['fields'] || '';
-                const is_hcmc = r['Ở TP.HCM'] ? (r['Ở TP.HCM'].toString().toLowerCase() === 'có' || r['Ở TP.HCM'] === 1) : true;
+                const name = r['tên doanh nghiệp'] || r['name'] || r['ten_doanh_nghiep'];
+                const tax_code = r['mã số thuế'] || r['tax_code'] || r['ma_so_thue'] || null;
+                const scaleStr = r['quy mô'] || r['scale'] || '';
+                const fieldStr = r['lĩnh vực'] || r['fields'] || '';
+                const is_hcmc = r['ở tp.hcm'] ? (r['ở tp.hcm'].toString().toLowerCase() === 'có' || r['ở tp.hcm'] === 1) : true;
                 
-                const rep_title = r['Danh xưng'] || null;
-                const rep_full_name = r['Họ và tên'] || null;
-                const rep_role = r['Chức vụ'] || null;
-                const rep_phone = r['Số điện thoại'] || null;
-                const rep_email = r['Email'] || null;
+                const rep_title = r['danh xưng'] || null;
+                const rep_full_name = r['họ và tên'] || null;
+                const rep_role = r['chức vụ'] || null;
+                const rep_phone = r['số điện thoại'] || null;
+                const rep_email = r['email'] || null;
 
-                const building_street = r['Địa chỉ'] || null; // Tương đương Đường/Tòa nhà
-                const district = r['Quận/Huyện'] || null;
-                const province = r['Tỉnh/Thành'] || null;
-                const country = r['Quốc gia'] || 'Việt Nam';
+                const building_street = r['địa chỉ'] || null; // Tương đương Đường/Tòa nhà
+                const district = r['quận/huyện'] || null;
+                const province = r['tỉnh/thành'] || null;
+                const country = r['quốc gia'] || 'Việt Nam';
 
-                const status = r['Trạng thái'] || r['status'] || 'Tiềm năng';
-                const department_id = r['Bộ môn ID'] || r['department_id'] || null;
+                const status = r['trạng thái'] || r['status'] || 'Tiềm năng';
+                const department_id = r['bộ môn id'] || r['department_id'] || null;
                 const facultyId = req.user.role === 'ADMIN' ? (r['faculty_id'] || null) : req.user.faculty_id;
 
                 if (!name) { errors.push(`Dòng ${i + 2}: Thiếu tên doanh nghiệp`); continue; }
@@ -134,17 +143,17 @@ const importActivities = async (req, res) => {
             try {
                 await conn.beginTransaction();
 
-                const title = r['Tên hoạt động'] || r['title'] || r['ten_hoat_dong'];
-                const enterprise_id = r['Mã doanh nghiệp (ID)'] || r['enterprise_id'];
-                const typeStr = r['Loại hình'] || r['type'] || r['loai_hinh'] || 'Khác';
-                const targetStr = r['Đối tượng'] || '';
-                const detail = r['Mô tả'] || r['detail'] || r['mo_ta'] || '';
+                const title = r['tên hoạt động'] || r['title'] || r['ten_hoat_dong'];
+                const enterprise_id = r['mã doanh nghiệp (id)'] || r['enterprise_id'];
+                const typeStr = r['loại hình'] || r['type'] || r['loai_hinh'] || 'Khác';
+                const targetStr = r['đối tượng'] || '';
+                const detail = r['mô tả'] || r['detail'] || r['mo_ta'] || '';
                 
                 // Format DD/MM/YYYY to YYYY-MM-DD if needed, but assuming ISO format from export for simplicity, 
                 // or just leave it if MySQL accepts it / handle Date object if parsed by xlsx.
-                let start_date = r['Ngày bắt đầu'] || r['start_date'] || null;
-                let end_date = r['Ngày kết thúc'] || r['end_date'] || null;
-                let collaboration_date = r['Ngày hợp tác'] || r['collaboration_date'] || null;
+                let start_date = r['ngày bắt đầu'] || r['start_date'] || null;
+                let end_date = r['ngày kết thúc'] || r['end_date'] || null;
+                let collaboration_date = r['ngày hợp tác'] || r['collaboration_date'] || null;
 
                 // Simple date parse helper for DD/MM/YYYY strings from excel exports
                 const parseDateStr = (d) => {
@@ -159,7 +168,7 @@ const importActivities = async (req, res) => {
                 end_date = parseDateStr(end_date);
                 collaboration_date = parseDateStr(collaboration_date);
 
-                const status = r['Trạng thái'] || r['status'] || 'Đề xuất';
+                const status = r['trạng thái'] || r['status'] || 'Đề xuất';
                 const facultyId = req.user.role === 'ADMIN' ? (r['faculty_id'] || null) : req.user.faculty_id;
 
                 if (!title) { errors.push(`Dòng ${i + 2}: Thiếu tên hoạt động`); continue; }
@@ -220,16 +229,16 @@ const importStudents = async (req, res) => {
         for (let i = 0; i < rows.length; i++) {
             const r = rows[i];
             try {
-                const student_code = r['MSSV'] || r['student_code'] || r['mssv'];
-                const name = r['Họ tên'] || r['name'] || r['ho_ten'];
-                const email = r['Email'] || r['email'] || '';
-                const className = r['Lớp'] || r['class'] || r['lop'] || '';
-                const major = r['Ngành học'] || r['major'] || r['nganh_hoc'] || '';
-                const advisor = r['Giảng viên HD'] || r['advisor'] || r['gvhd'] || '';
-                const activity_id = r['Mã hoạt động (ID)'] || r['activity_id'] || null;
-                const position = r['Vị trí'] || r['position'] || r['vi_tri'] || '';
-                const status = r['Trạng thái'] || r['status'] || 'Chờ phân công';
-                const gpa = r['GPA'] || r['gpa'] || null;
+                const student_code = r['mssv'] || r['student_code'];
+                const name = r['họ tên'] || r['name'] || r['ho_ten'];
+                const email = r['email'] || '';
+                const className = r['lớp'] || r['class'] || r['lop'] || '';
+                const major = r['ngành học'] || r['major'] || r['nganh_hoc'] || '';
+                const advisor = r['giảng viên hd'] || r['advisor'] || r['gvhd'] || '';
+                const activity_id = r['mã hoạt động (id)'] || r['activity_id'] || null;
+                const position = r['vị trí'] || r['position'] || r['vi_tri'] || '';
+                const status = r['trạng thái'] || r['status'] || 'Chờ phân công';
+                const gpa = r['gpa'] || null;
                 
                 const parseDateStr = (d) => {
                     if (!d) return null;
@@ -239,8 +248,8 @@ const importStudents = async (req, res) => {
                     }
                     return d;
                 };
-                const start_date = parseDateStr(r['Ngày bắt đầu'] || r['start_date'] || r['ngay_bat_dau'] || null);
-                const end_date = parseDateStr(r['Ngày kết thúc'] || r['end_date'] || r['ngay_ket_thuc'] || null);
+                const start_date = parseDateStr(r['ngày bắt đầu'] || r['start_date'] || r['ngay_bat_dau'] || null);
+                const end_date = parseDateStr(r['ngày kết thúc'] || r['end_date'] || r['ngay_ket_thuc'] || null);
 
                 if (!student_code || !name) { errors.push(`Dòng ${i + 2}: Thiếu MSSV hoặc Họ tên`); continue; }
 

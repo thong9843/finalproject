@@ -1,0 +1,113 @@
+﻿id,name,detail,id_company,id_activity_type,id_target
+1,Phối hợp tổ chức hội thảo,Phối hợp tổ chức hội thảo,2,1,1
+2,Giảng dạy môn học kết hợp doanh nghiệp,Giảng dạy môn học kết hợp doanh nghiệp,2,1,1
+3,Tặng quà và chứng nhận hoàn thành khóa học,Tặng quà và chứng nhận hoàn thành khóa học cho sinh viên,2,2,1
+4,Phối hợp tổ chức hội thảo và tham quan 2025,Phối hợp tổ chức hội thảo và tham quan 2025,2,"1, 3",1
+5,Tham gia hoạt động phỏng vấn kiểm định doanh nghiệp 2024,Tham gia hoạt động phỏng vấn kiểm định doanh nghiệp năm 2024,3,4,2
+6,Tuyển dụng thực tập năm 2025,Tuyển dụng thực tập năm 2025,4,5,1
+7,Tuyển dụng thực tập và việc làm,Tuyển dụng thực tập và việc làm,5,5,1
+8,Hỗ trợ thực tập cho sinh viên,Hỗ trợ thực tập cho SV,6,5,1
+9,Tham gia phỏng vấn kiểm định doanh nghiệp 2024,Tham gia hoạt động phỏng vấn kiểm định doanh nghiệp 2024,6,4,2
+10,Tuyển thực tập và việc làm,Tuyển dụng sinh viên thực tập và nhân sự chính thức,7,5,1
+11,Hướng dẫn sinh viên Khoa CNTT thực tập Software 1-2,Hướng dẫn sinh viên thực tập các môn Software 1 và 2,8,5,1
+12,Tham gia hoạt động phỏng vấn kiểm định doanh nghiệp 2024,Phỏng vấn phục vụ công tác kiểm định năm 2024,8,4,2
+13,Tuyển dụng thực tập và việc làm,Hỗ trợ thực tập cho 5 sinh viên,9,5,1
+14,Tiếp nhận sinh viên thực tập,Nhận 20-25 sinh viên mỗi đợt,10,5,1
+15,Tuyển dụng thực tập và việc làm,Tuyển dụng thực tập và việc làm,11,5,1
+16,Tuyển dụng thực tập sinh,Nhận 10-15 sinh viên thực tập mỗi đợt,12,5,1
+17,Hỗ trợ và hợp tác với nhà trường,"Tặng quà cho Khoa, tham quan trường, báo cáo Capstone và tuyển dụng sinh viên tốt nghiệp",12,"2, 3, 1, 5","1, 2"
+18,Tuyển dụng thực tập và việc làm,Tuyển dụng thực tập và việc làm cho sinh viên,13,5,1
+19,Tuyển dụng thực tập,Tuyển dụng thực tập,14,5,1
+20,Tuyển dụng thực tập và việc làm,Tuyển dụng thực tập sinh và nhân viên chính thức,15,5,1
+21,Tài trợ học bổng 2 triệu đồng năm 2024,Tài trợ học bổng 2 triệu đồng năm 2024,16,2,1
+22,Tham gia ngày hội tuyển dụng việc làm 2025,Tham gia ngày hội tuyển dụng việc làm 2025,17,5,1
+23,Tổ chức tham quan và tặng quà doanh nghiệp,Tổ chức tham quan doanh nghiệp và các hoạt động tặng quà hỗ trợ từ năm 2023 trở về trước,18,3,1
+24,Tuyển dụng thực tập và việc làm,Tuyển dụng thực tập và việc làm,19,5,1
+25,Tuyển dụng thực tập và việc làm,Tuyển dụng thực tập và việc làm,20,5,1
+26,Tham quan công ty,Tổ chức cho sinh viên tham quan thực tế doanh nghiệp,21,3,1
+27,Tuyển dụng nhân sự,1 tin tuyển dụng,21,5,1
+28,Hội thảo kỹ năng viết CV và phỏng vấn 3/2024,Tổ chức hội thảo hướng dẫn kỹ năng viết CV và phỏng vấn vào tháng 3/2024,21,1,1
+29,Tuyển dụng thực tập và việc làm,Tuyển dụng thực tập và việc làm,22,5,1
+30,Tham gia hoạt động phỏng vấn kiểm định doanh nghiệp 2024,Tham gia hoạt động phỏng vấn kiểm định doanh nghiệp 2024,23,4,2
+31,Tuyển dụng thực tập và việc làm,Tuyển dụng thực tập và việc làm,24,5,1
+32,Hỗ trợ thực tập cho sinh viên,Hỗ trợ thực tập cho SV (5),25,5,1
+33,Tuyển thực tập và việc làm,Tuyển dụng thực tập sinh và nhân viên chính thức,26,5,1
+34,Tuyển dụng thực tập sinh,Các chương trình tuyển dụng thực tập từ năm 2018 trở về trước,27,5,1
+35,Tham quan doanh nghiệp,Tổ chức cho sinh viên tham quan công ty từ năm 2018 trở về trước,27,3,1
+36,Tổ chức hội thảo chuyên ngành,Các buổi hội thảo được tổ chức từ năm 2018 trở về trước,27,1,1
+37,Hỗ trợ sinh viên thực tập,Tiếp nhận và hỗ trợ sinh viên thực tập,28,5,1
+38,Tham gia hoạt động phỏng vấn kiểm định doanh nghiệp 2024,Tham gia phỏng vấn kiểm định doanh nghiệp năm 2024,28,4,2
+39,Tuyển dụng thực tập và việc làm,Tuyển dụng thực tập và việc làm,29,5,1
+40,Tổ chức hội thảo năm 2024,Tổ chức hội thảo chuyên môn trong năm 2024,30,1,1
+41,Ký kết MOU và phối hợp tổ chức hội thảo,"Ký MOU, phối hợp tổ chức hội thảo",31,"6, 1","1, 3"
+42,Tham gia tọa đàm Lễ nhập môn K30,Tham gia tọa đàm Lễ nhập môn K30,31,1,1
+43,Tài trợ học bổng 5 triệu đồng ngày 1/11/2024,Tài trợ học bổng 5 triệu đồng 1/11/2024 - Lễ nhập môn K30,31,2,1
+44,Tham gia hoạt động phỏng vấn kiểm định doanh nghiệp 2024,Tham gia hoạt động phỏng vấn kiểm định doanh nghiệp 2024,31,4,2
+45,Tuyển dụng thực tập sinh,Tuyển dụng thực tập sinh từ 2018 trở về trước,32,5,1
+46,Tham quan doanh nghiệp,Hoạt động tham quan doanh nghiệp từ 2018 trở về trước,32,3,1
+47,Tổ chức hội thảo,Tổ chức hội thảo từ 2018 trở về trước,32,1,1
+48,Tổ chức hội thảo 19/10/2024,Tổ chức hội thảo ngày 19/10/2024,33,1,1
+49,Tổ chức cho sinh viên tham quan công ty 8/11/2024,Tham quan doanh nghiệp ngày 8/11/2024,33,3,1
+50,Tham gia hoạt động phỏng vấn kiểm định doanh nghiệp 2024,Phỏng vấn kiểm định doanh nghiệp năm 2024,33,4,2
+51,Tuyển dụng thực tập và việc làm,Tuyển dụng thực tập và việc làm,34,5,1
+52,Hỗ trợ thực tập cho sinh viên mỗi đợt gần 20 sinh viên,Tiếp nhận thực tập sinh định kỳ với số lượng khoảng 20 sinh viên mỗi đợt,35,5,1
+53,Tuyển dụng thực tập và việc làm,Tuyển dụng thực tập và việc làm,36,5,1
+54,Tuyển dụng thực tập và việc làm,Tuyển dụng thực tập và việc làm,37,5,1
+55,Tặng bánh kem 20/11,Tặng bánh kem nhân ngày 20/11/2024,38,7,3
+56,Hỗ trợ sinh viên thực tập,Hỗ trợ sinh viên thực tập số lượng ít,38,5,1
+57,Phỏng vấn kiểm định doanh nghiệp 2024,Tham gia hoạt động phỏng vấn kiểm định doanh nghiệp 2024,38,4,2
+58,Tặng hoa ngày Nhà giáo Việt Nam 20/11,Tặng hoa 20/11,39,7,3
+59,Mời Ban chủ nhiệm Khoa dự tiệc tất niên công ty năm 2023,Mời BCN Khoa dự tiệc tất niên của công ty năm 2023,39,7,2
+60,Tham gia tọa đàm Lễ nhập môn K30,Tham gia tọa đàm Lễ nhập môn K30,40,1,1
+61,Tham gia tọa đàm cho K29,Tham gia tọa đàm cho sinh viên khóa 29,41,1,1
+62,Hỗ trợ phỏng vấn kiểm định,Hỗ trợ công tác phỏng vấn kiểm định năm 2024,41,4,2
+63,"Nhận sinh viên làm Capstone, KLTN",Tiếp nhận sinh viên thực hiện đồ án tốt nghiệp và dự án Capstone,41,5,1
+64,Tham gia hội thảo,Tham gia các hội thảo chuyên môn,41,1,1
+65,Tham gia hoạt động phỏng vấn kiểm định doanh nghiệp 2024,Tham gia hoạt động phỏng vấn kiểm định doanh nghiệp 2024,42,4,3
+66,Tuyển dụng thực tập sinh,SV thực tập số lượng ít,42,5,1
+67,"Hỗ trợ sinh viên thực tập, tuyển dụng","Thường xuyên hỗ trợ sinh viên thực tập, tuyển dụng",43,5,1
+68,Hỗ trợ khảo sát kiểm định,Hỗ trợ khảo sát kiểm định,43,4,2
+69,Tài trợ học bổng,Tài trợ học bổng 5 triệu đồng,43,2,1
+70,Phỏng vấn kiểm định doanh nghiệp 2024,Tham gia hoạt động phỏng vấn kiểm định doanh nghiệp 2024,43,4,2
+71,Tham gia tọa đàm cho K29,Tham gia tọa đàm cho K29,44,1,1
+72,Phỏng vấn kiểm định doanh nghiệp 2024,Tham gia hoạt động phỏng vấn kiểm định doanh nghiệp 2024,44,4,2
+73,Tuyển dụng thực tập và việc làm,Tuyển dụng thực tập và việc làm,45,5,1
+74,Tham gia hoạt động phỏng vấn kiểm định doanh nghiệp 2024,Tham gia hoạt động phỏng vấn kiểm định doanh nghiệp 2024,46,4,2
+75,Tài trợ học bổng 10 triệu đồng cho sinh viên,"Lễ nhập môn K29, K30 (1/11/2024), K31",47,2,1
+76,Tuyển sinh viên thực tập,Tuyển sinh viên thực tập của Khoa,47,5,1
+77,Tuyển dụng thực tập và việc làm,Tuyển dụng nhân sự và vị trí thực tập sinh,48,5,1
+78,Phỏng vấn kiểm định doanh nghiệp 2024,Tham gia hoạt động phỏng vấn kiểm định doanh nghiệp 2024,49,4,2
+79,Tiếp nhận sinh viên thực tập,SV thực tập số lượng ít,49,5,1
+80,"Hỗ trợ sinh viên thực tập, tuyển dụng","Thường xuyên hỗ trợ sinh viên thực tập, tuyển dụng",50,5,1
+81,Hỗ trợ khảo sát kiểm định,Hỗ trợ khảo sát kiểm định,50,4,2
+82,Tuyển dụng thực tập và việc làm,Tuyển dụng thực tập và việc làm,51,5,1
+83,Tuyển dụng thực tập và việc làm,Tuyển dụng thực tập và việc làm cho sinh viên,52,5,1
+84,Tuyển dụng thực tập và việc làm,Tuyển dụng thực tập sinh và nhân viên chính thức,53,5,1
+85,Hỗ trợ thực tập cho sinh viên,Tiếp nhận 3 sinh viên thực tập,54,5,1
+86,Tặng hoa ngày Nhà giáo Việt Nam 20/11,Hoạt động tri ân giảng viên,54,7,3
+87,Tuyển dụng thực tập và việc làm,Tuyển dụng thực tập và việc làm,55,5,1
+88,Hỗ trợ thực tập cho SV,Hỗ trợ thực tập cho 3 sinh viên,56,5,1
+89,Tuyển dụng thực tập và việc làm,Tuyển dụng thực tập và việc làm,57,5,1
+90,Tuyển dụng thực tập và việc làm,Tuyển dụng thực tập và việc làm,58,5,1
+91,Tham gia phỏng vấn kiểm định doanh nghiệp 2024,Tham gia hoạt động phỏng vấn kiểm định doanh nghiệp 2024,59,4,2
+92,Tuyển dụng thực tập sinh,SV thực tập số lượng ít,59,5,1
+93,Tuyển dụng thực tập và việc làm,Tuyển dụng thực tập và việc làm,60,5,1
+94,Tổ chức cho sinh viên tham quan năm 2025,Tổ chức cho sinh viên tham quan công ty trong năm 2025,61,3,1
+95,Tuyển dụng thực tập và việc làm,Tuyển dụng thực tập và việc làm,62,5,1
+96,Hỗ trợ sinh viên thực tập,Hỗ trợ sinh viên thực tập tại doanh nghiệp,63,5,1
+97,Hỗ trợ quay clip tư vấn tuyển sinh,Hỗ trợ quay clip cho hoạt động tư vấn tuyển sinh của trường,63,7,2
+98,Tham gia bảo vệ capstone K25,Tham gia hội đồng/đánh giá buổi bảo vệ đồ án tốt nghiệp khóa 25,63,1,1
+99,Phỏng vấn kiểm định doanh nghiệp 2024,Tham gia hoạt động phỏng vấn phục vụ công tác kiểm định chất lượng đào tạo,63,4,3
+100,Tuyển dụng thực tập và việc làm,Tuyển dụng thực tập và việc làm cho sinh viên,64,5,1
+101,Hỗ trợ sinh viên thực tập,Hỗ trợ sinh viên thực tập,65,5,1
+102,Tuyển dụng thực tập và việc làm,Tuyển dụng thực tập và việc làm cho sinh viên,66,5,1
+103,Hỗ trợ sinh viên tham quan công ty,Hỗ trợ sinh viên tham quan công ty,67,3,1
+104,Phối hợp tổ chức hội thảo,Phối hợp tổ chức hội thảo,67,1,1
+105,Hỗ trợ thực tập cho sinh viên,Hỗ trợ thực tập cho sinh viên,67,5,1
+106,Thường xuyên tặng quà cho Khoa,Thường xuyên tặng quà cho Khoa,67,2,2
+107,Tham gia hoạt động phỏng vấn kiểm định doanh nghiệp 2024,Tham gia hoạt động phỏng vấn kiểm định doanh nghiệp 2024,67,4,3
+108,Tổ chức tham quan công ty 12/12/2024,Tổ chức tham quan công ty ngày 12/12/2024,67,3,1
+109,Tham gia định hướng chuyên ngành K30 - 2025,Tham gia định hướng chuyên ngành K30 - 2025,67,1,1
+110,Tuyển thực tập số lượng lớn,Tuyển dụng sinh viên thực tập,68,5,1
+111,Tuyển dụng thực tập và việc làm,Tuyển dụng thực tập và việc làm,69,5,1
+112,Tuyển dụng thực tập và việc làm,Tuyển dụng thực tập và việc làm cho sinh viên,70,5,1
