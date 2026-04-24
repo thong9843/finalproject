@@ -74,6 +74,8 @@ CREATE TABLE IF NOT EXISTS enterprises (
     department_id INT,
     faculty_id INT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_ent_status (status),
+    INDEX idx_ent_created (created_at),
     FOREIGN KEY (scale_id) REFERENCES scales(id) ON DELETE SET NULL,
     FOREIGN KEY (faculty_id) REFERENCES faculties(id) ON DELETE CASCADE,
     FOREIGN KEY (department_id) REFERENCES departments(id) ON DELETE SET NULL
@@ -152,6 +154,9 @@ CREATE TABLE IF NOT EXISTS activities (
     status ENUM('Đề xuất', 'Phê duyệt nội bộ', 'Đã triển khai', 'Đã kết thúc') DEFAULT 'Đề xuất',
     faculty_id INT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_act_status (status),
+    INDEX idx_act_created (created_at),
+    INDEX idx_act_ent_status (enterprise_id, status),
     FOREIGN KEY (enterprise_id) REFERENCES enterprises(id) ON DELETE CASCADE,
     FOREIGN KEY (faculty_id) REFERENCES faculties(id) ON DELETE CASCADE
 );
