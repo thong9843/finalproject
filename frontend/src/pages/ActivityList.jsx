@@ -16,10 +16,12 @@ const ActivityList = () => {
     const [isModalVisible, setIsModalVisible] = useState(false);
     const [showImport, setShowImport] = useState(false);
     const [activityTypes, setActivityTypes] = useState([]);
+    const [targets, setTargets] = useState([]);
     const [form] = Form.useForm();
     const [searchText, setSearchText] = useState('');
     const [filterType, setFilterType] = useState(null);
     const [filterStatus, setFilterStatus] = useState(null);
+    const [filterEnterprise, setFilterEnterprise] = useState(null);
     const [viewMode, setViewMode] = useState('grid');
     const [editingId, setEditingId] = useState(null);
 
@@ -28,15 +30,21 @@ const ActivityList = () => {
         fetchStats();
         fetchEnterprises();
         fetchActivityTypes();
+        fetchTargets();
     }, []);
 
     const fetchActivityTypes = async () => {
         try {
-            const res = await api.get('/structure/activity-types');
+            const res = await api.get('/structure/act-types');
             setActivityTypes(res.data || []);
-        } catch (e) {
-            console.log(e);
-        }
+        } catch (e) { console.log(e); }
+    };
+
+    const fetchTargets = async () => {
+        try {
+            const res = await api.get('/structure/targets');
+            setTargets(res.data || []);
+        } catch (e) { console.log(e); }
     };
 
     const fetchData = async () => {
@@ -75,6 +83,9 @@ const ActivityList = () => {
                 ...values,
                 start_date: values.start_date?.format('YYYY-MM-DD'),
                 end_date: values.end_date?.format('YYYY-MM-DD') || null,
+                collaboration_date: values.collaboration_date?.format('YYYY-MM-DD') || null,
+                type_ids: values.type_ids || [],
+                target_ids: values.target_ids || [],
             };
             if (editingId) {
                 await api.put(`/activities/${editingId}`, formattedValues);
@@ -122,27 +133,30 @@ const ActivityList = () => {
     };
 
     const typeConfig = {
-        'Tuyển dụng thực tập': { color: '#DA251D', bg: '#fff1f0' },
-        'Tuyển dụng việc làm': { color: '#722ed1', bg: '#f9f0ff' },
-        'Workshop': { color: '#1890ff', bg: '#e6f7ff' },
-        'Tham quan công ty': { color: '#13c2c2', bg: '#e6fffb' },
-        'Tặng hoa 20/11': { color: '#eb2f96', bg: '#fff0f6' },
+        'Tuyển dụng & Thực tập': { color: '#DA251D', bg: '#fff1f0' },
+        'Hội thảo & Đào tạo': { color: '#1890ff', bg: '#e6f7ff' },
+        'Tài trợ & Học bổng': { color: '#52c41a', bg: '#f6ffed' },
+        'Tham quan doanh nghiệp': { color: '#13c2c2', bg: '#e6fffb' },
+        'Kiểm định & Đánh giá': { color: '#722ed1', bg: '#f9f0ff' },
+        'Ký kết MOU': { color: '#eb2f96', bg: '#fff0f6' },
         'Khác': { color: '#8c8c8c', bg: '#fafafa' },
     };
 
     const typeIcons = {
-        'Tuyển dụng thực tập': '💼',
-        'Tuyển dụng việc làm': '🎯',
-        'Workshop': '🎓',
-        'Tham quan công ty': '🏭',
-        'Tặng hoa 20/11': '🌺',
+        'Tuyển dụng & Thực tập': '💼',
+        'Hội thảo & Đào tạo': '🎓',
+        'Tài trợ & Học bổng': '🏆',
+        'Tham quan doanh nghiệp': '🏢',
+        'Kiểm định & Đánh giá': '📊',
+        'Ký kết MOU': '📝',
         'Khác': '📋',
     };
 
-    // Count activities by type
+    // Count activities by type (using type_names from API)
     const typeCounts = {};
     data.forEach(item => {
-        typeCounts[item.type] = (typeCounts[item.type] || 0) + 1;
+        const names = item.type_names ? item.type_names.split(', ') : ['Khác'];
+        names.forEach(n => { typeCounts[n] = (typeCounts[n] || 0) + 1; });
     });
 
     // Filtered data
@@ -150,9 +164,10 @@ const ActivityList = () => {
         const matchSearch = !searchText || 
             item.title?.toLowerCase().includes(searchText.toLowerCase()) ||
             item.enterprise_name?.toLowerCase().includes(searchText.toLowerCase());
-        const matchType = !filterType || item.type === filterType;
+        const matchType = !filterType || (item.type_names && item.type_names.includes(filterType));
         const matchStatus = !filterStatus || item.status === filterStatus;
-        return matchSearch && matchType && matchStatus;
+        const matchEnterprise = !filterEnterprise || item.enterprise_id === filterEnterprise;
+        return matchSearch && matchType && matchStatus && matchEnterprise;
     });
 
     const handleExport = () => {
@@ -160,21 +175,21 @@ const ActivityList = () => {
             message.warning('Không có dữ liệu để xuất');
             return;
         }
-
         const exportData = filteredData.map(item => ({
             'ID': item.id,
             'Tên hoạt động': item.title,
             'Doanh nghiệp': item.enterprise_name || '',
-            'Loại hình': item.type || '',
+            'Loại hình': item.type_names || '',
+            'Đối tượng': item.target_names || '',
             'Ngày bắt đầu': item.start_date ? dayjs(item.start_date).format('DD/MM/YYYY') : '',
             'Ngày kết thúc': item.end_date ? dayjs(item.end_date).format('DD/MM/YYYY') : '',
-            'Mô tả': item.description || '',
+            'Ngày hợp tác': item.collaboration_date ? dayjs(item.collaboration_date).format('DD/MM/YYYY') : '',
+            'Mô tả': item.detail || '',
             'Trạng thái': item.status || '',
         }));
-
         const ws = XLSX.utils.json_to_sheet(exportData);
         const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "HoatDong");
+        XLSX.utils.book_append_sheet(wb, ws, 'HoatDong');
         XLSX.writeFile(wb, `DanhSachHoatDong_${dayjs().format('YYYYMMDD')}.xlsx`);
     };
 
@@ -195,6 +210,27 @@ const ActivityList = () => {
                         setIsModalVisible(true);
                     }}>Thêm hoạt động</Button>
                 </div>
+            </div>
+
+            {/* Search + Filter bar */}
+            <div className="flex gap-3 mb-5 flex-wrap">
+                <input
+                    placeholder="Tìm theo tên, doanh nghiệp..."
+                    value={searchText}
+                    onChange={e => setSearchText(e.target.value)}
+                    className="border border-slate-200 rounded-lg px-3 py-2 text-sm w-64 focus:outline-none focus:ring-2 focus:ring-red-300"
+                />
+                <Select allowClear placeholder="Doanh nghiệp" onChange={setFilterEnterprise} className="w-48" size="middle" showSearch optionFilterProp="children">
+                    {enterprises.map(e => <Option key={e.id} value={e.id}>{e.name}</Option>)}
+                </Select>
+                <Select allowClear placeholder="Loại hoạt động" onChange={setFilterType} className="w-52" size="middle">
+                    {['Tuyển dụng & Thực tập', 'Hội thảo & Đào tạo', 'Tài trợ & Học bổng', 'Tham quan doanh nghiệp', 'Kiểm định & Đánh giá', 'Ký kết MOU', 'Khác'].map(t => (
+                        <Option key={t} value={t}>{t}</Option>
+                    ))}
+                </Select>
+                <Select allowClear placeholder="Trạng thái" onChange={setFilterStatus} className="w-44" size="middle">
+                    {Object.keys(statusConfig).map(s => <Option key={s} value={s}>{s}</Option>)}
+                </Select>
             </div>
 
             {/* Stats Cards */}
@@ -395,8 +431,11 @@ const ActivityList = () => {
                                                         setEditingId(item.id);
                                                         form.setFieldsValue({
                                                             ...item,
+                                                            type_ids: item.type_ids ? item.type_ids.split(',').map(Number) : [],
+                                                            target_ids: item.target_ids ? item.target_ids.split(',').map(Number) : [],
                                                             start_date: item.start_date ? dayjs(item.start_date) : null,
                                                             end_date: item.end_date ? dayjs(item.end_date) : null,
+                                                            collaboration_date: item.collaboration_date ? dayjs(item.collaboration_date) : null,
                                                         });
                                                         setIsModalVisible(true);
                                                     }}>
@@ -443,29 +482,40 @@ const ActivityList = () => {
                             </Form.Item>
                         </Col>
                         <Col span={12}>
-                            <Form.Item name="type" label="Loại hình" rules={[{ required: true }]}>
-                                <Select placeholder="Chọn loại hình" showSearch>
+                            <Form.Item name="type_ids" label="Loại hình hoạt động">
+                                <Select mode="multiple" placeholder="Chọn loại hình" showSearch>
                                     {activityTypes.map(act => (
-                                        <Option key={act.id} value={act.name}>{act.name}</Option>
+                                        <Option key={act.id} value={act.id}>{act.name}</Option>
                                     ))}
-                                    <Option value="Khác">Khác</Option>
                                 </Select>
                             </Form.Item>
                         </Col>
                     </Row>
+                    <Form.Item name="target_ids" label="Đối tượng hướng tới">
+                        <Select mode="multiple" placeholder="Chọn đối tượng" showSearch>
+                            {targets.map(t => (
+                                <Option key={t.id} value={t.id}>{t.name}</Option>
+                            ))}
+                        </Select>
+                    </Form.Item>
                     <Row gutter={16}>
-                        <Col span={12}>
+                        <Col span={8}>
                             <Form.Item name="start_date" label="Ngày bắt đầu" rules={[{ required: true }]}>
                                 <DatePicker className="w-full" format="DD/MM/YYYY" />
                             </Form.Item>
                         </Col>
-                        <Col span={12}>
+                        <Col span={8}>
                             <Form.Item name="end_date" label="Ngày kết thúc">
                                 <DatePicker className="w-full" format="DD/MM/YYYY" />
                             </Form.Item>
                         </Col>
+                        <Col span={8}>
+                            <Form.Item name="collaboration_date" label="Ngày hợp tác">
+                                <DatePicker className="w-full" format="DD/MM/YYYY" />
+                            </Form.Item>
+                        </Col>
                     </Row>
-                    <Form.Item name="description" label="Mô tả nội dung hoạt động">
+                    <Form.Item name="detail" label="Mô tả nội dung hoạt động">
                         <Input.TextArea rows={3} placeholder="Nhập tóm tắt nội dung..." />
                     </Form.Item>
                     <Form.Item name="status" label="Trạng thái" initialValue="Đề xuất">
@@ -490,7 +540,7 @@ const ActivityList = () => {
                 onClose={() => setShowImport(false)}
                 onSuccess={() => { fetchData(); fetchStats(); }}
                 type="activities"
-                templateColumns={['Tên hoạt động', 'enterprise_id', 'Loại hình', 'Mô tả', 'Ngày bắt đầu', 'Ngày kết thúc', 'Trạng thái']}
+                templateColumns={['Tên hoạt động', 'enterprise_id', 'Loại hình IDs', 'Đối tượng IDs', 'Mô tả', 'Ngày bắt đầu', 'Ngày kết thúc', 'Ngày hợp tác', 'Trạng thái']}
             />
         </div>
     );

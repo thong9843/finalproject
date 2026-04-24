@@ -10,7 +10,6 @@ exports.getStudentsByEnterprise = async (req, res) => {
             params.push(req.user.faculty_id);
         }
 
-        // Số SV theo từng công ty (tất cả trạng thái)
         const [byEnterprise] = await pool.query(`
             SELECT e.name as enterprise, 
                    COUNT(s.id) as total,
@@ -24,7 +23,6 @@ exports.getStudentsByEnterprise = async (req, res) => {
             ORDER BY total DESC
         `, params);
 
-        // Số SV theo ngành học
         const [byMajor] = await pool.query(`
             SELECT s.major, COUNT(*) as count
             FROM students s
@@ -34,7 +32,6 @@ exports.getStudentsByEnterprise = async (req, res) => {
             LIMIT 8
         `, params);
 
-        // Tổng quan 
         const [overview] = await pool.query(`
             SELECT 
                 COUNT(*) as total,
@@ -46,11 +43,7 @@ exports.getStudentsByEnterprise = async (req, res) => {
             WHERE 1=1 ${facultyFilter}
         `, params);
 
-        res.status(200).json({
-            byEnterprise,
-            byMajor,
-            overview: overview[0]
-        });
+        res.status(200).json({ byEnterprise, byMajor, overview: overview[0] });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
@@ -66,12 +59,14 @@ exports.getActivitiesByEnterprise = async (req, res) => {
             params.push(req.user.faculty_id);
         }
 
-        // Hoạt động theo loại hình
+        // Hoạt động theo loại hình (dùng bảng junction mới)
         const [byType] = await pool.query(`
-            SELECT a.type, COUNT(*) as count
+            SELECT act.name as type, COUNT(DISTINCT a.id) as count
             FROM activities a
+            LEFT JOIN activity_type_map atm ON atm.activity_id = a.id
+            LEFT JOIN act_types act ON act.id = atm.type_id
             WHERE 1=1 ${facultyFilter}
-            GROUP BY a.type
+            GROUP BY act.name
             ORDER BY count DESC
         `, params);
 
@@ -79,8 +74,8 @@ exports.getActivitiesByEnterprise = async (req, res) => {
         const [byEnterprise] = await pool.query(`
             SELECT e.name as enterprise, 
                    COUNT(a.id) as total,
-                   SUM(CASE WHEN a.status = 'Đang hoạt động' THEN 1 ELSE 0 END) as active,
-                   SUM(CASE WHEN a.status = 'Hoàn thành' THEN 1 ELSE 0 END) as completed
+                   SUM(CASE WHEN a.status IN ('Đã triển khai', 'Phê duyệt nội bộ') THEN 1 ELSE 0 END) as active,
+                   SUM(CASE WHEN a.status = 'Đã kết thúc' THEN 1 ELSE 0 END) as completed
             FROM activities a
             JOIN enterprises e ON a.enterprise_id = e.id
             WHERE 1=1 ${facultyFilter}
@@ -104,26 +99,20 @@ exports.getActivitiesByEnterprise = async (req, res) => {
             WHERE YEAR(a.start_date) = ? ${facultyFilter}
             GROUP BY MONTH(a.start_date)
             ORDER BY month
-        `, [currentYear, ...(params.length ? [params[0]] : [])]);
+        `, [currentYear, ...params]);
 
         // Tổng quan
         const [overview] = await pool.query(`
             SELECT 
                 COUNT(*) as total,
-                SUM(CASE WHEN status = 'Đang hoạt động' THEN 1 ELSE 0 END) as active,
-                SUM(CASE WHEN status = 'Hoàn thành' THEN 1 ELSE 0 END) as completed,
-                (SELECT COUNT(DISTINCT enterprise_id) FROM activities a WHERE 1=1 ${facultyFilter}) as enterprises
+                SUM(CASE WHEN status IN ('Đã triển khai', 'Phê duyệt nội bộ') THEN 1 ELSE 0 END) as active,
+                SUM(CASE WHEN status = 'Đã kết thúc' THEN 1 ELSE 0 END) as completed,
+                (SELECT COUNT(DISTINCT enterprise_id) FROM activities WHERE 1=1 ${facultyFilter.replace('a.faculty_id', 'faculty_id')}) as enterprises
             FROM activities a
             WHERE 1=1 ${facultyFilter}
         `, [...params, ...params]);
 
-        res.status(200).json({
-            byType,
-            byEnterprise,
-            byStatus,
-            byMonth,
-            overview: overview[0]
-        });
+        res.status(200).json({ byType, byEnterprise, byStatus, byMonth, overview: overview[0] });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }

@@ -27,7 +27,7 @@ CREATE TABLE IF NOT EXISTS users (
     role ENUM('ADMIN', 'FACULTY_MANAGER', 'LECTURER') DEFAULT 'LECTURER',
     faculty_id INT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (faculty_id) REFERENCES faculties (id) ON DELETE CASCADE
+    FOREIGN KEY (faculty_id) REFERENCES faculties(id) ON DELETE CASCADE
 );
 
 -- 4. departments
@@ -39,38 +39,82 @@ CREATE TABLE IF NOT EXISTS departments (
     FOREIGN KEY (faculty_id) REFERENCES faculties(id) ON DELETE CASCADE
 );
 
--- 5. activity_types
-CREATE TABLE IF NOT EXISTS activity_types (
+-- 5. scales (NEW)
+CREATE TABLE IF NOT EXISTS scales (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,
-    faculty_id INT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (faculty_id) REFERENCES faculties(id) ON DELETE CASCADE
+    name VARCHAR(100) NOT NULL
 );
 
--- 6. enterprises
+-- 6. fields (NEW)
+CREATE TABLE IF NOT EXISTS fields (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL
+);
+
+-- 7. act_types (NEW)
+CREATE TABLE IF NOT EXISTS act_types (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL
+);
+
+-- 8. targets (NEW)
+CREATE TABLE IF NOT EXISTS targets (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL
+);
+
+-- 9. enterprises (UPDATED - normalized)
 CREATE TABLE IF NOT EXISTS enterprises (
     id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     tax_code VARCHAR(100),
-    industry VARCHAR(255),
-    address VARCHAR(255),
-    email VARCHAR(255),
-    phone VARCHAR(50),
-    contact_title VARCHAR(50),
-    contact VARCHAR(255),
-    contact_position VARCHAR(255),
+    scale_id INT,
+    is_hcmc BOOLEAN DEFAULT TRUE,
     status ENUM('Tiềm năng', 'Liên hệ', 'Đàm phán', 'Đề xuất', 'Đã ký hợp tác', 'Đang triển khai', 'Đã hoàn thành', 'Đã tạm ngưng') DEFAULT 'Tiềm năng',
-    past_collaboration TEXT,
     department_id INT,
-    collaboration_date DATE NULL,
     faculty_id INT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (faculty_id) REFERENCES faculties (id) ON DELETE CASCADE,
+    FOREIGN KEY (scale_id) REFERENCES scales(id) ON DELETE SET NULL,
+    FOREIGN KEY (faculty_id) REFERENCES faculties(id) ON DELETE CASCADE,
     FOREIGN KEY (department_id) REFERENCES departments(id) ON DELETE SET NULL
 );
 
--- 7. mous
+-- 10. enterprise_representatives (NEW)
+CREATE TABLE IF NOT EXISTS enterprise_representatives (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    enterprise_id INT NOT NULL,
+    title VARCHAR(50),
+    full_name VARCHAR(255),
+    role VARCHAR(255),
+    phone VARCHAR(50),
+    email VARCHAR(255),
+    is_primary BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (enterprise_id) REFERENCES enterprises(id) ON DELETE CASCADE
+);
+
+-- 11. enterprise_addresses (NEW)
+CREATE TABLE IF NOT EXISTS enterprise_addresses (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    enterprise_id INT NOT NULL,
+    building_street VARCHAR(255),
+    district VARCHAR(100),
+    province VARCHAR(100),
+    country VARCHAR(100) DEFAULT 'Việt Nam',
+    is_main BOOLEAN DEFAULT FALSE,
+    FOREIGN KEY (enterprise_id) REFERENCES enterprises(id) ON DELETE CASCADE
+);
+
+-- 12. enterprise_fields junction (NEW)
+CREATE TABLE IF NOT EXISTS enterprise_fields (
+    enterprise_id INT NOT NULL,
+    field_id INT NOT NULL,
+    PRIMARY KEY (enterprise_id, field_id),
+    FOREIGN KEY (enterprise_id) REFERENCES enterprises(id) ON DELETE CASCADE,
+    FOREIGN KEY (field_id) REFERENCES fields(id) ON DELETE CASCADE
+);
+
+-- 13. mous
 CREATE TABLE IF NOT EXISTS mous (
     id INT AUTO_INCREMENT PRIMARY KEY,
     mou_code VARCHAR(100) NOT NULL,
@@ -92,27 +136,45 @@ CREATE TABLE IF NOT EXISTS mous (
     FOREIGN KEY (executing_unit_id) REFERENCES departments(id) ON DELETE SET NULL
 );
 
--- 8. activities
+-- 14. activities (UPDATED - removed type/description, added detail/collaboration_date)
 CREATE TABLE IF NOT EXISTS activities (
     id INT AUTO_INCREMENT PRIMARY KEY,
     enterprise_id INT NOT NULL,
     title VARCHAR(255) NOT NULL,
-    type VARCHAR(100),
-    description TEXT,
+    detail TEXT,
     start_date DATE,
-    end_date DATE NULL,
-    start_time TIME NULL,
-    end_time TIME NULL,
-    person_in_charge VARCHAR(255) NULL,
-    tasks JSON NULL,
+    end_date DATE,
+    start_time TIME,
+    end_time TIME,
+    person_in_charge VARCHAR(255),
+    tasks JSON,
+    collaboration_date DATE,
     status ENUM('Đề xuất', 'Phê duyệt nội bộ', 'Đã triển khai', 'Đã kết thúc') DEFAULT 'Đề xuất',
     faculty_id INT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (enterprise_id) REFERENCES enterprises (id) ON DELETE CASCADE,
-    FOREIGN KEY (faculty_id) REFERENCES faculties (id) ON DELETE CASCADE
+    FOREIGN KEY (enterprise_id) REFERENCES enterprises(id) ON DELETE CASCADE,
+    FOREIGN KEY (faculty_id) REFERENCES faculties(id) ON DELETE CASCADE
 );
 
--- 9. students
+-- 15. activity_type_map junction (NEW)
+CREATE TABLE IF NOT EXISTS activity_type_map (
+    activity_id INT NOT NULL,
+    type_id INT NOT NULL,
+    PRIMARY KEY (activity_id, type_id),
+    FOREIGN KEY (activity_id) REFERENCES activities(id) ON DELETE CASCADE,
+    FOREIGN KEY (type_id) REFERENCES act_types(id) ON DELETE CASCADE
+);
+
+-- 16. activity_target_map junction (NEW)
+CREATE TABLE IF NOT EXISTS activity_target_map (
+    activity_id INT NOT NULL,
+    target_id INT NOT NULL,
+    PRIMARY KEY (activity_id, target_id),
+    FOREIGN KEY (activity_id) REFERENCES activities(id) ON DELETE CASCADE,
+    FOREIGN KEY (target_id) REFERENCES targets(id) ON DELETE CASCADE
+);
+
+-- 17. students
 CREATE TABLE IF NOT EXISTS students (
     id INT AUTO_INCREMENT PRIMARY KEY,
     student_code VARCHAR(50) NOT NULL,
@@ -130,12 +192,12 @@ CREATE TABLE IF NOT EXISTS students (
     end_date DATE,
     faculty_id INT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (activity_id) REFERENCES activities (id) ON DELETE SET NULL,
-    FOREIGN KEY (enterprise_id) REFERENCES enterprises (id) ON DELETE SET NULL,
-    FOREIGN KEY (faculty_id) REFERENCES faculties (id) ON DELETE CASCADE
+    FOREIGN KEY (activity_id) REFERENCES activities(id) ON DELETE SET NULL,
+    FOREIGN KEY (enterprise_id) REFERENCES enterprises(id) ON DELETE SET NULL,
+    FOREIGN KEY (faculty_id) REFERENCES faculties(id) ON DELETE CASCADE
 );
 
--- 10. workflow_history
+-- 18. workflow_history
 CREATE TABLE IF NOT EXISTS workflow_history (
     id INT AUTO_INCREMENT PRIMARY KEY,
     entity_type ENUM('ENTERPRISE', 'ACTIVITY') NOT NULL,
@@ -147,7 +209,7 @@ CREATE TABLE IF NOT EXISTS workflow_history (
     FOREIGN KEY (changed_by) REFERENCES users(id) ON DELETE SET NULL
 );
 
--- 11. enterprise_ratings
+-- 19. enterprise_ratings
 CREATE TABLE IF NOT EXISTS enterprise_ratings (
     id INT AUTO_INCREMENT PRIMARY KEY,
     enterprise_id INT NOT NULL,
@@ -164,42 +226,85 @@ CREATE TABLE IF NOT EXISTS enterprise_ratings (
     FOREIGN KEY (activity_id) REFERENCES activities(id) ON DELETE SET NULL
 );
 
--- INSERT SEED DATA
-INSERT IGNORE INTO clusters (id, name) VALUES 
-(1, 'Khối Công nghệ & Kỹ thuật'), 
-(2, 'Khối Kinh tế & Quản lý'), 
+-- ==================== SEED DATA ====================
+
+INSERT IGNORE INTO clusters (id, name) VALUES
+(1, 'Khối Công nghệ & Kỹ thuật'),
+(2, 'Khối Kinh tế & Quản lý'),
 (3, 'Khối Xã hội & Ngôn ngữ');
 
-INSERT IGNORE INTO faculties (id, cluster_id, name, code) VALUES 
+INSERT IGNORE INTO faculties (id, cluster_id, name, code) VALUES
 (1, 1, 'Khoa Công nghệ Thông tin', 'IT'),
 (2, 2, 'Khoa Quản trị Kinh doanh', 'BA'),
 (3, 3, 'Khoa Quan hệ Công chúng', 'PR');
 
-INSERT IGNORE INTO activity_types (name) VALUES 
-('Tuyển dụng việc làm'), 
-('Tuyển dụng thực tập'), 
-('Tặng hoa 20/11'), 
-('Tham quan công ty'), 
-('Workshop');
-
-INSERT IGNORE INTO users (id, full_name, email, password, role, faculty_id) VALUES 
+INSERT IGNORE INTO users (id, full_name, email, password, role, faculty_id) VALUES
 (1, 'System Admin', 'admin@vlu.edu.vn', '$2b$10$9FfmKHRV6ffkngWroSCTt.ha.L2GDuFCjxHtqxgMoJfUfHxx5tamy', 'ADMIN', NULL),
 (2, 'IT Manager', 'manager.it@vlu.edu.vn', '$2b$10$9FfmKHRV6ffkngWroSCTt.ha.L2GDuFCjxHtqxgMoJfUfHxx5tamy', 'FACULTY_MANAGER', 1),
 (3, 'IT Lecturer', 'lecturer.it@vlu.edu.vn', '$2b$10$9FfmKHRV6ffkngWroSCTt.ha.L2GDuFCjxHtqxgMoJfUfHxx5tamy', 'LECTURER', 1),
 (4, 'BA Manager', 'manager.ba@vlu.edu.vn', '$2b$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW', 'FACULTY_MANAGER', 2);
 
-INSERT IGNORE INTO enterprises (id, name, tax_code, industry, address, email, phone, status, collaboration_date, faculty_id) VALUES 
-(1, 'FPT Software', '0304200420', 'Công nghệ thông tin', 'Quận 9, TP.HCM', 'contact@fpt.com', '02873004666', 'Đang triển khai', '2023-01-15', 1),
-(2, 'VNG Corporation', '0303456789', 'Công nghệ thông tin', 'Quận 7, TP.HCM', 'contact@vng.com.vn', '02811112222', 'Đàm phán', NULL, 1),
-(3, 'Unilever Vietnam', '0301112223', 'FMCG', 'Quận 7, TP.HCM', 'hr@unilever.com', '02833334444', 'Đang triển khai', '2022-11-20', 2),
-(4, 'Masan Group', '0309998887', 'Bán lẻ', 'Quận 1, TP.HCM', 'hr@masan.com', '02855556666', 'Tiềm năng', NULL, 2);
+INSERT IGNORE INTO scales (id, name) VALUES
+(1, 'Tier 1 (Tập đoàn/Global)'),
+(2, 'Tier 2 (SME)'),
+(3, 'Tier 3 (Startup/Micro)');
 
-INSERT IGNORE INTO activities (id, enterprise_id, title, type, description, start_date, status, faculty_id) VALUES 
-(1, 1, 'Tuyển dụng Fresher ReactJS', 'Tuyển dụng việc làm', 'Tuyển dụng 50 sinh viên năm cuối', '2024-05-10', 'Đã triển khai', 1),
-(2, 1, 'Workshop: Định hướng nghề nghiệp IT', 'Workshop', 'Chia sẻ kỹ năng phỏng vấn từ chuyên gia FPT', '2024-03-20', 'Đã triển khai', 1),
-(3, 3, 'Thực tập sinh Marketing', 'Tuyển dụng thực tập', 'Chương trình kỳ thực tập mùa hè 2024', '2024-06-01', 'Đề xuất', 2);
+INSERT IGNORE INTO fields (id, name) VALUES
+(1, 'Phần mềm & Outsource'),
+(2, 'Giải pháp CNTT & Chuyển đổi số'),
+(3, 'Hạ tầng & Viễn thông'),
+(4, 'Tài chính & Fintech'),
+(5, 'Phần cứng & Điện tử'),
+(6, 'Marketing & Truyền thông'),
+(7, 'Khác');
 
-INSERT IGNORE INTO students (student_code, name, class, major, activity_id, faculty_id) VALUES 
+INSERT IGNORE INTO act_types (id, name) VALUES
+(1, 'Tuyển dụng & Thực tập'),
+(2, 'Hội thảo & Đào tạo'),
+(3, 'Tài trợ & Học bổng'),
+(4, 'Tham quan doanh nghiệp'),
+(5, 'Kiểm định & Đánh giá'),
+(6, 'Ký kết MOU'),
+(7, 'Khác');
+
+INSERT IGNORE INTO targets (id, name) VALUES
+(1, 'Sinh viên năm 1'),
+(2, 'Sinh viên năm 2'),
+(3, 'Sinh viên năm 3'),
+(4, 'Sinh viên năm 4'),
+(5, 'Sinh viên mới tốt nghiệp'),
+(6, 'Giảng viên'),
+(7, 'Tất cả sinh viên');
+
+INSERT IGNORE INTO enterprises (id, name, tax_code, scale_id, is_hcmc, status, faculty_id) VALUES
+(1, 'FPT Software', '0304200420', 1, TRUE, 'Đang triển khai', 1),
+(2, 'VNG Corporation', '0303456789', 1, TRUE, 'Đàm phán', 1),
+(3, 'Unilever Vietnam', '0301112223', 2, TRUE, 'Đang triển khai', 2),
+(4, 'Masan Group', '0309998887', 2, TRUE, 'Tiềm năng', 2);
+
+INSERT IGNORE INTO enterprise_representatives (enterprise_id, title, full_name, role, phone, email, is_primary) VALUES
+(1, 'Ông', 'Nguyễn Văn Hùng', 'HR Director', '02873004666', 'contact@fpt.com', TRUE),
+(2, 'Bà', 'Trần Thị Lan', 'Talent Manager', '02811112222', 'contact@vng.com.vn', TRUE),
+(3, 'Ông', 'Lê Văn Nam', 'HR Manager', '02833334444', 'hr@unilever.com', TRUE),
+(4, 'Bà', 'Phạm Thị Hoa', 'Recruitment Lead', '02855556666', 'hr@masan.com', TRUE);
+
+INSERT IGNORE INTO enterprise_addresses (enterprise_id, building_street, district, province, country, is_main) VALUES
+(1, 'Tòa nhà FPT, Đường số 17A', 'Quận 9', 'TP. Hồ Chí Minh', 'Việt Nam', TRUE),
+(2, '182 Lê Đại Hành', 'Quận 11', 'TP. Hồ Chí Minh', 'Việt Nam', TRUE),
+(3, '156 Nguyễn Lương Bằng', 'Quận 7', 'TP. Hồ Chí Minh', 'Việt Nam', TRUE),
+(4, '9-11 Đoàn Văn Bơ', 'Quận 4', 'TP. Hồ Chí Minh', 'Việt Nam', TRUE);
+
+INSERT IGNORE INTO enterprise_fields (enterprise_id, field_id) VALUES
+(1, 1), (2, 1), (2, 2), (3, 2), (3, 3), (4, 2);
+
+INSERT IGNORE INTO activities (id, enterprise_id, title, detail, start_date, collaboration_date, status, faculty_id) VALUES
+(1, 1, 'Tuyển dụng Fresher ReactJS', 'Tuyển dụng 50 sinh viên năm cuối ngành CNTT', '2024-05-10', '2024-04-01', 'Đã triển khai', 1),
+(2, 1, 'Workshop: Định hướng nghề nghiệp IT', 'Chia sẻ kỹ năng phỏng vấn từ chuyên gia FPT', '2024-03-20', '2024-03-01', 'Đã triển khai', 1),
+(3, 3, 'Thực tập sinh Marketing', 'Chương trình kỳ thực tập mùa hè 2024', '2024-06-01', NULL, 'Đề xuất', 2);
+
+INSERT IGNORE INTO activity_type_map (activity_id, type_id) VALUES (1, 1), (2, 3), (3, 2);
+
+INSERT IGNORE INTO students (student_code, name, class, major, activity_id, faculty_id) VALUES
 ('207CT50111', 'Nguyễn Văn A', 'K26-IT1', 'Kỹ thuật Phần mềm', 1, 1),
 ('207CT50112', 'Trần Thị B', 'K26-IT2', 'Khoa học Máy tính', 1, 1),
 ('207BA50113', 'Lê Văn C', 'K27-BA1', 'Quản trị Marketing', 3, 2);
