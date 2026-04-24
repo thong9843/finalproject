@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Card, Row, Col, Tag, Form, Select, Button, Modal, message, Input, DatePicker, Statistic, Spin, Empty, Tooltip } from 'antd';
-import { PlusOutlined, CheckCircleOutlined, ClockCircleOutlined, SyncOutlined, CheckOutlined, PauseCircleOutlined, TeamOutlined, BankOutlined, CalendarOutlined, UploadOutlined, SearchOutlined, EditOutlined, DeleteOutlined, UserOutlined, AppstoreOutlined, UnorderedListOutlined, DownloadOutlined } from '@ant-design/icons';
+import { Card, Row, Col, Tag, Form, Select, Button, Modal, message, Input, DatePicker, Statistic, Spin, Empty, Tooltip, Drawer, Descriptions, Popover, Badge } from 'antd';
+import { PlusOutlined, CheckCircleOutlined, ClockCircleOutlined, SyncOutlined, CheckOutlined, PauseCircleOutlined, TeamOutlined, BankOutlined, CalendarOutlined, UploadOutlined, SearchOutlined, EditOutlined, DeleteOutlined, UserOutlined, AppstoreOutlined, UnorderedListOutlined, DownloadOutlined, FilterOutlined } from '@ant-design/icons';
 import ImportModal from '../components/ImportModal';
 import api from '../utils/api';
 import dayjs from 'dayjs';
@@ -24,6 +24,8 @@ const ActivityList = () => {
     const [filterEnterprise, setFilterEnterprise] = useState(null);
     const [viewMode, setViewMode] = useState('grid');
     const [editingId, setEditingId] = useState(null);
+    const [isDrawerVisible, setIsDrawerVisible] = useState(false);
+    const [selectedActivity, setSelectedActivity] = useState(null);
 
     useEffect(() => {
         fetchData();
@@ -161,7 +163,7 @@ const ActivityList = () => {
 
     // Filtered data
     const filteredData = data.filter(item => {
-        const matchSearch = !searchText || 
+        const matchSearch = !searchText ||
             item.title?.toLowerCase().includes(searchText.toLowerCase()) ||
             item.enterprise_name?.toLowerCase().includes(searchText.toLowerCase());
         const matchType = !filterType || (item.type_names && item.type_names.includes(filterType));
@@ -170,15 +172,21 @@ const ActivityList = () => {
         return matchSearch && matchType && matchStatus && matchEnterprise;
     });
 
+    const activeCount = filteredData.filter(item => item.status === 'Đã triển khai').length;
+    const completedCount = filteredData.filter(item => item.status === 'Đã kết thúc').length;
+    const pendingCount = filteredData.filter(item => item.status === 'Đề xuất' || item.status === 'Phê duyệt nội bộ').length;
+    const totalStudents = filteredData.reduce((sum, item) => sum + (item.student_count || 0), 0);
+
     const handleExport = () => {
         if (!filteredData || filteredData.length === 0) {
             message.warning('Không có dữ liệu để xuất');
             return;
         }
         const exportData = filteredData.map(item => ({
-            'ID': item.id,
+            'Mã hoạt động': item.id,
+            'Mã doanh nghiệp (ID)': item.enterprise_id || '',
+            'Tên doanh nghiệp': item.enterprise_name || '',
             'Tên hoạt động': item.title,
-            'Doanh nghiệp': item.enterprise_name || '',
             'Loại hình': item.type_names || '',
             'Đối tượng': item.target_names || '',
             'Ngày bắt đầu': item.start_date ? dayjs(item.start_date).format('DD/MM/YYYY') : '',
@@ -212,26 +220,7 @@ const ActivityList = () => {
                 </div>
             </div>
 
-            {/* Search + Filter bar */}
-            <div className="flex gap-3 mb-5 flex-wrap">
-                <input
-                    placeholder="Tìm theo tên, doanh nghiệp..."
-                    value={searchText}
-                    onChange={e => setSearchText(e.target.value)}
-                    className="border border-slate-200 rounded-lg px-3 py-2 text-sm w-64 focus:outline-none focus:ring-2 focus:ring-red-300"
-                />
-                <Select allowClear placeholder="Doanh nghiệp" onChange={setFilterEnterprise} className="w-48" size="middle" showSearch optionFilterProp="children">
-                    {enterprises.map(e => <Option key={e.id} value={e.id}>{e.name}</Option>)}
-                </Select>
-                <Select allowClear placeholder="Loại hoạt động" onChange={setFilterType} className="w-52" size="middle">
-                    {['Tuyển dụng & Thực tập', 'Hội thảo & Đào tạo', 'Tài trợ & Học bổng', 'Tham quan doanh nghiệp', 'Kiểm định & Đánh giá', 'Ký kết MOU', 'Khác'].map(t => (
-                        <Option key={t} value={t}>{t}</Option>
-                    ))}
-                </Select>
-                <Select allowClear placeholder="Trạng thái" onChange={setFilterStatus} className="w-44" size="middle">
-                    {Object.keys(statusConfig).map(s => <Option key={s} value={s}>{s}</Option>)}
-                </Select>
-            </div>
+
 
             {/* Stats Cards */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
@@ -241,7 +230,7 @@ const ActivityList = () => {
                             <SyncOutlined className="text-white text-lg" />
                         </div>
                         <div>
-                            <div className="text-2xl font-bold text-green-700">{stats?.active || 0}</div>
+                            <div className="text-2xl font-bold text-green-700">{activeCount}</div>
                             <div className="text-xs text-green-600/70/70">Đang hoạt động</div>
                         </div>
                     </div>
@@ -252,7 +241,7 @@ const ActivityList = () => {
                             <CheckCircleOutlined className="text-white text-lg" />
                         </div>
                         <div>
-                            <div className="text-2xl font-bold text-blue-700">{stats?.completed || 0}</div>
+                            <div className="text-2xl font-bold text-blue-700">{completedCount}</div>
                             <div className="text-xs text-blue-600/70/70">Hoàn thành</div>
                         </div>
                     </div>
@@ -263,7 +252,7 @@ const ActivityList = () => {
                             <ClockCircleOutlined className="text-white text-lg" />
                         </div>
                         <div>
-                            <div className="text-2xl font-bold text-orange-700">{stats?.pending || 0}</div>
+                            <div className="text-2xl font-bold text-orange-700">{pendingCount}</div>
                             <div className="text-xs text-orange-600/70/70">Chờ triển khai</div>
                         </div>
                     </div>
@@ -274,7 +263,7 @@ const ActivityList = () => {
                             <TeamOutlined className="text-white text-lg" />
                         </div>
                         <div>
-                            <div className="text-2xl font-bold text-purple-700">{stats?.totalStudents || 0}</div>
+                            <div className="text-2xl font-bold text-purple-700">{totalStudents}</div>
                             <div className="text-xs text-purple-600/70/70">Sinh viên tham gia</div>
                         </div>
                     </div>
@@ -291,16 +280,15 @@ const ActivityList = () => {
                             <button
                                 key={type}
                                 onClick={() => setFilterType(filterType === type ? null : type)}
-                                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all border ${
-                                    filterType === type 
-                                        ? 'ring-2 ring-offset-1 shadow-sm' 
-                                        : 'hover:shadow-sm'
-                                }`}
-                                style={{ 
-                                    color: tc.color, 
-                                    backgroundColor: tc.bg, 
+                                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all border ${filterType === type
+                                    ? 'ring-2 ring-offset-1 shadow-sm'
+                                    : 'hover:shadow-sm'
+                                    }`}
+                                style={{
+                                    color: tc.color,
+                                    backgroundColor: tc.bg,
                                     borderColor: filterType === type ? tc.color : 'transparent',
-                                    '--tw-ring-color': tc.color 
+                                    '--tw-ring-color': tc.color
                                 }}
                             >
                                 {typeIcons[type] || '📋'} {type} <span className="font-bold">{count}</span>
@@ -315,28 +303,45 @@ const ActivityList = () => {
                 <Input
                     placeholder="Tìm kiếm hoạt động, doanh nghiệp..."
                     prefix={<SearchOutlined className="text-gray-300" />}
-                    className="flex-1 min-w-[200px] rounded-lg"
+                    className="flex-1 min-w-[200px] rounded-lg h-10"
                     value={searchText}
                     onChange={e => setSearchText(e.target.value)}
                     allowClear
                 />
-                <Select placeholder="Tất cả loại" allowClear onChange={v => setFilterType(v)} value={filterType} className="w-44 search-select-dark">
-                    {activityTypes.map(act => (
-                        <Option key={act.id} value={act.name}>{act.name}</Option>
-                    ))}
-                    <Option value="Khác">Khác</Option>
-                </Select>
-                <Select placeholder="Tất cả trạng thái" allowClear onChange={v => setFilterStatus(v)} value={filterStatus} className="w-44 search-select-dark">
-                    <Option value="Đề xuất">Đề xuất</Option>
-                    <Option value="Phê duyệt nội bộ">Phê duyệt nội bộ</Option>
-                    <Option value="Đã triển khai">Đã triển khai</Option>
-                    <Option value="Đã kết thúc">Đã kết thúc</Option>
-                </Select>
-                <div className="flex border border-gray-200 rounded-lg overflow-hidden transition-colors">
-                    <button onClick={() => setViewMode('grid')} className={`p-2 px-3 transition-colors ${viewMode === 'grid' ? 'bg-white text-gray-800' : 'text-gray-400 hover:text-gray-600:text-gray-300'}`}>
+
+                <Popover
+                    title="Bộ lọc nâng cao"
+                    trigger="click"
+                    placement="bottomLeft"
+                    content={
+                        <div className="flex flex-col gap-3 w-64 p-1">
+                            <Select allowClear placeholder="Doanh nghiệp" onChange={setFilterEnterprise} value={filterEnterprise} className="w-full" showSearch optionFilterProp="children">
+                                {enterprises.map(e => <Option key={e.id} value={e.id}>{e.name}</Option>)}
+                            </Select>
+                            <Select allowClear placeholder="Loại hoạt động" onChange={setFilterType} value={filterType} className="w-full">
+                                {['Tuyển dụng & Thực tập', 'Hội thảo & Đào tạo', 'Tài trợ & Học bổng', 'Tham quan doanh nghiệp', 'Kiểm định & Đánh giá', 'Ký kết MOU', 'Khác'].map(t => (
+                                    <Option key={t} value={t}>{t}</Option>
+                                ))}
+                            </Select>
+                            <Select allowClear placeholder="Trạng thái" onChange={setFilterStatus} value={filterStatus} className="w-full">
+                                {Object.keys(statusConfig).map(s => <Option key={s} value={s}>{s}</Option>)}
+                            </Select>
+                            <Button type="default" onClick={() => {
+                                setFilterEnterprise(null); setFilterType(null); setFilterStatus(null);
+                            }}>Xóa bộ lọc</Button>
+                        </div>
+                    }
+                >
+                    <Button icon={<FilterOutlined />} className="h-10 rounded-lg text-gray-600">
+                        Bộ lọc {(filterEnterprise || filterType || filterStatus) && <Badge dot color="blue"><span className="ml-1 text-xs">Đang bật</span></Badge>}
+                    </Button>
+                </Popover>
+
+                <div className="flex border border-gray-200 rounded-lg overflow-hidden transition-colors h-10">
+                    <button onClick={() => setViewMode('grid')} className={`p-2 px-3 transition-colors ${viewMode === 'grid' ? 'bg-white text-gray-800' : 'text-gray-400 hover:text-gray-600'}`}>
                         <AppstoreOutlined />
                     </button>
-                    <button onClick={() => setViewMode('list')} className={`p-2 px-3 transition-colors ${viewMode === 'list' ? 'bg-white text-gray-800' : 'text-gray-400 hover:text-gray-600:text-gray-300'}`}>
+                    <button onClick={() => setViewMode('list')} className={`p-2 px-3 transition-colors ${viewMode === 'list' ? 'bg-white text-gray-800' : 'text-gray-400 hover:text-gray-600'}`}>
                         <UnorderedListOutlined />
                     </button>
                 </div>
@@ -354,13 +359,19 @@ const ActivityList = () => {
 
                         return (
                             <Col xs={24} sm={viewMode === 'list' ? 24 : 12} lg={viewMode === 'list' ? 24 : 8} key={item.id}>
-                                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all h-full flex flex-col overflow-hidden group">
+                                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all h-full flex flex-col overflow-hidden group cursor-pointer"
+                                    onClick={(e) => {
+                                        if (e.target.closest('.action-buttons')) return;
+                                        setSelectedActivity(item);
+                                        setIsDrawerVisible(true);
+                                    }}
+                                >
                                     {/* Card Header */}
                                     <div className="p-5 pb-3 flex-1">
                                         <div className="flex justify-between items-start mb-3">
                                             <div className="flex items-start gap-3 flex-1">
-                                                <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 text-lg shadow-sm" 
-                                                     style={{ backgroundColor: tc.bg }}>
+                                                <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 text-lg shadow-sm"
+                                                    style={{ backgroundColor: tc.bg }}>
                                                     {typeIcons[item.type] || '📋'}
                                                 </div>
                                                 <div className="flex-1 min-w-0">
@@ -373,7 +384,7 @@ const ActivityList = () => {
                                                     </div>
                                                 </div>
                                             </div>
-                                            <Tag 
+                                            <Tag
                                                 className="rounded-full px-2.5 py-0.5 text-xs font-medium flex-shrink-0 border-0 ml-2"
                                                 style={{ color: sc.color, backgroundColor: sc.bg }}
                                             >
@@ -411,7 +422,7 @@ const ActivityList = () => {
                                     </div>
 
                                     {/* Card Footer */}
-                                    <div className="px-5 py-3 border-t border-gray-50 flex items-center justify-between bg-white/50 transition-colors">
+                                    <div className="px-5 py-3 border-t border-gray-50 flex items-center justify-between bg-white/50 transition-colors action-buttons">
                                         <Select
                                             size="small"
                                             value={item.status}
@@ -540,8 +551,62 @@ const ActivityList = () => {
                 onClose={() => setShowImport(false)}
                 onSuccess={() => { fetchData(); fetchStats(); }}
                 type="activities"
-                templateColumns={['Tên hoạt động', 'enterprise_id', 'Loại hình IDs', 'Đối tượng IDs', 'Mô tả', 'Ngày bắt đầu', 'Ngày kết thúc', 'Ngày hợp tác', 'Trạng thái']}
+                templateColumns={['Tên hoạt động', 'Mã doanh nghiệp (ID)', 'Loại hình', 'Đối tượng', 'Ngày bắt đầu', 'Ngày kết thúc', 'Ngày hợp tác', 'Mô tả', 'Trạng thái']}
             />
+
+            <Drawer
+                title={<span className="font-bold flex items-center gap-2"><UnorderedListOutlined /> Chi tiết Hoạt động</span>}
+                placement="right" width={600}
+                onClose={() => setIsDrawerVisible(false)}
+                open={isDrawerVisible} className="bg-slate-50"
+            >
+                {selectedActivity && (
+                    <div className="flex flex-col gap-6">
+                        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                            <div className="flex justify-between items-start mb-4">
+                                <h2 className="text-xl font-bold text-slate-800 m-0 leading-tight">{selectedActivity.title}</h2>
+                                <Tag color={statusConfig[selectedActivity.status]?.color} className="m-0 flex-shrink-0">
+                                    {selectedActivity.status}
+                                </Tag>
+                            </div>
+                            <div className="flex items-center gap-2 text-gray-500 mb-6">
+                                <BankOutlined className="text-blue-500" />
+                                <span className="font-medium text-slate-700">{selectedActivity.enterprise_name}</span>
+                            </div>
+
+                            <Descriptions column={1} layout="horizontal" size="small" bordered className="bg-white">
+                                <Descriptions.Item label="Loại hình">
+                                    {selectedActivity.type_names ? selectedActivity.type_names.split(', ').map(t => <Tag key={t} color="blue">{t}</Tag>) : '---'}
+                                </Descriptions.Item>
+                                <Descriptions.Item label="Đối tượng">
+                                    {selectedActivity.target_names ? selectedActivity.target_names.split(', ').map(t => <Tag key={t} color="cyan">{t}</Tag>) : '---'}
+                                </Descriptions.Item>
+                                <Descriptions.Item label="Ngày bắt đầu">{selectedActivity.start_date ? dayjs(selectedActivity.start_date).format('DD/MM/YYYY') : '---'}</Descriptions.Item>
+                                <Descriptions.Item label="Ngày kết thúc">{selectedActivity.end_date ? dayjs(selectedActivity.end_date).format('DD/MM/YYYY') : '---'}</Descriptions.Item>
+                                <Descriptions.Item label="Ngày hợp tác">{selectedActivity.collaboration_date ? dayjs(selectedActivity.collaboration_date).format('DD/MM/YYYY') : '---'}</Descriptions.Item>
+                            </Descriptions>
+                        </div>
+
+                        {selectedActivity.detail && (
+                            <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                                <h3 className="text-lg font-bold text-slate-800 mb-3 border-b pb-2">Mô tả nội dung</h3>
+                                <div className="text-slate-600 whitespace-pre-wrap">{selectedActivity.detail}</div>
+                            </div>
+                        )}
+
+                        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                            <h3 className="text-lg font-bold text-slate-800 mb-3 border-b pb-2">Thống kê</h3>
+                            <div className="flex items-center gap-3">
+                                <TeamOutlined className="text-2xl text-purple-500" />
+                                <div>
+                                    <div className="text-2xl font-bold text-slate-800">{selectedActivity.student_count || 0}</div>
+                                    <div className="text-sm text-gray-500">Sinh viên tham gia</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </Drawer>
         </div>
     );
 };

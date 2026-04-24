@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Table, Tag, Form, Input, Select, Button, Modal, message, Space, Drawer, Timeline, Row, Col, DatePicker, Descriptions, Switch } from 'antd';
-import { EditOutlined, DeleteOutlined, PlusOutlined, UnorderedListOutlined, UploadOutlined, DownloadOutlined, UserOutlined, HomeOutlined } from '@ant-design/icons';
+import { Table, Tag, Form, Input, Select, Button, Modal, message, Space, Drawer, Timeline, Row, Col, DatePicker, Descriptions, Switch, Popover, Badge } from 'antd';
+import { EditOutlined, DeleteOutlined, PlusOutlined, UnorderedListOutlined, UploadOutlined, DownloadOutlined, UserOutlined, HomeOutlined, FilterOutlined } from '@ant-design/icons';
 import ImportModal from '../components/ImportModal';
 import api from '../utils/api';
 import dayjs from 'dayjs';
@@ -22,6 +22,8 @@ const EnterpriseList = () => {
     const [searchText, setSearchText] = useState('');
     const [filterScale, setFilterScale] = useState(undefined);
     const [filterField, setFilterField] = useState(undefined);
+    const [filterIsHcmc, setFilterIsHcmc] = useState(undefined);
+    const [filterDistrict, setFilterDistrict] = useState(undefined);
     const [isDrawerVisible, setIsDrawerVisible] = useState(false);
     const [selectedEnterprise, setSelectedEnterprise] = useState(null);
     const [showImport, setShowImport] = useState(false);
@@ -112,18 +114,22 @@ const EnterpriseList = () => {
     const handleExport = () => {
         if (!data || data.length === 0) { message.warning('Không có dữ liệu để xuất'); return; }
         const exportData = filteredData.map(item => ({
-            'STT': item.id,
-            'Tên Doanh nghiệp': item.name,
+            'Tên doanh nghiệp': item.name,
             'Mã số thuế': item.tax_code || '',
             'Quy mô': item.scale_name || '',
             'Lĩnh vực': item.fields_text || '',
-            'Đại diện': `${item.rep_title || ''} ${item.rep_full_name || ''}`.trim(),
+            'Ở TP.HCM': item.is_hcmc ? 'Có' : 'Không',
+            'Danh xưng': item.rep_title || '',
+            'Họ và tên': item.rep_full_name || '',
             'Chức vụ': item.rep_role || '',
-            'SĐT': item.rep_phone || '',
+            'Số điện thoại': item.rep_phone || '',
             'Email': item.rep_email || '',
-            'Địa chỉ': [item.building_street, item.district, item.province, item.country].filter(Boolean).join(', '),
+            'Địa chỉ': item.building_street || '',
+            'Quận/Huyện': item.district || '',
+            'Tỉnh/Thành': item.province || '',
+            'Quốc gia': item.country || '',
+            'Bộ môn ID': item.department_id || '',
             'Trạng thái': item.status || '',
-            'Số lượng SV': item.student_count || 0,
         }));
         const ws = XLSX.utils.json_to_sheet(exportData);
         const wb = XLSX.utils.book_new();
@@ -131,17 +137,45 @@ const EnterpriseList = () => {
         XLSX.writeFile(wb, `DanhSachDoanhNghiep_${dayjs().format('YYYYMMDD')}.xlsx`);
     };
 
+    const uniqueDistricts = [...new Set(data.map(item => item.district).filter(Boolean))];
+
     const filteredData = data.filter(item => {
         const q = searchText.toLowerCase();
-        const matchSearch = !searchText ||
+        const matchSearch = !searchText || 
             item.name?.toLowerCase().includes(q) ||
             item.tax_code?.toLowerCase().includes(q) ||
             item.rep_full_name?.toLowerCase().includes(q) ||
             item.rep_phone?.toLowerCase().includes(q);
         const matchScale = !filterScale || item.scale_id === filterScale;
         const matchField = !filterField || (item.field_ids && item.field_ids.split(',').map(Number).includes(filterField));
-        return matchSearch && matchScale && matchField;
+        const matchIsHcmc = filterIsHcmc === undefined || item.is_hcmc === filterIsHcmc;
+        const matchDistrict = !filterDistrict || item.district === filterDistrict;
+        return matchSearch && matchScale && matchField && matchIsHcmc && matchDistrict;
     });
+
+    const filterContent = (
+        <div className="flex flex-col gap-3 w-64 p-1">
+            <Select allowClear placeholder="Lọc trạng thái" onChange={setStatusFilter} value={statusFilter} className="w-full">
+                {Object.keys(statusColors).map(s => <Option key={s} value={s}>{s}</Option>)}
+            </Select>
+            <Select allowClear placeholder="Lọc quy mô" onChange={setFilterScale} value={filterScale} className="w-full">
+                {scales.map(s => <Option key={s.id} value={s.id}>{s.name}</Option>)}
+            </Select>
+            <Select allowClear placeholder="Lọc lĩnh vực" onChange={setFilterField} value={filterField} className="w-full">
+                {fields.map(f => <Option key={f.id} value={f.id}>{f.name}</Option>)}
+            </Select>
+            <Select allowClear placeholder="Khu vực" onChange={setFilterIsHcmc} value={filterIsHcmc} className="w-full">
+                <Option value={true}>Trong TP.HCM</Option>
+                <Option value={false}>Ngoài TP.HCM</Option>
+            </Select>
+            <Select allowClear placeholder="Quận/Huyện" onChange={setFilterDistrict} value={filterDistrict} className="w-full" showSearch>
+                {uniqueDistricts.map(d => <Option key={d} value={d}>{d}</Option>)}
+            </Select>
+            <Button type="default" onClick={() => {
+                setStatusFilter(undefined); setFilterScale(undefined); setFilterField(undefined); setFilterIsHcmc(undefined); setFilterDistrict(undefined);
+            }}>Xóa bộ lọc</Button>
+        </div>
+    );
 
     const columns = [
         { title: 'Tên Doanh nghiệp', dataIndex: 'name', key: 'name', width: 220, render: (text) => <span className="font-semibold text-slate-800">{text}</span> },
@@ -219,22 +253,18 @@ const EnterpriseList = () => {
             </div>
 
             {/* Search + Filter bar */}
-            <div className="flex gap-3 mb-4 flex-wrap">
+            <div className="flex gap-3 mb-4 items-center">
                 <input
                     placeholder="Tìm kiếm theo tên, mã thuế, đại diện..."
                     value={searchText}
                     onChange={e => setSearchText(e.target.value)}
                     className="border border-slate-200 rounded-lg px-3 py-2 text-sm w-72 focus:outline-none focus:ring-2 focus:ring-blue-300"
                 />
-                <Select allowClear placeholder="Lọc trạng thái" onChange={setStatusFilter} className="w-44" size="middle">
-                    {Object.keys(statusColors).map(s => <Option key={s} value={s}>{s}</Option>)}
-                </Select>
-                <Select allowClear placeholder="Lọc quy mô" onChange={setFilterScale} className="w-48" size="middle">
-                    {scales.map(s => <Option key={s.id} value={s.id}>{s.name}</Option>)}
-                </Select>
-                <Select allowClear placeholder="Lọc lĩnh vực" onChange={setFilterField} className="w-52" size="middle">
-                    {fields.map(f => <Option key={f.id} value={f.id}>{f.name}</Option>)}
-                </Select>
+                <Popover content={filterContent} title="Bộ lọc nâng cao" trigger="click" placement="bottomLeft">
+                    <Button icon={<FilterOutlined />} size="large" className="rounded-lg text-gray-600">
+                        Bộ lọc {(statusFilter || filterScale || filterField || filterIsHcmc !== undefined || filterDistrict) && <Badge dot color="blue"><span className="ml-1 text-xs">Đang bật</span></Badge>}
+                    </Button>
+                </Popover>
             </div>
 
             <Table columns={columns} dataSource={filteredData} rowKey="id" loading={loading}
@@ -414,9 +444,14 @@ const EnterpriseList = () => {
                             <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
                                 <h3 className="text-lg font-bold text-slate-800 mb-4 border-b pb-2">Địa chỉ</h3>
                                 {selectedEnterprise.addresses.map(addr => (
-                                    <div key={addr.id} className="mb-2">
-                                        {addr.is_main && <Tag color="blue">Chính</Tag>}
-                                        <span className="text-slate-700">{[addr.building_street, addr.district, addr.province, addr.country].filter(Boolean).join(', ')}</span>
+                                    <div key={addr.id} className="mb-4 last:mb-0">
+                                        {addr.is_main && <Tag color="blue" className="mb-2">Chính</Tag>}
+                                        <Descriptions column={1} size="small" className="ml-1" colon={false}>
+                                            <Descriptions.Item label={<span className="text-gray-500 w-28 inline-block">Đường/Tòa nhà</span>}><span className="font-medium text-slate-700">{addr.building_street || '---'}</span></Descriptions.Item>
+                                            <Descriptions.Item label={<span className="text-gray-500 w-28 inline-block">Quận/Huyện</span>}><span className="font-medium text-slate-700">{addr.district || '---'}</span></Descriptions.Item>
+                                            <Descriptions.Item label={<span className="text-gray-500 w-28 inline-block">Tỉnh/Thành</span>}><span className="font-medium text-slate-700">{addr.province || '---'}</span></Descriptions.Item>
+                                            <Descriptions.Item label={<span className="text-gray-500 w-28 inline-block">Quốc gia</span>}><span className="font-medium text-slate-700">{addr.country || '---'}</span></Descriptions.Item>
+                                        </Descriptions>
                                     </div>
                                 ))}
                             </div>
@@ -448,7 +483,7 @@ const EnterpriseList = () => {
             <ImportModal
                 open={showImport} onClose={() => setShowImport(false)} onSuccess={fetchData}
                 type="enterprises"
-                templateColumns={['Tên doanh nghiệp', 'Mã số thuế', 'Quy mô ID', 'Lĩnh vực IDs', 'Ở TP.HCM', 'Danh xưng', 'Họ và tên', 'Chức vụ', 'Số điện thoại', 'Email', 'Địa chỉ', 'Quận/Huyện', 'Tỉnh/Thành', 'Quốc gia', 'Bộ môn ID', 'Trạng thái']}
+                templateColumns={['Tên doanh nghiệp', 'Mã số thuế', 'Quy mô', 'Lĩnh vực', 'Ở TP.HCM', 'Danh xưng', 'Họ và tên', 'Chức vụ', 'Số điện thoại', 'Email', 'Địa chỉ', 'Quận/Huyện', 'Tỉnh/Thành', 'Quốc gia', 'Bộ môn ID', 'Trạng thái']}
             />
         </div>
     );
