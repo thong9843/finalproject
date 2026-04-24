@@ -41,29 +41,29 @@ const ST_SCALES = [
 ];
 
 const ST_FIELDS = [
-    "Phần mềm & Outsource", 
-    "Giải pháp CNTT & Chuyển đổi số", 
-    "Hạ tầng & Viễn thông", 
-    "Tài chính & Fintech", 
-    "Phần cứng & Điện tử", 
-    "Marketing & Truyền thông", 
+    "Phần mềm & Outsource",
+    "Giải pháp CNTT & Chuyển đổi số",
+    "Hạ tầng & Viễn thông",
+    "Tài chính & Fintech",
+    "Phần cứng & Điện tử",
+    "Marketing & Truyền thông",
     "Khác"
 ];
 
 const ST_ACT_TYPES = [
-    "Tuyển dụng & Thực tập", 
-    "Hội thảo & Đào tạo", 
-    "Tài trợ & Học bổng", 
-    "Tham quan doanh nghiệp", 
-    "Kiểm định & Đánh giá", 
-    "Ký kết MOU", 
+    "Tuyển dụng & Thực tập",
+    "Hội thảo & Đào tạo",
+    "Tài trợ & Học bổng",
+    "Tham quan doanh nghiệp",
+    "Kiểm định & Đánh giá",
+    "Ký kết MOU",
     "Khác"
 ];
 
 // Heuristics
 function getCompanyInfo(name) {
     const n = name.toLowerCase();
-    
+
     let scale = "Tier 2 (SME)";
     if (/(aws|hitachi|tma|fpt|acb|mobifone|cmc|dxc|vnpt|nashtech|kms|nab|dek|opswat|sharp|sctv|vinasa|vnito|agest|mitek|elca)/.test(n)) {
         scale = "Tier 1 (Tập đoàn/Global)";
@@ -90,9 +90,9 @@ function getCompanyInfo(name) {
     if (/(marketing|media|truyền thông|cánh cam|sen vàng|tmai)/.test(n)) {
         fields.push("Marketing & Truyền thông");
     }
-    
+
     if (fields.length === 0) fields.push("Khác");
-    
+
     return { scale, fields };
 }
 
@@ -105,7 +105,7 @@ function getActivityTypes(title, detail) {
     if (str.includes("hội thảo") || str.includes("đào tạo") || str.includes("tọa đàm") || str.includes("môn học") || str.includes("định hướng") || str.includes("chuyên ngành") || str.includes("bảo vệ") || str.includes("tư vấn") || str.includes("giảng dạy")) types.push("Hội thảo & Đào tạo");
     if (str.includes("học bổng") || str.includes("tặng quà") || str.includes("bánh kem") || str.includes("tặng hoa") || str.includes("tài trợ") || str.includes("tiệc") || str.includes("tri ân")) types.push("Tài trợ & Học bổng");
     if (str.includes("tham quan")) types.push("Tham quan doanh nghiệp");
-    
+
     if (types.length === 0) types.push("Khác");
     return types;
 }
@@ -119,13 +119,13 @@ async function importData() {
 
         console.log('Disabling foreign key checks and truncating tables...');
         await conn.query('SET FOREIGN_KEY_CHECKS = 0');
-        
+
         const tablesToTruncate = [
             'activity_target_map', 'activity_type_map', 'activities',
             'enterprise_fields', 'enterprise_addresses', 'enterprise_representatives', 'enterprises',
             'targets', 'act_types', 'scales', 'fields'
         ];
-        
+
         for (const table of tablesToTruncate) {
             await conn.query(`TRUNCATE TABLE ${table}`);
         }
@@ -163,9 +163,9 @@ async function importData() {
         const companiesData = readCSV('1_Company.csv');
         for (const row of companiesData) {
             if (!row.id || !row.name) continue;
-            
+
             const isHcmc = row.is_hcmc ? (row.is_hcmc.toLowerCase() === 'true' || row.is_hcmc === '1') : false;
-            
+
             // LLM Heuristic Evaluation
             const info = getCompanyInfo(row.name);
             const scaleId = scaleMap[info.scale] || null;
