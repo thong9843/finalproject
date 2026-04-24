@@ -8,13 +8,13 @@ async function runSQL() {
         const connection = await mysql.createConnection({
             host: 'localhost',
             user: 'root',
-            password: '0103040285',
+            password: '',
             multipleStatements: true
         });
 
         console.log('Connected to MySQL server.');
 
-        const sqlFilePath = path.join(__dirname, '../database.sql');
+        const sqlFilePath = path.join(__dirname, '../../database.sql');
         const sql = fs.readFileSync(sqlFilePath, 'utf8');
 
         console.log('Executing database.sql...');
