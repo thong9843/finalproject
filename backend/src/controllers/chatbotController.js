@@ -75,14 +75,14 @@ const handlers = {
         let rows;
         if (keyword) {
             [rows] = await pool.query(
-                `SELECT e.name, e.industry, e.status, e.phone, e.email,
+                `SELECT e.name, e.status, 
                  (SELECT COUNT(*) FROM students s WHERE s.enterprise_id = e.id) as sv
                  FROM enterprises e WHERE e.name LIKE ? ORDER BY e.id DESC LIMIT 5`,
                 [`%${keyword}%`]
             );
         } else {
             [rows] = await pool.query(
-                `SELECT e.name, e.industry, e.status,
+                `SELECT e.name, e.status, 
                  (SELECT COUNT(*) FROM students s WHERE s.enterprise_id = e.id) as sv
                  FROM enterprises e ORDER BY e.id DESC LIMIT 8`
             );
@@ -91,8 +91,8 @@ const handlers = {
 
         let reply = `🏢 **Danh sách doanh nghiệp${keyword ? ` tìm thấy "${keyword}"` : ''}** (${rows.length}):\n\n`;
         rows.forEach((r, i) => {
-            const icon = r.status === 'Đang hợp tác' ? '🟢' : r.status === 'Tiềm năng' ? '🔵' : '🟡';
-            reply += `${i + 1}. ${icon} **${r.name}** – ${r.industry || 'N/A'}\n   └ ${r.status} · ${r.sv} sinh viên\n`;
+            const icon = r.status === 'active' ? '🟢' : r.status === 'potential' ? '🔵' : '🟡';
+            reply += `${i + 1}. ${icon} **${r.name}**\n   └ ${r.status} · ${r.sv} sinh viên\n`;
         });
         reply += `\n📄 Xem chi tiết tại **/enterprises**`;
         return { reply };
@@ -119,7 +119,7 @@ const handlers = {
 
         let reply = `👨‍🎓 **Danh sách sinh viên${keyword ? ` "${keyword}"` : ''}** (${rows.length}):\n\n`;
         rows.forEach((r, i) => {
-            const icon = r.status === 'Đang thực tập' ? '🟢' : r.status === 'Hoàn thành' ? '✅' : '⏳';
+            const icon = r.status === 'interning' ? '🟢' : r.status === 'completed' ? '✅' : '⏳';
             reply += `${i + 1}. ${icon} **${r.name}** (${r.student_code})\n   └ ${r.major || 'N/A'} · ${r.en || 'Chưa phân công'} · GPA: ${r.gpa || 'N/A'}\n`;
         });
         reply += `\n📄 Xem chi tiết tại **/students**`;
@@ -128,12 +128,12 @@ const handlers = {
 
     student_active: async () => {
         const [rows] = await pool.query(
-            `SELECT s.name, s.student_code, e.name as en, s.position FROM students s 
-             LEFT JOIN enterprises e ON s.enterprise_id = e.id WHERE s.status = 'Đang thực tập'`
+            `SELECT s.name, s.student_code, e.name as en FROM students s 
+             LEFT JOIN enterprises e ON s.enterprise_id = e.id WHERE s.status = 'interning'`
         );
         let reply = `🟢 **${rows.length} sinh viên đang thực tập:**\n\n`;
         rows.forEach((r, i) => {
-            reply += `${i + 1}. **${r.name}** (${r.student_code}) → ${r.en || 'N/A'} · ${r.position || 'N/A'}\n`;
+            reply += `${i + 1}. **${r.name}** (${r.student_code}) → ${r.en || 'N/A'}\n`;
         });
         return { reply };
     },
@@ -141,7 +141,7 @@ const handlers = {
     student_completed: async () => {
         const [rows] = await pool.query(
             `SELECT s.name, s.student_code, e.name as en FROM students s 
-             LEFT JOIN enterprises e ON s.enterprise_id = e.id WHERE s.status = 'Hoàn thành'`
+             LEFT JOIN enterprises e ON s.enterprise_id = e.id WHERE s.status = 'completed'`
         );
         let reply = `✅ **${rows.length} sinh viên đã hoàn thành:**\n\n`;
         rows.forEach((r, i) => {
@@ -152,7 +152,7 @@ const handlers = {
 
     student_pending: async () => {
         const [rows] = await pool.query(
-            `SELECT s.name, s.student_code, s.major FROM students s WHERE s.status = 'Chờ phân công'`
+            `SELECT s.name, s.student_code, s.major FROM students s WHERE s.status = 'pending'`
         );
         let reply = `⏳ **${rows.length} sinh viên đang chờ phân công:**\n\n`;
         rows.forEach((r, i) => {
@@ -164,16 +164,18 @@ const handlers = {
 
     activity: async () => {
         const [rows] = await pool.query(
-            `SELECT a.title, a.type, a.status, a.start_date, e.name as en
-             FROM activities a JOIN enterprises e ON a.enterprise_id = e.id
+            `SELECT a.title, a.status, e.name as en, t.name as type_name
+             FROM activities a 
+             JOIN enterprises e ON a.enterprise_id = e.id
+             LEFT JOIN act_types t ON a.type_id = t.id
              ORDER BY a.created_at DESC LIMIT 8`
         );
         if (rows.length === 0) return { reply: '📋 Chưa có hoạt động nào. Tạo mới tại **/activities**.' };
 
         let reply = `📋 **Hoạt động hợp tác gần nhất** (${rows.length}):\n\n`;
         rows.forEach((r, i) => {
-            const icon = r.status === 'Đang hoạt động' ? '🟢' : r.status === 'Hoàn thành' ? '✅' : '🟡';
-            reply += `${i + 1}. ${icon} **${r.title}**\n   └ ${r.en} · ${r.type} · ${r.status}\n`;
+            const icon = r.status === 'active' ? '🟢' : r.status === 'completed' ? '✅' : '🟡';
+            reply += `${i + 1}. ${icon} **${r.title}**\n   └ ${r.en} · ${r.type_name || 'N/A'} · ${r.status}\n`;
         });
         reply += `\n📄 Xem chi tiết tại **/activities**`;
         return { reply };
@@ -183,11 +185,11 @@ const handlers = {
         const [ent] = await pool.query('SELECT COUNT(*) as c FROM enterprises');
         const [stu] = await pool.query('SELECT COUNT(*) as c FROM students');
         const [act] = await pool.query('SELECT COUNT(*) as c FROM activities');
-        const [activeS] = await pool.query("SELECT COUNT(*) as c FROM students WHERE status='Đang thực tập'");
-        const [activeE] = await pool.query("SELECT COUNT(*) as c FROM enterprises WHERE status='Đang hợp tác'");
-        const [activeA] = await pool.query("SELECT COUNT(*) as c FROM activities WHERE status='Đang hoạt động'");
+        const [activeS] = await pool.query("SELECT COUNT(*) as c FROM students WHERE status='interning'");
+        const [activeE] = await pool.query("SELECT COUNT(*) as c FROM enterprises WHERE status='active'");
+        const [activeA] = await pool.query("SELECT COUNT(*) as c FROM activities WHERE status='active'");
         const [avgGpa] = await pool.query("SELECT ROUND(AVG(gpa),2) as a FROM students WHERE gpa IS NOT NULL");
-        const [byType] = await pool.query("SELECT type, COUNT(*) as c FROM activities GROUP BY type ORDER BY c DESC");
+        const [byType] = await pool.query("SELECT t.name, COUNT(a.id) as c FROM activities a JOIN act_types t ON a.type_id = t.id GROUP BY t.name ORDER BY c DESC");
 
         let reply = `📊 **Thống kê tổng quan hệ thống:**\n\n`;
         reply += `🏢 Doanh nghiệp: **${ent[0].c}** (Đang hợp tác: ${activeE[0].c})\n`;
@@ -197,7 +199,7 @@ const handlers = {
 
         if (byType.length > 0) {
             reply += `\n📈 **Hoạt động theo loại hình:**\n`;
-            byType.forEach(r => { reply += `• ${r.type}: ${r.c}\n`; });
+            byType.forEach(r => { reply += `• ${r.name}: ${r.c}\n`; });
         }
         reply += `\n📊 Xem biểu đồ chi tiết tại **/reports/students** hoặc **/reports/activities**`;
         return { reply };
@@ -207,20 +209,19 @@ const handlers = {
         const lowerMsg = msg.toLowerCase();
         if (lowerMsg.includes('doanh nghiệp') || lowerMsg.includes('công ty')) {
             const [r] = await pool.query('SELECT COUNT(*) as c FROM enterprises');
-            const [a] = await pool.query("SELECT COUNT(*) as c FROM enterprises WHERE status='Đang hợp tác'");
+            const [a] = await pool.query("SELECT COUNT(*) as c FROM enterprises WHERE status='active'");
             return { reply: `🏢 Hệ thống hiện có **${r[0].c} doanh nghiệp**, trong đó **${a[0].c}** đang hợp tác. Xem chi tiết tại **/enterprises**.` };
         }
         if (lowerMsg.includes('sinh viên') || lowerMsg.includes('sv')) {
             const [r] = await pool.query('SELECT COUNT(*) as c FROM students');
-            const [a] = await pool.query("SELECT COUNT(*) as c FROM students WHERE status='Đang thực tập'");
+            const [a] = await pool.query("SELECT COUNT(*) as c FROM students WHERE status='interning'");
             return { reply: `👨‍🎓 Hệ thống có **${r[0].c} sinh viên**, trong đó **${a[0].c}** đang thực tập. Xem chi tiết tại **/students**.` };
         }
         if (lowerMsg.includes('hoạt động')) {
             const [r] = await pool.query('SELECT COUNT(*) as c FROM activities');
-            const [a] = await pool.query("SELECT COUNT(*) as c FROM activities WHERE status='Đang hoạt động'");
+            const [a] = await pool.query("SELECT COUNT(*) as c FROM activities WHERE status='active'");
             return { reply: `📋 Hệ thống có **${r[0].c} hoạt động**, trong đó **${a[0].c}** đang hoạt động. Xem chi tiết tại **/activities**.` };
         }
-        // Default count all
         const [e] = await pool.query('SELECT COUNT(*) as c FROM enterprises');
         const [s] = await pool.query('SELECT COUNT(*) as c FROM students');
         const [a] = await pool.query('SELECT COUNT(*) as c FROM activities');
@@ -231,14 +232,14 @@ const handlers = {
         const keyword = extractKeyword(msg);
         if (!keyword) return { reply: '🔍 Vui lòng cho biết bạn muốn tìm gì? VD: "tìm công ty FPT" hoặc "tìm sinh viên Nguyễn"' };
 
-        const [ent] = await pool.query('SELECT name, industry, status FROM enterprises WHERE name LIKE ? LIMIT 3', [`%${keyword}%`]);
+        const [ent] = await pool.query('SELECT name, status FROM enterprises WHERE name LIKE ? LIMIT 3', [`%${keyword}%`]);
         const [stu] = await pool.query('SELECT name, student_code, status FROM students WHERE name LIKE ? OR student_code LIKE ? LIMIT 3', [`%${keyword}%`, `%${keyword}%`]);
-        const [act] = await pool.query('SELECT title, type, status FROM activities WHERE title LIKE ? LIMIT 3', [`%${keyword}%`]);
+        const [act] = await pool.query('SELECT title, status FROM activities WHERE title LIKE ? LIMIT 3', [`%${keyword}%`]);
 
         let reply = `🔍 **Kết quả tìm kiếm "${keyword}":**\n\n`;
         if (ent.length > 0) { reply += `🏢 **Doanh nghiệp:**\n`; ent.forEach(r => { reply += `• ${r.name} (${r.status})\n`; }); reply += '\n'; }
         if (stu.length > 0) { reply += `👨‍🎓 **Sinh viên:**\n`; stu.forEach(r => { reply += `• ${r.name} - ${r.student_code} (${r.status})\n`; }); reply += '\n'; }
-        if (act.length > 0) { reply += `📋 **Hoạt động:**\n`; act.forEach(r => { reply += `• ${r.title} (${r.type})\n`; }); }
+        if (act.length > 0) { reply += `📋 **Hoạt động:**\n`; act.forEach(r => { reply += `• ${r.title} (${r.status})\n`; }); }
         if (ent.length === 0 && stu.length === 0 && act.length === 0) { reply = `🔍 Không tìm thấy kết quả nào cho "${keyword}".`; }
         return { reply };
     },
