@@ -1,5 +1,5 @@
 DROP DATABASE IF EXISTS vlu_enterprise_link;
-CREATE DATABASE IF NOT EXISTS vlu_enterprise_link;
+CREATE DATABASE IF NOT EXISTS vlu_enterprise_link CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE vlu_enterprise_link;
 
 -- 1. clusters
@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS clusters (
     id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 2. faculties
 CREATE TABLE IF NOT EXISTS faculties (
@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS faculties (
     name VARCHAR(255) NOT NULL,
     code VARCHAR(50) NOT NULL UNIQUE,
     FOREIGN KEY (cluster_id) REFERENCES clusters(id) ON DELETE SET NULL
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 3. users
 CREATE TABLE IF NOT EXISTS users (
@@ -28,7 +28,7 @@ CREATE TABLE IF NOT EXISTS users (
     faculty_id INT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (faculty_id) REFERENCES faculties(id) ON DELETE CASCADE
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 4. departments
 CREATE TABLE IF NOT EXISTS departments (
@@ -37,31 +37,31 @@ CREATE TABLE IF NOT EXISTS departments (
     name VARCHAR(255) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (faculty_id) REFERENCES faculties(id) ON DELETE CASCADE
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 5. scales (NEW)
 CREATE TABLE IF NOT EXISTS scales (
     id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(100) NOT NULL
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 6. fields (NEW)
 CREATE TABLE IF NOT EXISTS fields (
     id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(255) NOT NULL
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 7. act_types (NEW)
 CREATE TABLE IF NOT EXISTS act_types (
     id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(255) NOT NULL
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 8. targets (NEW)
 CREATE TABLE IF NOT EXISTS targets (
     id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(255) NOT NULL
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 9. enterprises (UPDATED - normalized)
 CREATE TABLE IF NOT EXISTS enterprises (
@@ -74,12 +74,11 @@ CREATE TABLE IF NOT EXISTS enterprises (
     department_id INT,
     faculty_id INT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    INDEX idx_ent_status (status),
     INDEX idx_ent_created (created_at),
     FOREIGN KEY (scale_id) REFERENCES scales(id) ON DELETE SET NULL,
     FOREIGN KEY (faculty_id) REFERENCES faculties(id) ON DELETE CASCADE,
     FOREIGN KEY (department_id) REFERENCES departments(id) ON DELETE SET NULL
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 10. enterprise_representatives (NEW)
 CREATE TABLE IF NOT EXISTS enterprise_representatives (
@@ -93,7 +92,7 @@ CREATE TABLE IF NOT EXISTS enterprise_representatives (
     is_primary BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (enterprise_id) REFERENCES enterprises(id) ON DELETE CASCADE
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 11. enterprise_addresses (NEW)
 CREATE TABLE IF NOT EXISTS enterprise_addresses (
@@ -105,7 +104,7 @@ CREATE TABLE IF NOT EXISTS enterprise_addresses (
     country VARCHAR(100) DEFAULT 'Việt Nam',
     is_main BOOLEAN DEFAULT FALSE,
     FOREIGN KEY (enterprise_id) REFERENCES enterprises(id) ON DELETE CASCADE
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 12. enterprise_fields junction (NEW)
 CREATE TABLE IF NOT EXISTS enterprise_fields (
@@ -114,7 +113,7 @@ CREATE TABLE IF NOT EXISTS enterprise_fields (
     PRIMARY KEY (enterprise_id, field_id),
     FOREIGN KEY (enterprise_id) REFERENCES enterprises(id) ON DELETE CASCADE,
     FOREIGN KEY (field_id) REFERENCES fields(id) ON DELETE CASCADE
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 13. mous
 CREATE TABLE IF NOT EXISTS mous (
@@ -136,7 +135,7 @@ CREATE TABLE IF NOT EXISTS mous (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (enterprise_id) REFERENCES enterprises(id) ON DELETE CASCADE,
     FOREIGN KEY (executing_unit_id) REFERENCES departments(id) ON DELETE SET NULL
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 14. activities (UPDATED - removed type/description, added detail/collaboration_date)
 CREATE TABLE IF NOT EXISTS activities (
@@ -154,12 +153,11 @@ CREATE TABLE IF NOT EXISTS activities (
     status ENUM('Đề xuất', 'Phê duyệt nội bộ', 'Đã triển khai', 'Đã kết thúc') DEFAULT 'Đề xuất',
     faculty_id INT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    INDEX idx_act_status (status),
     INDEX idx_act_created (created_at),
-    INDEX idx_act_ent_status (enterprise_id, status),
+    INDEX idx_act_ent (enterprise_id),
     FOREIGN KEY (enterprise_id) REFERENCES enterprises(id) ON DELETE CASCADE,
     FOREIGN KEY (faculty_id) REFERENCES faculties(id) ON DELETE CASCADE
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 15. activity_type_map junction (NEW)
 CREATE TABLE IF NOT EXISTS activity_type_map (
@@ -168,7 +166,7 @@ CREATE TABLE IF NOT EXISTS activity_type_map (
     PRIMARY KEY (activity_id, type_id),
     FOREIGN KEY (activity_id) REFERENCES activities(id) ON DELETE CASCADE,
     FOREIGN KEY (type_id) REFERENCES act_types(id) ON DELETE CASCADE
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 16. activity_target_map junction (NEW)
 CREATE TABLE IF NOT EXISTS activity_target_map (
@@ -177,7 +175,7 @@ CREATE TABLE IF NOT EXISTS activity_target_map (
     PRIMARY KEY (activity_id, target_id),
     FOREIGN KEY (activity_id) REFERENCES activities(id) ON DELETE CASCADE,
     FOREIGN KEY (target_id) REFERENCES targets(id) ON DELETE CASCADE
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 17. students
 CREATE TABLE IF NOT EXISTS students (
@@ -200,7 +198,7 @@ CREATE TABLE IF NOT EXISTS students (
     FOREIGN KEY (activity_id) REFERENCES activities(id) ON DELETE SET NULL,
     FOREIGN KEY (enterprise_id) REFERENCES enterprises(id) ON DELETE SET NULL,
     FOREIGN KEY (faculty_id) REFERENCES faculties(id) ON DELETE CASCADE
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 18. workflow_history
 CREATE TABLE IF NOT EXISTS workflow_history (
@@ -212,7 +210,7 @@ CREATE TABLE IF NOT EXISTS workflow_history (
     changed_by INT,
     changed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (changed_by) REFERENCES users(id) ON DELETE SET NULL
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 19. enterprise_ratings
 CREATE TABLE IF NOT EXISTS enterprise_ratings (
@@ -229,7 +227,7 @@ CREATE TABLE IF NOT EXISTS enterprise_ratings (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (enterprise_id) REFERENCES enterprises(id) ON DELETE CASCADE,
     FOREIGN KEY (activity_id) REFERENCES activities(id) ON DELETE SET NULL
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ==================== SEED DATA ====================
 

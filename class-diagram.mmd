@@ -1,0 +1,655 @@
+classDiagram
+    direction TB
+
+    %% ============================================================
+    %% STEP 1: Database Entity Layer
+    %% Define all tables as classes with columns and types
+    %% ============================================================
+
+    class clusters {
+        +INT id PK
+        +VARCHAR name
+        +TIMESTAMP created_at
+    }
+
+    class faculties {
+        +INT id PK
+        +INT cluster_id FK
+        +VARCHAR name
+        +VARCHAR code UNIQUE
+    }
+
+    class users {
+        +INT id PK
+        +VARCHAR full_name
+        +VARCHAR email UNIQUE
+        +VARCHAR password
+        +ENUM role
+        +INT faculty_id FK
+        +TIMESTAMP created_at
+    }
+
+    class departments {
+        +INT id PK
+        +INT faculty_id FK
+        +VARCHAR name
+        +TIMESTAMP created_at
+    }
+
+    class scales {
+        +INT id PK
+        +VARCHAR name
+    }
+
+    class fields {
+        +INT id PK
+        +VARCHAR name
+    }
+
+    class act_types {
+        +INT id PK
+        +VARCHAR name
+    }
+
+    class targets {
+        +INT id PK
+        +VARCHAR name
+    }
+
+    class enterprises {
+        +INT id PK
+        +VARCHAR name
+        +VARCHAR tax_code
+        +INT scale_id FK
+        +BOOLEAN is_hcmc
+        +ENUM status
+        +INT department_id FK
+        +INT faculty_id FK
+        +TIMESTAMP created_at
+    }
+
+    class enterprise_representatives {
+        +INT id PK
+        +INT enterprise_id FK
+        +VARCHAR title
+        +VARCHAR full_name
+        +VARCHAR role
+        +VARCHAR phone
+        +VARCHAR email
+        +BOOLEAN is_primary
+        +TIMESTAMP created_at
+    }
+
+    class enterprise_addresses {
+        +INT id PK
+        +INT enterprise_id FK
+        +VARCHAR building_street
+        +VARCHAR district
+        +VARCHAR province
+        +VARCHAR country
+        +BOOLEAN is_main
+    }
+
+    class enterprise_fields {
+        +INT enterprise_id PK_FK
+        +INT field_id PK_FK
+    }
+
+    class mous {
+        +INT id PK
+        +VARCHAR mou_code
+        +INT enterprise_id FK
+        +DATE signing_date
+        +VARCHAR partner_contact
+        +VARCHAR org_type
+        +VARCHAR country
+        +TEXT collaboration_scope
+        +INT executing_unit_id FK
+        +VARCHAR vlu_contact
+        +TEXT tasks_ay24_25
+        +TEXT next_steps
+        +TEXT past_activities
+        +TEXT related_data
+        +VARCHAR working_dir
+        +TIMESTAMP created_at
+    }
+
+    class activities {
+        +INT id PK
+        +INT enterprise_id FK
+        +VARCHAR title
+        +TEXT detail
+        +DATE start_date
+        +DATE end_date
+        +TIME start_time
+        +TIME end_time
+        +VARCHAR person_in_charge
+        +JSON tasks
+        +DATE collaboration_date
+        +ENUM status
+        +INT faculty_id FK
+        +TIMESTAMP created_at
+    }
+
+    class activity_type_map {
+        +INT activity_id PK_FK
+        +INT type_id PK_FK
+    }
+
+    class activity_target_map {
+        +INT activity_id PK_FK
+        +INT target_id PK_FK
+    }
+
+    class students {
+        +INT id PK
+        +VARCHAR student_code
+        +VARCHAR name
+        +VARCHAR email
+        +VARCHAR class
+        +VARCHAR major
+        +VARCHAR advisor
+        +INT activity_id FK
+        +INT enterprise_id FK
+        +VARCHAR position
+        +ENUM status
+        +DECIMAL gpa
+        +DATE start_date
+        +DATE end_date
+        +INT faculty_id FK
+        +TIMESTAMP created_at
+    }
+
+    class workflow_history {
+        +INT id PK
+        +ENUM entity_type
+        +INT entity_id
+        +VARCHAR old_status
+        +VARCHAR new_status
+        +INT changed_by FK
+        +TIMESTAMP changed_at
+    }
+
+    class enterprise_ratings {
+        +INT id PK
+        +INT enterprise_id FK
+        +INT activity_id FK
+        +ENUM user_type
+        +INT overall_score
+        +INT guidance_score
+        +INT facilities_score
+        +INT opportunities_score
+        +INT coordination_score
+        +TEXT internal_note
+        +TIMESTAMP created_at
+    }
+
+    %% ============================================================
+    %% STEP 2: Database Relationships
+    %% Map all FK constraints and junction tables
+    %% ============================================================
+
+    clusters "1" --> "*" faculties : has many
+    faculties "1" --> "*" users : has many
+    faculties "1" --> "*" departments : has many
+    faculties "1" --> "*" enterprises : has many
+    faculties "1" --> "*" activities : has many
+    faculties "1" --> "*" students : has many
+
+    scales "1" --> "*" enterprises : categorizes
+    departments "0..1" --> "*" enterprises : belongs to
+    departments "0..1" --> "*" mous : executing unit
+
+    enterprises "1" --> "*" enterprise_representatives : has many
+    enterprises "1" --> "*" enterprise_addresses : has many
+    enterprises "1" --> "*" mous : has many
+    enterprises "1" --> "*" activities : has many
+    enterprises "1" --> "*" students : assigned to
+    enterprises "1" --> "*" enterprise_ratings : rated by
+
+    enterprises "1" --> "*" enterprise_fields : participates
+    fields "1" --> "*" enterprise_fields : categorized in
+
+    activities "1" --> "*" activity_type_map : classified by
+    act_types "1" --> "*" activity_type_map : maps to
+
+    activities "1" --> "*" activity_target_map : targets
+    targets "1" --> "*" activity_target_map : maps to
+
+    activities "1" --> "*" students : enrolls
+    activities "1" --> "*" enterprise_ratings : evaluated in
+
+    users "1" --> "*" workflow_history : changed by
+
+    %% ============================================================
+    %% STEP 3: Backend Config and Middleware Layer
+    %% Database connection pool and JWT authentication
+    %% ============================================================
+
+    class DatabasePool {
+        <<config>>
+        -String host
+        -String user
+        -String password
+        -String database
+        -Int connectionLimit
+        +createPool() Pool
+    }
+
+    class AuthMiddleware {
+        <<middleware>>
+        +verifyToken(req, res, next) void
+        +verifyRole(roles) Middleware
+    }
+
+    %% ============================================================
+    %% STEP 4: Backend Controllers
+    %% Each controller exposes handler methods for route binding
+    %% ============================================================
+
+    class AuthController {
+        <<controller>>
+        +login(req, res) void
+    }
+
+    class EnterpriseController {
+        <<controller>>
+        +getAll(req, res) void
+        +getById(req, res) void
+        +create(req, res) void
+        +update(req, res) void
+        +remove(req, res) void
+        +updateStatus(req, res) void
+    }
+
+    class ActivityController {
+        <<controller>>
+        +getAll(req, res) void
+        +getStats(req, res) void
+        +create(req, res) void
+        +update(req, res) void
+        +updateStatus(req, res) void
+        +remove(req, res) void
+        +getUpcoming(req, res) void
+    }
+
+    class StudentController {
+        <<controller>>
+        +getAll(req, res) void
+        +getStats(req, res) void
+        +create(req, res) void
+        +update(req, res) void
+        +remove(req, res) void
+    }
+
+    class MOUController {
+        <<controller>>
+        +getAll(req, res) void
+        +getById(req, res) void
+        +create(req, res) void
+        +update(req, res) void
+        +remove(req, res) void
+    }
+
+    class ImportController {
+        <<controller>>
+        +upload Multer
+        +importEnterprises(req, res) void
+        +importActivities(req, res) void
+        +importStudents(req, res) void
+        -parseFileToJSON(buffer, name) Array
+    }
+
+    class RatingController {
+        <<controller>>
+        +addRating(req, res) void
+        +getEnterpriseRatings(req, res) void
+        +getBestEnterprises(req, res) void
+    }
+
+    class StatController {
+        <<controller>>
+        +getDashboardStats(req, res) void
+    }
+
+    class ReportController {
+        <<controller>>
+        +getStudentsByEnterprise(req, res) void
+        +getActivitiesByEnterprise(req, res) void
+    }
+
+    class ChatbotController {
+        <<controller>>
+        +chat(req, res) void
+        -detectIntent(message) String
+        -extractKeyword(message) String
+    }
+
+    class StructureController {
+        <<controller>>
+        +getClusters(req, res) void
+        +getDepartments(req, res) void
+        +getActivityTypes(req, res) void
+        +getScales(req, res) void
+        +getFields(req, res) void
+        +getActTypes(req, res) void
+        +getTargets(req, res) void
+    }
+
+    %% ============================================================
+    %% STEP 5: Backend Routes
+    %% Each route module binds HTTP methods to controller handlers
+    %% ============================================================
+
+    class AuthRoutes {
+        <<route>>
+        +POST /login
+    }
+
+    class EnterpriseRoutes {
+        <<route>>
+        +GET /
+        +GET /:id
+        +POST /
+        +PUT /:id
+        +DELETE /:id
+    }
+
+    class ActivityRoutes {
+        <<route>>
+        +GET /
+        +GET /upcoming
+        +GET /stats
+        +POST /
+        +PUT /:id
+        +PUT /:id/status
+    }
+
+    class StudentRoutes {
+        <<route>>
+        +GET /
+        +GET /stats
+        +POST /
+        +PUT /:id
+        +DELETE /:id
+    }
+
+    class MOURoutes {
+        <<route>>
+        +GET /
+        +GET /:id
+        +POST /
+        +PUT /:id
+        +DELETE /:id
+    }
+
+    class ImportRoutes {
+        <<route>>
+        +POST /enterprises
+        +POST /activities
+        +POST /students
+    }
+
+    class RatingRoutes {
+        <<route>>
+        +POST /
+        +GET /enterprise/:id
+        +GET /best
+    }
+
+    class StatRoutes {
+        <<route>>
+        +GET /dashboard
+    }
+
+    class ReportRoutes {
+        <<route>>
+        +GET /students
+        +GET /activities
+    }
+
+    class ChatbotRoutes {
+        <<route>>
+        +POST /chat
+    }
+
+    class StructureRoutes {
+        <<route>>
+        +GET /clusters
+        +GET /departments
+        +GET /scales
+        +GET /fields
+        +GET /act-types
+        +GET /targets
+    }
+
+    %% ============================================================
+    %% STEP 6: Frontend Components and Pages
+    %% React component hierarchy with Ant Design and Vite
+    %% ============================================================
+
+    class App {
+        <<frontend>>
+        +AppConfig component
+        +BrowserRouter routing
+        +ProtectedRoute guard
+    }
+
+    class ProtectedRoute {
+        <<frontend>>
+        +checkToken() Boolean
+        +redirectToLogin() void
+    }
+
+    class LayoutComponent {
+        <<component>>
+        +Sidebar component
+        +Header component
+        +Outlet content
+    }
+
+    class Sidebar {
+        <<component>>
+        +menuItems Array
+        +onNavigate(path) void
+    }
+
+    class Header {
+        <<component>>
+        +userInfo Object
+        +onLogout() void
+    }
+
+    class ChatbotWidget {
+        <<component>>
+        +messages Array
+        +sendMessage(text) void
+        +toggleOpen() void
+    }
+
+    class ImportModal {
+        <<component>>
+        +visible Boolean
+        +entityType String
+        +onUpload(file) void
+        +onClose() void
+    }
+
+    class ApiClient {
+        <<utility>>
+        +baseURL String
+        +interceptors Object
+        +get(url) Promise
+        +post(url, data) Promise
+        +put(url, data) Promise
+        +delete(url) Promise
+    }
+
+    class LoginPage {
+        <<page>>
+        +onSubmit(email, password) void
+    }
+
+    class DashboardPage {
+        <<page>>
+        +totalStats Object
+        +charts Object
+        +upcomingActivities Array
+    }
+
+    class EnterpriseListPage {
+        <<page>>
+        +enterprises Array
+        +onSearch(query) void
+        +onCreate(data) void
+        +onEdit(id, data) void
+        +onDelete(id) void
+    }
+
+    class ActivityListPage {
+        <<page>>
+        +activities Array
+        +stats Object
+        +onFilter(params) void
+        +onCreate(data) void
+        +onEdit(id, data) void
+    }
+
+    class StudentListPage {
+        <<page>>
+        +students Array
+        +stats Object
+        +onCreate(data) void
+        +onEdit(id, data) void
+        +onDelete(id) void
+    }
+
+    class KanbanBoardPage {
+        <<page>>
+        +columns Map
+        +onDragEnd(result) void
+        +onStatusChange(id, status) void
+    }
+
+    class CalendarViewPage {
+        <<page>>
+        +events Array
+        +onSelectDate(date) void
+    }
+
+    class MOUListPage {
+        <<page>>
+        +mous Array
+        +onCreate(data) void
+        +onEdit(id, data) void
+        +onDelete(id) void
+    }
+
+    class ActivityTypesPage {
+        <<page>>
+        +actTypes Array
+        +targets Array
+    }
+
+    class ReportStudentsPage {
+        <<page>>
+        +byEnterprise Array
+        +byMajor Array
+        +overview Object
+    }
+
+    class ReportActivitiesPage {
+        <<page>>
+        +byType Array
+        +byEnterprise Array
+        +byStatus Array
+        +byMonth Array
+    }
+
+    class SettingsPage {
+        <<page>>
+        +userProfile Object
+        +onSave(data) void
+    }
+
+    %% ============================================================
+    %% STEP 7: Cross-layer Dependencies
+    %% Connect Routes to Controllers to Database
+    %% Connect Frontend to API to Backend
+    %% ============================================================
+
+    %% Routes delegate to Controllers
+    AuthRoutes --> AuthController : delegates to
+    EnterpriseRoutes --> EnterpriseController : delegates to
+    ActivityRoutes --> ActivityController : delegates to
+    StudentRoutes --> StudentController : delegates to
+    MOURoutes --> MOUController : delegates to
+    ImportRoutes --> ImportController : delegates to
+    RatingRoutes --> RatingController : delegates to
+    StatRoutes --> StatController : delegates to
+    ReportRoutes --> ReportController : delegates to
+    ChatbotRoutes --> ChatbotController : delegates to
+    StructureRoutes --> StructureController : delegates to
+
+    %% Routes protected by AuthMiddleware
+    EnterpriseRoutes --> AuthMiddleware : protected by
+    ActivityRoutes --> AuthMiddleware : protected by
+    StudentRoutes --> AuthMiddleware : protected by
+    MOURoutes --> AuthMiddleware : protected by
+    ImportRoutes --> AuthMiddleware : protected by
+    RatingRoutes --> AuthMiddleware : protected by
+    StatRoutes --> AuthMiddleware : protected by
+    ReportRoutes --> AuthMiddleware : protected by
+    ChatbotRoutes --> AuthMiddleware : protected by
+    StructureRoutes --> AuthMiddleware : protected by
+
+    %% Controllers query DatabasePool
+    AuthController --> DatabasePool : queries
+    EnterpriseController --> DatabasePool : queries
+    ActivityController --> DatabasePool : queries
+    StudentController --> DatabasePool : queries
+    MOUController --> DatabasePool : queries
+    ImportController --> DatabasePool : queries
+    RatingController --> DatabasePool : queries
+    StatController --> DatabasePool : queries
+    ReportController --> DatabasePool : queries
+    ChatbotController --> DatabasePool : queries
+    StructureController --> DatabasePool : queries
+
+    %% Frontend App structure
+    App --> ProtectedRoute : wraps routes
+    App --> LayoutComponent : renders
+    LayoutComponent --> Sidebar : contains
+    LayoutComponent --> Header : contains
+
+    %% Frontend Pages belong to App
+    App --> LoginPage : /login
+    App --> DashboardPage : /dashboard
+    App --> EnterpriseListPage : /enterprises
+    App --> ActivityListPage : /activities
+    App --> StudentListPage : /students
+    App --> KanbanBoardPage : /kanban
+    App --> CalendarViewPage : /calendar
+    App --> MOUListPage : /mous
+    App --> ActivityTypesPage : /activity-types
+    App --> ReportStudentsPage : /reports/students
+    App --> ReportActivitiesPage : /reports/activities
+    App --> SettingsPage : /settings
+
+    %% Shared components used by pages
+    LayoutComponent --> ChatbotWidget : floating widget
+    EnterpriseListPage --> ImportModal : opens
+    ActivityListPage --> ImportModal : opens
+    StudentListPage --> ImportModal : opens
+
+    %% Frontend Pages use ApiClient
+    LoginPage --> ApiClient : POST auth
+    DashboardPage --> ApiClient : GET stats
+    EnterpriseListPage --> ApiClient : CRUD enterprises
+    ActivityListPage --> ApiClient : CRUD activities
+    StudentListPage --> ApiClient : CRUD students
+    KanbanBoardPage --> ApiClient : PUT status
+    MOUListPage --> ApiClient : CRUD mous
+    ReportStudentsPage --> ApiClient : GET reports
+    ReportActivitiesPage --> ApiClient : GET reports
+    ChatbotWidget --> ApiClient : POST chatbot
