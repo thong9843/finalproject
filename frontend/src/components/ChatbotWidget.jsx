@@ -59,9 +59,12 @@ const ChatbotWidget = () => {
     };
 
     const quickQuestions = [
-        'Có bao nhiêu doanh nghiệp?',
+        'Thống kê tổng quan hệ thống?',
+        'Danh sách doanh nghiệp đang triển khai?',
         'Sinh viên đang thực tập?',
-        'Hoạt động gần nhất?',
+        'Hoạt động sắp diễn ra?',
+        'Danh sách MOU đã ký?',
+        'Doanh nghiệp được đánh giá cao nhất?',
     ];
 
     const handleQuickQuestion = (q) => {
@@ -114,8 +117,11 @@ const ChatbotWidget = () => {
                                 <RobotOutlined className="text-white text-lg" />
                             </div>
                             <div>
-                                <div className="text-white font-semibold text-sm">VLU Assistant</div>
-                                <div className="text-white/70 text-xs">Trợ lý AI nội bộ</div>
+                                <div className="text-white font-semibold text-sm flex items-center gap-2">
+                                    VLU Assistant
+                                    <span className="text-xs bg-white/20 px-1.5 py-0.5 rounded-full font-normal">Gemini AI</span>
+                                </div>
+                                <div className="text-white/70 text-xs">Trợ lý AI thông minh · Gemini 2.0 Flash</div>
                             </div>
                         </div>
                         <button 
