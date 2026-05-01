@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Card, Row, Col, Tag, Form, Select, Button, Modal, message, Input, DatePicker, Statistic, Spin, Empty, Tooltip, Drawer, Descriptions, Popover, Badge } from 'antd';
-import { PlusOutlined, CheckCircleOutlined, ClockCircleOutlined, SyncOutlined, CheckOutlined, PauseCircleOutlined, TeamOutlined, BankOutlined, CalendarOutlined, UploadOutlined, SearchOutlined, EditOutlined, DeleteOutlined, UserOutlined, AppstoreOutlined, UnorderedListOutlined, DownloadOutlined, FilterOutlined } from '@ant-design/icons';
+import { Card, Row, Col, Tag, Form, Select, Button, Modal, message, Input, DatePicker, Statistic, Spin, Empty, Tooltip, Drawer, Descriptions, Popover, Badge, Divider } from 'antd';
+import { PlusOutlined, CheckCircleOutlined, ClockCircleOutlined, SyncOutlined, CheckOutlined, PauseCircleOutlined, TeamOutlined, BankOutlined, CalendarOutlined, UploadOutlined, SearchOutlined, EditOutlined, DeleteOutlined, UserOutlined, AppstoreOutlined, UnorderedListOutlined, DownloadOutlined, FilterOutlined, SortAscendingOutlined, ClearOutlined } from '@ant-design/icons';
 import ImportModal from '../components/ImportModal';
 import api from '../utils/api';
 import dayjs from 'dayjs';
@@ -26,6 +26,8 @@ const ActivityList = () => {
     const [editingId, setEditingId] = useState(null);
     const [isDrawerVisible, setIsDrawerVisible] = useState(false);
     const [selectedActivity, setSelectedActivity] = useState(null);
+    const [sortOption, setSortOption] = useState(null);
+    const [dateRange, setDateRange] = useState(null);
 
     useEffect(() => {
         fetchData();
@@ -169,7 +171,24 @@ const ActivityList = () => {
         const matchType = !filterType || (item.type_names && item.type_names.includes(filterType));
         const matchStatus = !filterStatus || item.status === filterStatus;
         const matchEnterprise = !filterEnterprise || item.enterprise_id === filterEnterprise;
-        return matchSearch && matchType && matchStatus && matchEnterprise;
+        // Date range filter
+        let matchDateRange = true;
+        if (dateRange && dateRange[0] && dateRange[1]) {
+            const startDate = dayjs(item.start_date);
+            matchDateRange = startDate.isAfter(dateRange[0].startOf('day').subtract(1, 'ms')) && startDate.isBefore(dateRange[1].endOf('day').add(1, 'ms'));
+        }
+        return matchSearch && matchType && matchStatus && matchEnterprise && matchDateRange;
+    }).sort((a, b) => {
+        if (!sortOption) return 0;
+        switch (sortOption) {
+            case 'title_asc': return (a.title || '').localeCompare(b.title || '', 'vi');
+            case 'title_desc': return (b.title || '').localeCompare(a.title || '', 'vi');
+            case 'date_newest': return new Date(b.start_date) - new Date(a.start_date);
+            case 'date_oldest': return new Date(a.start_date) - new Date(b.start_date);
+            case 'students_desc': return (b.student_count || 0) - (a.student_count || 0);
+            case 'students_asc': return (a.student_count || 0) - (b.student_count || 0);
+            default: return 0;
+        }
     });
 
     const activeCount = filteredData.filter(item => item.status === 'Đã triển khai').length;
@@ -310,30 +329,59 @@ const ActivityList = () => {
                 />
 
                 <Popover
-                    title="Bộ lọc nâng cao"
+                    title="Bộ lọc & Sắp xếp"
                     trigger="click"
                     placement="bottomLeft"
                     content={
-                        <div className="flex flex-col gap-3 w-64 p-1">
-                            <Select allowClear placeholder="Doanh nghiệp" onChange={setFilterEnterprise} value={filterEnterprise} className="w-full" showSearch optionFilterProp="children">
-                                {enterprises.map(e => <Option key={e.id} value={e.id}>{e.name}</Option>)}
-                            </Select>
-                            <Select allowClear placeholder="Loại hoạt động" onChange={setFilterType} value={filterType} className="w-full">
-                                {['Tuyển dụng & Thực tập', 'Hội thảo & Đào tạo', 'Tài trợ & Học bổng', 'Tham quan doanh nghiệp', 'Kiểm định & Đánh giá', 'Ký kết MOU', 'Khác'].map(t => (
-                                    <Option key={t} value={t}>{t}</Option>
-                                ))}
-                            </Select>
-                            <Select allowClear placeholder="Trạng thái" onChange={setFilterStatus} value={filterStatus} className="w-full">
-                                {Object.keys(statusConfig).map(s => <Option key={s} value={s}>{s}</Option>)}
-                            </Select>
-                            <Button type="default" onClick={() => {
-                                setFilterEnterprise(null); setFilterType(null); setFilterStatus(null);
-                            }}>Xóa bộ lọc</Button>
+                        <div className="flex flex-col gap-3 w-72 p-1">
+                            <div>
+                                <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5 flex items-center gap-1"><SortAscendingOutlined /> Sắp xếp</div>
+                                <Select allowClear placeholder="Chọn cách sắp xếp..." onChange={setSortOption} value={sortOption} className="w-full" options={[
+                                    { value: 'title_asc', label: '🔤 Tên (A → Z)' },
+                                    { value: 'title_desc', label: '🔤 Tên (Z → A)' },
+                                    { value: 'date_newest', label: '📅 Ngày BĐ (Mới → Cũ)' },
+                                    { value: 'date_oldest', label: '📅 Ngày BĐ (Cũ → Mới)' },
+                                    { value: 'students_desc', label: '👥 SV nhiều → ít' },
+                                    { value: 'students_asc', label: '👥 SV ít → nhiều' },
+                                ]} />
+                            </div>
+                            <Divider className="my-0" />
+                            <div>
+                                <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5 flex items-center gap-1"><CalendarOutlined /> Khoảng thời gian</div>
+                                <DatePicker.RangePicker
+                                    className="w-full"
+                                    format="DD/MM/YYYY"
+                                    value={dateRange}
+                                    onChange={setDateRange}
+                                    placeholder={['Từ ngày', 'Đến ngày']}
+                                    allowClear
+                                />
+                            </div>
+                            <Divider className="my-0" />
+                            <div>
+                                <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5 flex items-center gap-1"><FilterOutlined /> Bộ lọc</div>
+                                <div className="flex flex-col gap-2">
+                                    <Select allowClear placeholder="Doanh nghiệp" onChange={setFilterEnterprise} value={filterEnterprise} className="w-full" showSearch optionFilterProp="children">
+                                        {enterprises.map(e => <Option key={e.id} value={e.id}>{e.name}</Option>)}
+                                    </Select>
+                                    <Select allowClear placeholder="Loại hoạt động" onChange={setFilterType} value={filterType} className="w-full">
+                                        {['Tuyển dụng & Thực tập', 'Hội thảo & Đào tạo', 'Tài trợ & Học bổng', 'Tham quan doanh nghiệp', 'Kiểm định & Đánh giá', 'Ký kết MOU', 'Khác'].map(t => (
+                                            <Option key={t} value={t}>{t}</Option>
+                                        ))}
+                                    </Select>
+                                    <Select allowClear placeholder="Trạng thái" onChange={setFilterStatus} value={filterStatus} className="w-full">
+                                        {Object.keys(statusConfig).map(s => <Option key={s} value={s}>{s}</Option>)}
+                                    </Select>
+                                </div>
+                            </div>
+                            <Button icon={<ClearOutlined />} type="default" block onClick={() => {
+                                setFilterEnterprise(null); setFilterType(null); setFilterStatus(null); setSortOption(null); setDateRange(null);
+                            }}>Xóa tất cả bộ lọc</Button>
                         </div>
                     }
                 >
                     <Button icon={<FilterOutlined />} className="h-10 rounded-lg text-gray-600">
-                        Bộ lọc {(filterEnterprise || filterType || filterStatus) && <Badge dot color="blue"><span className="ml-1 text-xs">Đang bật</span></Badge>}
+                        Bộ lọc {(() => { const c = [filterEnterprise, filterType, filterStatus, sortOption, dateRange].filter(v => v !== null && v !== undefined).length; return c > 0 ? <Badge count={c} size="small" offset={[2, -2]} style={{ backgroundColor: '#1677ff' }} /> : null; })()}
                     </Button>
                 </Popover>
 

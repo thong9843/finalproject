@@ -17,19 +17,48 @@ exports.getAll = async (req, res) => {
             params.push(req.user.faculty_id);
         }
 
-        const statusFilter = req.query.status;
+        const { status: statusFilter, search, enterprise_id, major, date_from, date_to, sort_by, sort_order } = req.query;
+
         if (statusFilter) {
             query += ' AND s.status = ?';
             params.push(statusFilter);
         }
 
-        const search = req.query.search;
         if (search) {
-            query += ' AND (s.student_code LIKE ? OR s.name LIKE ?)';
-            params.push(`%${search}%`, `%${search}%`);
+            query += ' AND (s.student_code LIKE ? OR s.name LIKE ? OR s.email LIKE ?)';
+            params.push(`%${search}%`, `%${search}%`, `%${search}%`);
         }
 
-        query += ' ORDER BY s.created_at DESC';
+        if (enterprise_id) {
+            query += ' AND s.enterprise_id = ?';
+            params.push(enterprise_id);
+        }
+
+        if (major) {
+            query += ' AND s.major = ?';
+            params.push(major);
+        }
+
+        if (date_from) {
+            query += ' AND s.start_date >= ?';
+            params.push(date_from);
+        }
+        if (date_to) {
+            query += ' AND s.start_date <= ?';
+            params.push(date_to);
+        }
+
+        // Sorting
+        const allowedSortColumns = {
+            'name': 's.name',
+            'student_code': 's.student_code',
+            'gpa': 's.gpa',
+            'start_date': 's.start_date',
+            'created_at': 's.created_at'
+        };
+        const sortCol = allowedSortColumns[sort_by] || 's.created_at';
+        const sortDir = sort_order === 'ASC' ? 'ASC' : 'DESC';
+        query += ` ORDER BY ${sortCol} ${sortDir}`;
 
         const [students] = await pool.query(query, params);
         res.status(200).json(students);

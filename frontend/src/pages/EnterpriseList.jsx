@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Table, Tag, Form, Input, Select, Button, Modal, message, Space, Drawer, Timeline, Row, Col, DatePicker, Descriptions, Switch, Popover, Badge } from 'antd';
-import { EditOutlined, DeleteOutlined, PlusOutlined, UnorderedListOutlined, UploadOutlined, DownloadOutlined, UserOutlined, HomeOutlined, FilterOutlined } from '@ant-design/icons';
+import { Table, Tag, Form, Input, Select, Button, Modal, message, Space, Drawer, Timeline, Row, Col, DatePicker, Descriptions, Switch, Popover, Badge, Divider } from 'antd';
+import { EditOutlined, DeleteOutlined, PlusOutlined, UnorderedListOutlined, UploadOutlined, DownloadOutlined, UserOutlined, HomeOutlined, FilterOutlined, SortAscendingOutlined, ClearOutlined } from '@ant-design/icons';
 import ImportModal from '../components/ImportModal';
 import api from '../utils/api';
 import dayjs from 'dayjs';
@@ -27,6 +27,7 @@ const EnterpriseList = () => {
     const [isDrawerVisible, setIsDrawerVisible] = useState(false);
     const [selectedEnterprise, setSelectedEnterprise] = useState(null);
     const [showImport, setShowImport] = useState(false);
+    const [sortOption, setSortOption] = useState(null);
 
     useEffect(() => {
         fetchData();
@@ -151,29 +152,61 @@ const EnterpriseList = () => {
         const matchIsHcmc = filterIsHcmc === undefined || item.is_hcmc === filterIsHcmc;
         const matchDistrict = !filterDistrict || item.district === filterDistrict;
         return matchSearch && matchScale && matchField && matchIsHcmc && matchDistrict;
+    }).sort((a, b) => {
+        if (!sortOption) return 0;
+        switch (sortOption) {
+            case 'name_asc': return (a.name || '').localeCompare(b.name || '', 'vi');
+            case 'name_desc': return (b.name || '').localeCompare(a.name || '', 'vi');
+            case 'created_newest': return new Date(b.created_at) - new Date(a.created_at);
+            case 'created_oldest': return new Date(a.created_at) - new Date(b.created_at);
+            case 'students_desc': return (b.student_count || 0) - (a.student_count || 0);
+            case 'students_asc': return (a.student_count || 0) - (b.student_count || 0);
+            default: return 0;
+        }
     });
 
+    const activeFilterCount = [statusFilter, filterScale, filterField, filterIsHcmc !== undefined ? filterIsHcmc : undefined, filterDistrict, sortOption].filter(v => v !== undefined && v !== null).length;
+
+    const sortOptions = [
+        { value: 'name_asc', label: '🔤 Tên (A → Z)' },
+        { value: 'name_desc', label: '🔤 Tên (Z → A)' },
+        { value: 'created_newest', label: '📅 Mới nhất' },
+        { value: 'created_oldest', label: '📅 Cũ nhất' },
+        { value: 'students_desc', label: '👥 SV nhiều → ít' },
+        { value: 'students_asc', label: '👥 SV ít → nhiều' },
+    ];
+
     const filterContent = (
-        <div className="flex flex-col gap-3 w-64 p-1">
-            <Select allowClear placeholder="Lọc trạng thái" onChange={setStatusFilter} value={statusFilter} className="w-full">
-                {Object.keys(statusColors).map(s => <Option key={s} value={s}>{s}</Option>)}
-            </Select>
-            <Select allowClear placeholder="Lọc quy mô" onChange={setFilterScale} value={filterScale} className="w-full">
-                {scales.map(s => <Option key={s.id} value={s.id}>{s.name}</Option>)}
-            </Select>
-            <Select allowClear placeholder="Lọc lĩnh vực" onChange={setFilterField} value={filterField} className="w-full">
-                {fields.map(f => <Option key={f.id} value={f.id}>{f.name}</Option>)}
-            </Select>
-            <Select allowClear placeholder="Khu vực" onChange={setFilterIsHcmc} value={filterIsHcmc} className="w-full">
-                <Option value={true}>Trong TP.HCM</Option>
-                <Option value={false}>Ngoài TP.HCM</Option>
-            </Select>
-            <Select allowClear placeholder="Quận/Huyện" onChange={setFilterDistrict} value={filterDistrict} className="w-full" showSearch>
-                {uniqueDistricts.map(d => <Option key={d} value={d}>{d}</Option>)}
-            </Select>
-            <Button type="default" onClick={() => {
-                setStatusFilter(undefined); setFilterScale(undefined); setFilterField(undefined); setFilterIsHcmc(undefined); setFilterDistrict(undefined);
-            }}>Xóa bộ lọc</Button>
+        <div className="flex flex-col gap-3 w-72 p-1">
+            <div>
+                <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5 flex items-center gap-1"><SortAscendingOutlined /> Sắp xếp</div>
+                <Select allowClear placeholder="Chọn cách sắp xếp..." onChange={setSortOption} value={sortOption} className="w-full" options={sortOptions} />
+            </div>
+            <Divider className="my-0" />
+            <div>
+                <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5 flex items-center gap-1"><FilterOutlined /> Bộ lọc</div>
+                <div className="flex flex-col gap-2">
+                    <Select allowClear placeholder="Lọc trạng thái" onChange={setStatusFilter} value={statusFilter} className="w-full">
+                        {Object.keys(statusColors).map(s => <Option key={s} value={s}>{s}</Option>)}
+                    </Select>
+                    <Select allowClear placeholder="Lọc quy mô" onChange={setFilterScale} value={filterScale} className="w-full">
+                        {scales.map(s => <Option key={s.id} value={s.id}>{s.name}</Option>)}
+                    </Select>
+                    <Select allowClear placeholder="Lọc lĩnh vực" onChange={setFilterField} value={filterField} className="w-full">
+                        {fields.map(f => <Option key={f.id} value={f.id}>{f.name}</Option>)}
+                    </Select>
+                    <Select allowClear placeholder="Khu vực" onChange={setFilterIsHcmc} value={filterIsHcmc} className="w-full">
+                        <Option value={true}>Trong TP.HCM</Option>
+                        <Option value={false}>Ngoài TP.HCM</Option>
+                    </Select>
+                    <Select allowClear placeholder="Quận/Huyện" onChange={setFilterDistrict} value={filterDistrict} className="w-full" showSearch>
+                        {uniqueDistricts.map(d => <Option key={d} value={d}>{d}</Option>)}
+                    </Select>
+                </div>
+            </div>
+            <Button icon={<ClearOutlined />} type="default" block onClick={() => {
+                setStatusFilter(undefined); setFilterScale(undefined); setFilterField(undefined); setFilterIsHcmc(undefined); setFilterDistrict(undefined); setSortOption(null);
+            }}>Xóa tất cả bộ lọc</Button>
         </div>
     );
 
@@ -262,7 +295,7 @@ const EnterpriseList = () => {
                 />
                 <Popover content={filterContent} title="Bộ lọc nâng cao" trigger="click" placement="bottomLeft">
                     <Button icon={<FilterOutlined />} size="large" className="rounded-lg text-gray-600">
-                        Bộ lọc {(statusFilter || filterScale || filterField || filterIsHcmc !== undefined || filterDistrict) && <Badge dot color="blue"><span className="ml-1 text-xs">Đang bật</span></Badge>}
+                        Bộ lọc {activeFilterCount > 0 && <Badge count={activeFilterCount} size="small" offset={[2, -2]} style={{ backgroundColor: '#1677ff' }} />}
                     </Button>
                 </Popover>
             </div>

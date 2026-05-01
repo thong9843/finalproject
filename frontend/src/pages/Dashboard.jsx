@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { Card, Row, Col, Spin, List, Tag, Typography } from 'antd';
+import React, { useEffect, useState, useMemo } from 'react';
+import { Card, Row, Col, Spin, List, Tag, Typography, Segmented, DatePicker } from 'antd';
 import {
     BankOutlined,
     CheckCircleOutlined,
@@ -16,21 +16,67 @@ import {
 } from 'chart.js';
 import dayjs from 'dayjs';
 import 'dayjs/locale/vi';
+import isoWeek from 'dayjs/plugin/isoWeek';
+import quarterOfYear from 'dayjs/plugin/quarterOfYear';
 
 dayjs.locale('vi');
+dayjs.extend(isoWeek);
+dayjs.extend(quarterOfYear);
 
 ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, Title, RadialLinearScale, PointElement, LineElement);
 
 const { Title: AntTitle, Text } = Typography;
+const { RangePicker } = DatePicker;
+
+const periodOptions = [
+    { label: 'Tuần này', value: 'week' },
+    { label: 'Tháng này', value: 'month' },
+    { label: 'Quý này', value: 'quarter' },
+    { label: 'Năm nay', value: 'year' },
+    { label: 'Tất cả', value: 'all' },
+    { label: 'Tùy chỉnh', value: 'custom' },
+];
+
+const getDateRange = (period) => {
+    const now = dayjs();
+    switch (period) {
+        case 'week':
+            return [now.startOf('isoWeek'), now.endOf('isoWeek')];
+        case 'month':
+            return [now.startOf('month'), now.endOf('month')];
+        case 'quarter':
+            return [now.startOf('quarter'), now.endOf('quarter')];
+        case 'year':
+            return [now.startOf('year'), now.endOf('year')];
+        case 'all':
+            return [null, null];
+        default:
+            return [null, null];
+    }
+};
 
 const Dashboard = () => {
     const [stats, setStats] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [period, setPeriod] = useState('year');
+    const [customRange, setCustomRange] = useState(null);
+
+    const dateRange = useMemo(() => {
+        if (period === 'custom' && customRange) {
+            return customRange;
+        }
+        return getDateRange(period);
+    }, [period, customRange]);
 
     useEffect(() => {
         const fetchStats = async () => {
+            setLoading(true);
             try {
-                const { data } = await api.get('/stats/dashboard');
+                const params = {};
+                const [from, to] = dateRange;
+                if (from) params.date_from = from.format('YYYY-MM-DD');
+                if (to) params.date_to = to.format('YYYY-MM-DD');
+                const { data } = await api.get('/stats/dashboard', { params });
                 setStats(data);
             } catch (error) {
                 console.error('Error fetching stats:', error);
@@ -39,7 +85,26 @@ const Dashboard = () => {
             }
         };
         fetchStats();
-    }, []);
+    }, [dateRange]);
+
+    const getPeriodLabel = () => {
+        const [from, to] = dateRange;
+        if (!from && !to) return 'Tất cả thời gian';
+        if (from && to) return `${from.format('DD/MM/YYYY')} — ${to.format('DD/MM/YYYY')}`;
+        return '';
+    };
+
+    const getPeriodTitle = () => {
+        switch (period) {
+            case 'week': return 'tuần này';
+            case 'month': return 'tháng này';
+            case 'quarter': return 'quý này';
+            case 'year': return 'năm nay';
+            case 'all': return 'tất cả';
+            case 'custom': return getPeriodLabel();
+            default: return '';
+        }
+    };
 
     if (loading || !stats) {
         return <div className="flex justify-center items-center h-full"><Spin size="large" /></div>;
@@ -64,8 +129,8 @@ const Dashboard = () => {
             shadow: 'shadow-emerald-200'
         },
         {
-            title: 'Hoạt động năm nay',
-            value: totals.activitiesThisYear,
+            title: `Hoạt động (${getPeriodTitle()})`,
+            value: totals.activitiesCount,
             icon: <AppstoreOutlined className="text-4xl text-white opacity-80 group-hover:scale-110 transition-transform duration-300" />,
             bg: 'bg-gradient-to-br from-blue-500 to-blue-600',
             shadow: 'shadow-blue-200'
@@ -161,6 +226,38 @@ const Dashboard = () => {
                 <Text type="secondary">Theo dõi các chỉ số quan trọng và hoạt động hợp tác doanh nghiệp</Text>
             </div>
 
+            {/* Period Selector */}
+            <div className="bg-white rounded-2xl p-4 mb-8 border border-gray-100 shadow-sm flex flex-wrap items-center gap-4">
+                <div className="flex items-center gap-2 text-gray-500">
+                    <CalendarOutlined className="text-lg" />
+                    <span className="text-sm font-medium">Khoảng thời gian:</span>
+                </div>
+                <Segmented
+                    options={periodOptions}
+                    value={period}
+                    onChange={(val) => {
+                        setPeriod(val);
+                        if (val !== 'custom') setCustomRange(null);
+                    }}
+                    className="bg-gray-50"
+                />
+                {period === 'custom' && (
+                    <RangePicker
+                        format="DD/MM/YYYY"
+                        value={customRange}
+                        onChange={setCustomRange}
+                        placeholder={['Từ ngày', 'Đến ngày']}
+                        className="rounded-lg"
+                        allowClear={false}
+                    />
+                )}
+                {dateRange[0] && dateRange[1] && (
+                    <span className="text-xs text-gray-400 ml-auto">
+                        📅 {getPeriodLabel()}
+                    </span>
+                )}
+            </div>
+
             {/* KPI Cards */}
             <Row gutter={[24, 24]} className="mb-8">
                 {kpiCards.map((kpi, idx) => (
@@ -204,7 +301,7 @@ const Dashboard = () => {
                     </Card>
                 </Col>
                 <Col xs={24} lg={8}>
-                    <Card title={<span className="font-semibold text-gray-700">Loại hình hoạt động</span>} className="shadow-sm rounded-xl h-full border-gray-100 hover:shadow-md transition-shadow">
+                    <Card title={<span className="font-semibold text-gray-700">{`Loại hình hoạt động (${getPeriodTitle()})`}</span>} className="shadow-sm rounded-xl h-full border-gray-100 hover:shadow-md transition-shadow">
                         <div className="h-64 flex justify-center relative">
                             <Doughnut data={actTypeData} options={doughnutOptions} />
                         </div>

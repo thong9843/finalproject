@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Table, Tag, Card, Row, Col, Statistic, Form, Input, Select, Button, Modal, message, Space, DatePicker, InputNumber } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, SearchOutlined, SyncOutlined, ClockCircleOutlined, CheckCircleOutlined, TeamOutlined, UploadOutlined, DownloadOutlined } from '@ant-design/icons';
+import { Table, Tag, Card, Row, Col, Statistic, Form, Input, Select, Button, Modal, message, Space, DatePicker, InputNumber, Popover, Badge, Divider } from 'antd';
+import { PlusOutlined, EditOutlined, DeleteOutlined, SearchOutlined, SyncOutlined, ClockCircleOutlined, CheckCircleOutlined, TeamOutlined, UploadOutlined, DownloadOutlined, FilterOutlined, SortAscendingOutlined, ClearOutlined, CalendarOutlined } from '@ant-design/icons';
 import ImportModal from '../components/ImportModal';
 import api from '../utils/api';
 import dayjs from 'dayjs';
@@ -19,23 +19,21 @@ const StudentList = () => {
     const [activeTab, setActiveTab] = useState('all');
     const [searchText, setSearchText] = useState('');
     const [showImport, setShowImport] = useState(false);
+    const [sortOption, setSortOption] = useState(null);
+    const [dateRange, setDateRange] = useState(null);
+    const [filterEnterprise, setFilterEnterprise] = useState(null);
+    const [filterMajor, setFilterMajor] = useState(null);
 
     useEffect(() => {
         fetchData();
         fetchStats();
         fetchEnterprises();
-    }, [activeTab]);
+    }, []);
 
     const fetchData = async () => {
         setLoading(true);
         try {
-            let url = '/students';
-            const params = [];
-            if (activeTab !== 'all') params.push(`status=${activeTab}`);
-            if (searchText) params.push(`search=${searchText}`);
-            if (params.length > 0) url += '?' + params.join('&');
-
-            const res = await api.get(url);
+            const res = await api.get('/students');
             setData(res.data);
         } catch (error) {
             message.error('Lỗi khi tải dữ liệu sinh viên');
@@ -60,10 +58,6 @@ const StudentList = () => {
         } catch (error) {
             console.error('Error fetching enterprises:', error);
         }
-    };
-
-    const handleSearch = () => {
-        fetchData();
     };
 
     const handleSave = async (values) => {
@@ -153,6 +147,89 @@ const StudentList = () => {
         { key: 'Chờ phân công', label: 'Chờ phân công' },
         { key: 'Hoàn thành', label: 'Hoàn thành' },
     ];
+
+    // Unique values for filter dropdowns
+    const uniqueMajors = [...new Set(data.map(item => item.major).filter(Boolean))];
+
+    // Client-side filtering + sorting
+    const filteredData = data.filter(item => {
+        const q = searchText.toLowerCase();
+        const matchSearch = !searchText ||
+            item.student_code?.toLowerCase().includes(q) ||
+            item.name?.toLowerCase().includes(q) ||
+            item.email?.toLowerCase().includes(q);
+        const matchTab = activeTab === 'all' || item.status === activeTab;
+        const matchEnterprise = !filterEnterprise || item.enterprise_id === filterEnterprise;
+        const matchMajor = !filterMajor || item.major === filterMajor;
+        let matchDateRange = true;
+        if (dateRange && dateRange[0] && dateRange[1]) {
+            const startDate = dayjs(item.start_date);
+            matchDateRange = item.start_date && startDate.isAfter(dateRange[0].startOf('day').subtract(1, 'ms')) && startDate.isBefore(dateRange[1].endOf('day').add(1, 'ms'));
+        }
+        return matchSearch && matchTab && matchEnterprise && matchMajor && matchDateRange;
+    }).sort((a, b) => {
+        if (!sortOption) return 0;
+        switch (sortOption) {
+            case 'name_asc': return (a.name || '').localeCompare(b.name || '', 'vi');
+            case 'name_desc': return (b.name || '').localeCompare(a.name || '', 'vi');
+            case 'code_asc': return (a.student_code || '').localeCompare(b.student_code || '');
+            case 'code_desc': return (b.student_code || '').localeCompare(a.student_code || '');
+            case 'gpa_desc': return (b.gpa || 0) - (a.gpa || 0);
+            case 'gpa_asc': return (a.gpa || 0) - (b.gpa || 0);
+            case 'created_newest': return new Date(b.created_at) - new Date(a.created_at);
+            case 'created_oldest': return new Date(a.created_at) - new Date(b.created_at);
+            default: return 0;
+        }
+    });
+
+    const activeFilterCount = [sortOption, dateRange, filterEnterprise, filterMajor].filter(v => v !== null && v !== undefined).length;
+
+    const sortOptions = [
+        { value: 'name_asc', label: '🔤 Tên (A → Z)' },
+        { value: 'name_desc', label: '🔤 Tên (Z → A)' },
+        { value: 'code_asc', label: '🆔 MSSV (A → Z)' },
+        { value: 'code_desc', label: '🆔 MSSV (Z → A)' },
+        { value: 'gpa_desc', label: '🏆 GPA (Cao → Thấp)' },
+        { value: 'gpa_asc', label: '🏆 GPA (Thấp → Cao)' },
+        { value: 'created_newest', label: '📅 Mới nhất' },
+        { value: 'created_oldest', label: '📅 Cũ nhất' },
+    ];
+
+    const filterContent = (
+        <div className="flex flex-col gap-3 w-72 p-1">
+            <div>
+                <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5 flex items-center gap-1"><SortAscendingOutlined /> Sắp xếp</div>
+                <Select allowClear placeholder="Chọn cách sắp xếp..." onChange={setSortOption} value={sortOption} className="w-full" options={sortOptions} />
+            </div>
+            <Divider className="my-0" />
+            <div>
+                <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5 flex items-center gap-1"><CalendarOutlined /> Khoảng thời gian thực tập</div>
+                <DatePicker.RangePicker
+                    className="w-full"
+                    format="DD/MM/YYYY"
+                    value={dateRange}
+                    onChange={setDateRange}
+                    placeholder={['Từ ngày', 'Đến ngày']}
+                    allowClear
+                />
+            </div>
+            <Divider className="my-0" />
+            <div>
+                <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5 flex items-center gap-1"><FilterOutlined /> Bộ lọc</div>
+                <div className="flex flex-col gap-2">
+                    <Select allowClear placeholder="Doanh nghiệp thực tập" onChange={setFilterEnterprise} value={filterEnterprise} className="w-full" showSearch optionFilterProp="children">
+                        {enterprises.map(e => <Option key={e.id} value={e.id}>{e.name}</Option>)}
+                    </Select>
+                    <Select allowClear placeholder="Ngành học" onChange={setFilterMajor} value={filterMajor} className="w-full" showSearch>
+                        {uniqueMajors.map(m => <Option key={m} value={m}>{m}</Option>)}
+                    </Select>
+                </div>
+            </div>
+            <Button icon={<ClearOutlined />} type="default" block onClick={() => {
+                setSortOption(null); setDateRange(null); setFilterEnterprise(null); setFilterMajor(null);
+            }}>Xóa tất cả bộ lọc</Button>
+        </div>
+    );
 
     const columns = [
         { 
@@ -285,7 +362,7 @@ const StudentList = () => {
                 </Col>
             </Row>
 
-            {/* Filter Tabs + Search */}
+            {/* Filter Tabs + Search + Filter Popover */}
             <div className="flex justify-between items-center mb-4">
                 <div className="flex gap-1 bg-white rounded-lg p-1 border border-transparent">
                     {tabs.map(tab => (
@@ -301,22 +378,28 @@ const StudentList = () => {
                         </button>
                     ))}
                 </div>
-                <Input 
-                    placeholder="Tìm kiếm sinh viên..." 
-                    prefix={<SearchOutlined className="text-gray-300" />}
-                    className="w-64 rounded-lg"
-                    value={searchText}
-                    onChange={e => setSearchText(e.target.value)}
-                    onPressEnter={handleSearch}
-                    allowClear
-                />
+                <div className="flex gap-2 items-center">
+                    <Input 
+                        placeholder="Tìm kiếm sinh viên..." 
+                        prefix={<SearchOutlined className="text-gray-300" />}
+                        className="w-64 rounded-lg"
+                        value={searchText}
+                        onChange={e => setSearchText(e.target.value)}
+                        allowClear
+                    />
+                    <Popover content={filterContent} title="Bộ lọc & Sắp xếp" trigger="click" placement="bottomRight">
+                        <Button icon={<FilterOutlined />} className="h-8 rounded-lg text-gray-600">
+                            Bộ lọc {activeFilterCount > 0 && <Badge count={activeFilterCount} size="small" offset={[2, -2]} style={{ backgroundColor: '#1677ff' }} />}
+                        </Button>
+                    </Popover>
+                </div>
             </div>
 
             {/* Table */}
             <div className="bg-white rounded-xl shadow-sm overflow-hidden">
                 <Table 
                     columns={columns} 
-                    dataSource={data} 
+                    dataSource={filteredData} 
                     rowKey="id" 
                     loading={loading}
                     pagination={{ pageSize: 10, showSizeChanger: false }}

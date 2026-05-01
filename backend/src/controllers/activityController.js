@@ -24,7 +24,35 @@ exports.getAll = async (req, res) => {
             params.push(req.user.faculty_id);
         }
 
-        query += ' GROUP BY a.id ORDER BY a.created_at DESC';
+        const { search, date_from, date_to, sort_by, sort_order } = req.query;
+
+        if (search) {
+            query += ' AND (a.title LIKE ? OR e.name LIKE ?)';
+            const s = `%${search}%`;
+            params.push(s, s);
+        }
+
+        if (date_from) {
+            query += ' AND a.start_date >= ?';
+            params.push(date_from);
+        }
+        if (date_to) {
+            query += ' AND a.start_date <= ?';
+            params.push(date_to);
+        }
+
+        query += ' GROUP BY a.id';
+
+        // Sorting
+        const allowedSortColumns = {
+            'title': 'a.title',
+            'start_date': 'a.start_date',
+            'created_at': 'a.created_at',
+            'student_count': 'student_count'
+        };
+        const sortCol = allowedSortColumns[sort_by] || 'a.created_at';
+        const sortDir = sort_order === 'ASC' ? 'ASC' : 'DESC';
+        query += ` ORDER BY ${sortCol} ${sortDir}`;
 
         const [activities] = await pool.query(query, params);
         res.status(200).json(activities);

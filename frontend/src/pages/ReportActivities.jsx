@@ -1,31 +1,86 @@
-import React, { useEffect, useState } from 'react';
-import { Card, Row, Col, Statistic, Spin, Empty, Button, message } from 'antd';
-import { AppstoreOutlined, BankOutlined, CheckCircleOutlined, SyncOutlined, DownloadOutlined } from '@ant-design/icons';
+import React, { useEffect, useState, useMemo } from 'react';
+import { Card, Row, Col, Statistic, Spin, Empty, Button, message, Segmented, DatePicker, Space } from 'antd';
+import { AppstoreOutlined, BankOutlined, CheckCircleOutlined, SyncOutlined, DownloadOutlined, CalendarOutlined } from '@ant-design/icons';
 import api from '../utils/api';
 import { Bar, Pie, Line } from 'react-chartjs-2';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, PointElement, LineElement, Title, Filler } from 'chart.js';
 import * as XLSX from 'xlsx';
 import dayjs from 'dayjs';
+import isoWeek from 'dayjs/plugin/isoWeek';
+import quarterOfYear from 'dayjs/plugin/quarterOfYear';
+
+dayjs.extend(isoWeek);
+dayjs.extend(quarterOfYear);
 
 ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, PointElement, LineElement, Title, Filler);
+
+const { RangePicker } = DatePicker;
+
+const periodOptions = [
+    { label: 'Tuần này', value: 'week' },
+    { label: 'Tháng này', value: 'month' },
+    { label: 'Quý này', value: 'quarter' },
+    { label: 'Năm nay', value: 'year' },
+    { label: 'Tất cả', value: 'all' },
+    { label: 'Tùy chỉnh', value: 'custom' },
+];
+
+const getDateRange = (period) => {
+    const now = dayjs();
+    switch (period) {
+        case 'week':
+            return [now.startOf('isoWeek'), now.endOf('isoWeek')];
+        case 'month':
+            return [now.startOf('month'), now.endOf('month')];
+        case 'quarter':
+            return [now.startOf('quarter'), now.endOf('quarter')];
+        case 'year':
+            return [now.startOf('year'), now.endOf('year')];
+        case 'all':
+            return [null, null];
+        default:
+            return [null, null];
+    }
+};
 
 const ReportActivities = () => {
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [period, setPeriod] = useState('year');
+    const [customRange, setCustomRange] = useState(null);
+
+    const dateRange = useMemo(() => {
+        if (period === 'custom' && customRange) {
+            return customRange;
+        }
+        return getDateRange(period);
+    }, [period, customRange]);
 
     useEffect(() => {
         fetchData();
-    }, []);
+    }, [dateRange]);
 
     const fetchData = async () => {
+        setLoading(true);
         try {
-            const res = await api.get('/reports/activities-by-enterprise');
+            const params = {};
+            const [from, to] = dateRange;
+            if (from) params.date_from = from.format('YYYY-MM-DD');
+            if (to) params.date_to = to.format('YYYY-MM-DD');
+            const res = await api.get('/reports/activities-by-enterprise', { params });
             setData(res.data);
         } catch (error) {
             console.error('Error:', error);
         } finally {
             setLoading(false);
         }
+    };
+
+    const getPeriodLabel = () => {
+        const [from, to] = dateRange;
+        if (!from && !to) return 'Tất cả thời gian';
+        if (from && to) return `${from.format('DD/MM/YYYY')} — ${to.format('DD/MM/YYYY')}`;
+        return '';
     };
 
     if (loading) return <div className="flex justify-center items-center h-96"><Spin size="large" /></div>;
@@ -125,6 +180,7 @@ const ReportActivities = () => {
 
         // Sheet 1: Tổng quan
         const overviewSheet = XLSX.utils.json_to_sheet([
+            { 'Chỉ số': 'Khoảng thời gian', 'Giá trị': getPeriodLabel() },
             { 'Chỉ số': 'Tổng hoạt động', 'Giá trị': overview.total || 0 },
             { 'Chỉ số': 'Đang hoạt động', 'Giá trị': overview.active || 0 },
             { 'Chỉ số': 'Hoàn thành', 'Giá trị': overview.completed || 0 },
@@ -168,6 +224,38 @@ const ReportActivities = () => {
                 <Button icon={<DownloadOutlined />} onClick={handleExport} type="primary" className="bg-vluRed h-10 px-5 rounded-lg">Xuất Báo Cáo</Button>
             </div>
 
+            {/* Period Selector */}
+            <div className="bg-gradient-to-r from-slate-50 to-gray-50 rounded-2xl p-4 mb-6 border border-gray-100 flex flex-wrap items-center gap-4">
+                <div className="flex items-center gap-2 text-gray-500">
+                    <CalendarOutlined className="text-lg" />
+                    <span className="text-sm font-medium">Khoảng thời gian:</span>
+                </div>
+                <Segmented
+                    options={periodOptions}
+                    value={period}
+                    onChange={(val) => {
+                        setPeriod(val);
+                        if (val !== 'custom') setCustomRange(null);
+                    }}
+                    className="bg-white shadow-sm"
+                />
+                {period === 'custom' && (
+                    <RangePicker
+                        format="DD/MM/YYYY"
+                        value={customRange}
+                        onChange={setCustomRange}
+                        placeholder={['Từ ngày', 'Đến ngày']}
+                        className="rounded-lg"
+                        allowClear={false}
+                    />
+                )}
+                {dateRange[0] && dateRange[1] && (
+                    <span className="text-xs text-gray-400 ml-auto">
+                        📅 {getPeriodLabel()}
+                    </span>
+                )}
+            </div>
+
             {/* Stats */}
             <Row gutter={[16, 16]} className="mb-8">
                 <Col xs={12} sm={6}>
@@ -200,7 +288,7 @@ const ReportActivities = () => {
                             {byEnterprise.length > 0 ? (
                                 <Bar data={barData} options={barOptions} />
                             ) : (
-                                <Empty description="Chưa có dữ liệu" className="mt-20" />
+                                <Empty description="Chưa có dữ liệu trong khoảng thời gian này" className="mt-20" />
                             )}
                         </div>
                     </Card>
@@ -211,7 +299,7 @@ const ReportActivities = () => {
                             {byType.length > 0 ? (
                                 <Pie data={pieData} options={pieOptions} />
                             ) : (
-                                <Empty description="Chưa có dữ liệu" className="mt-20" />
+                                <Empty description="Chưa có dữ liệu trong khoảng thời gian này" className="mt-20" />
                             )}
                         </div>
                     </Card>
@@ -221,7 +309,7 @@ const ReportActivities = () => {
             {/* Row 2: Line chart */}
             <Row gutter={[20, 20]}>
                 <Col xs={24}>
-                    <Card title={<span className="">{`Xu hướng hoạt động theo tháng (Năm ${new Date().getFullYear()})`}</span>} className="rounded-xl shadow-sm">
+                    <Card title={<span className="">{period === 'all' ? 'Xu hướng hoạt động theo tháng' : `Xu hướng hoạt động theo tháng (${getPeriodLabel()})`}</span>} className="rounded-xl shadow-sm">
                         <div style={{ height: 300 }}>
                             <Line data={lineData} options={lineOptions} />
                         </div>

@@ -28,13 +28,31 @@ exports.getAll = async (req, res) => {
             params.push(req.user.faculty_id);
         }
 
-        const status = req.query.status;
+        const { status, search, sort_by, sort_order } = req.query;
+
         if (status) {
             query += ' AND e.status = ?';
             params.push(status);
         }
 
-        query += ' GROUP BY e.id ORDER BY e.created_at DESC';
+        if (search) {
+            query += ' AND (e.name LIKE ? OR e.tax_code LIKE ? OR rep.full_name LIKE ? OR rep.phone LIKE ?)';
+            const s = `%${search}%`;
+            params.push(s, s, s, s);
+        }
+
+        query += ' GROUP BY e.id';
+
+        // Sorting
+        const allowedSortColumns = {
+            'name': 'e.name',
+            'created_at': 'e.created_at',
+            'status': 'e.status',
+            'student_count': 'student_count'
+        };
+        const sortCol = allowedSortColumns[sort_by] || 'e.created_at';
+        const sortDir = sort_order === 'ASC' ? 'ASC' : 'DESC';
+        query += ` ORDER BY ${sortCol} ${sortDir}`;
 
         const [enterprises] = await pool.query(query, params);
         res.status(200).json(enterprises);
