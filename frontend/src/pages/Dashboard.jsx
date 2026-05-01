@@ -1,18 +1,18 @@
 import React, { useEffect, useState } from 'react';
 import { Card, Row, Col, Spin, List, Tag, Typography } from 'antd';
-import { 
-    BankOutlined, 
-    CheckCircleOutlined, 
-    AppstoreOutlined, 
+import {
+    BankOutlined,
+    CheckCircleOutlined,
+    AppstoreOutlined,
     TeamOutlined,
     CalendarOutlined,
     RightOutlined
 } from '@ant-design/icons';
 import api from '../utils/api';
 import { Doughnut, Bar } from 'react-chartjs-2';
-import { 
-    Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, 
-    LinearScale, BarElement, Title, RadialLinearScale, PointElement, LineElement 
+import {
+    Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale,
+    LinearScale, BarElement, Title, RadialLinearScale, PointElement, LineElement
 } from 'chart.js';
 import dayjs from 'dayjs';
 import 'dayjs/locale/vi';
@@ -126,7 +126,7 @@ const Dashboard = () => {
         labels: charts.activityTypes?.map(item => item.type) || [],
         datasets: [{
             data: charts.activityTypes?.map(item => item.count) || [],
-            backgroundColor: ['#DA251D', '#ff7875', '#ffa39e', '#cf1322', '#a8071a', '#1890ff', '#faad14'],
+            backgroundColor: ['#DA251D', '#7ce228ff', '#ffa39e', '#13b3cfff', '#a80772ff', '#18ff4a71', '#faad14'],
             borderWidth: 0,
             hoverOffset: 4
         }]
@@ -222,13 +222,13 @@ const Dashboard = () => {
                     </Card>
                 </Col>
                 <Col xs={24} lg={10}>
-                    <Card 
+                    <Card
                         title={
                             <div className="flex items-center gap-2">
                                 <CalendarOutlined className="text-vluRed" />
                                 <span className="font-semibold text-gray-700">Hoạt động sắp diễn ra</span>
                             </div>
-                        } 
+                        }
                         className="shadow-sm rounded-xl h-full border-gray-100 hover:shadow-md transition-shadow"
                         bodyStyle={{ padding: '0 24px' }}
                     >
