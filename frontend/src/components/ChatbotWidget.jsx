@@ -60,9 +60,9 @@ const ChatbotWidget = () => {
 
     const quickQuestions = [
         'Thống kê tổng quan hệ thống?',
-        'Danh sách doanh nghiệp đang triển khai?',
+        'Doanh nghiệp ngành Công nghệ thông tin?',
         'Sinh viên đang thực tập?',
-        'Hoạt động sắp diễn ra?',
+        'Chi tiết công ty FPT?',
         'Danh sách MOU đã ký?',
         'Doanh nghiệp được đánh giá cao nhất?',
     ];

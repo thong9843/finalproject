@@ -123,6 +123,62 @@ const tools = [
                     required: [],
                 },
             },
+            {
+                name: 'get_enterprise_details',
+                description: 'Lấy thông tin chi tiết của một doanh nghiệp cụ thể bao gồm địa chỉ, người đại diện và lĩnh vực hoạt động.',
+                parameters: {
+                    type: 'OBJECT',
+                    properties: {
+                        keyword: {
+                            type: 'STRING',
+                            description: 'Tên hoặc mã số thuế doanh nghiệp',
+                        },
+                    },
+                    required: ['keyword'],
+                },
+            },
+            {
+                name: 'get_student_details',
+                description: 'Lấy thông tin chi tiết của một sinh viên bao gồm ngành, lớp, GPA, công ty và hoạt động đang tham gia.',
+                parameters: {
+                    type: 'OBJECT',
+                    properties: {
+                        keyword: {
+                            type: 'STRING',
+                            description: 'Tên hoặc Mã số sinh viên (MSSV)',
+                        },
+                    },
+                    required: ['keyword'],
+                },
+            },
+            {
+                name: 'search_enterprises_by_field',
+                description: 'Tìm kiếm danh sách doanh nghiệp theo lĩnh vực/ngành nghề hoạt động (ví dụ: CNTT, Marketing, Ngân hàng, v.v.).',
+                parameters: {
+                    type: 'OBJECT',
+                    properties: {
+                        field_name: {
+                            type: 'STRING',
+                            description: 'Tên lĩnh vực hoặc ngành nghề',
+                        },
+                    },
+                    required: ['field_name'],
+                },
+            },
+            {
+                name: 'get_activity_details',
+                description: 'Lấy thông tin chi tiết của một hoạt động hợp tác cụ thể.',
+                parameters: {
+                    type: 'OBJECT',
+                    properties: {
+                        keyword: {
+                            type: 'STRING',
+                            description: 'Tên hoạt động',
+                        },
+                    },
+                    required: ['keyword'],
+                },
+            },
         ],
     },
 ];
@@ -332,6 +388,69 @@ async function get_student_stats_by_enterprise() {
     return { byEnterprise, byMajor };
 }
 
+async function get_enterprise_details({ keyword }) {
+    const [enterprises] = await pool.query(`
+        SELECT e.name, e.tax_code, e.status, s.name as scale,
+               addr.building_street, addr.district, addr.province,
+               rep.full_name as rep_name, rep.phone as rep_phone, rep.email as rep_email,
+               GROUP_CONCAT(DISTINCT fi.name SEPARATOR ', ') as fields
+        FROM enterprises e
+        LEFT JOIN scales s ON e.scale_id = s.id
+        LEFT JOIN enterprise_addresses addr ON addr.enterprise_id = e.id AND addr.is_main = 1
+        LEFT JOIN enterprise_representatives rep ON rep.enterprise_id = e.id AND rep.is_primary = 1
+        LEFT JOIN enterprise_fields ef ON ef.enterprise_id = e.id
+        LEFT JOIN fields fi ON fi.id = ef.field_id
+        WHERE e.name LIKE ? OR e.tax_code = ?
+        GROUP BY e.id
+        LIMIT 1
+    `, [`%${keyword}%`, keyword]);
+    return enterprises.length > 0 ? enterprises[0] : { message: 'Không tìm thấy doanh nghiệp' };
+}
+
+async function get_student_details({ keyword }) {
+    const [students] = await pool.query(`
+        SELECT s.student_code, s.name, s.major, s.class, s.gpa, s.status,
+               e.name as enterprise_name, a.title as activity_title,
+               s.start_date, s.end_date
+        FROM students s
+        LEFT JOIN enterprises e ON s.enterprise_id = e.id
+        LEFT JOIN activities a ON s.activity_id = a.id
+        WHERE s.name LIKE ? OR s.student_code = ?
+        LIMIT 1
+    `, [`%${keyword}%`, keyword]);
+    return students.length > 0 ? students[0] : { message: 'Không tìm thấy sinh viên' };
+}
+
+async function search_enterprises_by_field({ field_name }) {
+    const [enterprises] = await pool.query(`
+        SELECT e.name, e.status, fi.name as field_name, s.name as scale
+        FROM enterprises e
+        JOIN enterprise_fields ef ON ef.enterprise_id = e.id
+        JOIN fields fi ON fi.id = ef.field_id
+        LEFT JOIN scales s ON e.scale_id = s.id
+        WHERE fi.name LIKE ?
+        LIMIT 10
+    `, [`%${field_name}%`]);
+    return enterprises.length > 0 ? enterprises : { message: 'Không tìm thấy doanh nghiệp trong lĩnh vực này' };
+}
+
+async function get_activity_details({ keyword }) {
+    const [activities] = await pool.query(`
+        SELECT a.title, a.status, a.start_date, a.end_date, a.person_in_charge,
+               e.name as enterprise_name,
+               GROUP_CONCAT(DISTINCT act.name SEPARATOR ', ') as types,
+               (SELECT COUNT(*) FROM students s WHERE s.activity_id = a.id) as student_count
+        FROM activities a
+        JOIN enterprises e ON a.enterprise_id = e.id
+        LEFT JOIN activity_type_map atm ON atm.activity_id = a.id
+        LEFT JOIN act_types act ON act.id = atm.type_id
+        WHERE a.title LIKE ?
+        GROUP BY a.id
+        LIMIT 1
+    `, [`%${keyword}%`]);
+    return activities.length > 0 ? activities[0] : { message: 'Không tìm thấy hoạt động' };
+}
+
 // Map tên tool -> hàm thực thi
 const toolExecutors = {
     get_enterprise_list,
@@ -342,6 +461,10 @@ const toolExecutors = {
     get_upcoming_activities,
     get_enterprise_ratings,
     get_student_stats_by_enterprise,
+    get_enterprise_details,
+    get_student_details,
+    search_enterprises_by_field,
+    get_activity_details,
 };
 
 // ---- SYSTEM PROMPT ----
