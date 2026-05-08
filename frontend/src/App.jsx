@@ -1,6 +1,6 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { ConfigProvider } from 'antd';
+import { ConfigProvider, theme as antTheme } from 'antd';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import EnterpriseList from './pages/EnterpriseList';
@@ -15,6 +15,7 @@ import CalendarView from './pages/CalendarView';
 import ActivityTypes from './pages/ActivityTypes';
 import MOUList from './pages/MOUList';
 import Cookies from 'js-cookie';
+import { ThemeProvider, useTheme } from './context/ThemeContext';
 
 const ProtectedRoute = ({ children }) => {
     const token = Cookies.get('token');
@@ -23,9 +24,11 @@ const ProtectedRoute = ({ children }) => {
 };
 
 const AppConfig = ({ children }) => {
+    const { isDark } = useTheme();
     return (
         <ConfigProvider
             theme={{
+                algorithm: isDark ? antTheme.darkAlgorithm : antTheme.defaultAlgorithm,
                 token: {
                     colorPrimary: '#DA251D',
                     borderRadius: 6,
@@ -39,28 +42,30 @@ const AppConfig = ({ children }) => {
 
 const App = () => {
     return (
-        <AppConfig>
-            <BrowserRouter>
-                <Routes>
-                    <Route path="/login" element={<Login />} />
-                    
-                    <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
-                        <Route index element={<Navigate to="/dashboard" replace />} />
-                        <Route path="dashboard" element={<Dashboard />} />
-                        <Route path="kanban" element={<KanbanBoard />} />
-                        <Route path="calendar" element={<CalendarView />} />
-                        <Route path="enterprises" element={<EnterpriseList />} />
-                        <Route path="activities" element={<ActivityList />} />
-                        <Route path="settings" element={<Settings />} />
-                        <Route path="students" element={<StudentList />} />
-                        <Route path="reports/students" element={<ReportStudents />} />
-                        <Route path="reports/activities" element={<ReportActivities />} />
-                        <Route path="activity-types" element={<ActivityTypes />} />
-                        <Route path="mous" element={<MOUList />} />
-                    </Route>
-                </Routes>
-            </BrowserRouter>
-        </AppConfig>
+        <ThemeProvider>
+            <AppConfig>
+                <BrowserRouter>
+                    <Routes>
+                        <Route path="/login" element={<Login />} />
+
+                        <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
+                            <Route index element={<Navigate to="/dashboard" replace />} />
+                            <Route path="dashboard" element={<Dashboard />} />
+                            <Route path="kanban" element={<KanbanBoard />} />
+                            <Route path="calendar" element={<CalendarView />} />
+                            <Route path="enterprises" element={<EnterpriseList />} />
+                            <Route path="activities" element={<ActivityList />} />
+                            <Route path="settings" element={<Settings />} />
+                            <Route path="students" element={<StudentList />} />
+                            <Route path="reports/students" element={<ReportStudents />} />
+                            <Route path="reports/activities" element={<ReportActivities />} />
+                            <Route path="activity-types" element={<ActivityTypes />} />
+                            <Route path="mous" element={<MOUList />} />
+                        </Route>
+                    </Routes>
+                </BrowserRouter>
+            </AppConfig>
+        </ThemeProvider>
     );
 };
 

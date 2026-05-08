@@ -220,7 +220,7 @@ const Dashboard = () => {
     };
 
     return (
-        <div className="p-6 bg-gray-50 min-h-screen">
+        <div>
             <div className="mb-8">
                 <AntTitle level={2} className="!mb-1 !text-gray-800">Tổng quan hệ thống</AntTitle>
                 <Text type="secondary">Theo dõi các chỉ số quan trọng và hoạt động hợp tác doanh nghiệp</Text>

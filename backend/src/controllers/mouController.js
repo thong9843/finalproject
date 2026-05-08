@@ -1,15 +1,27 @@
 const pool = require('../config/db');
+const PDFDocument = require('pdfkit');
+const { GoogleGenerativeAI } = require('@google/generative-ai');
+const fs = require('fs');
+const path = require('path');
+
+// Font paths (Roboto TTF - ho tro tieng Viet Unicode)
+const FONTS = {
+    regular: path.join(__dirname, '../fonts/Roboto-Regular.ttf'),
+    bold: path.join(__dirname, '../fonts/Roboto-Bold.ttf'),
+    italic: path.join(__dirname, '../fonts/Roboto-Italic.ttf'),
+};
+
+// ==================== CRUD ====================
 
 exports.getAll = async (req, res) => {
     try {
-        let query = `
+        const [rows] = await pool.query(`
             SELECT m.*, e.name as enterprise_name, d.name as executing_unit_name
             FROM mous m
             JOIN enterprises e ON m.enterprise_id = e.id
             LEFT JOIN departments d ON m.executing_unit_id = d.id
             ORDER BY m.created_at DESC
-        `;
-        const [rows] = await pool.query(query);
+        `);
         res.status(200).json(rows);
     } catch (error) {
         res.status(500).json({ message: error.message });
@@ -28,19 +40,17 @@ exports.getById = async (req, res) => {
 
 exports.create = async (req, res) => {
     try {
-        const { mou_code, enterprise_id, signing_date, partner_contact, org_type, country, collaboration_scope, executing_unit_id, vlu_contact, tasks_ay24_25, next_steps, past_activities, related_data, working_dir } = req.body;
-        
+        const { mou_code, enterprise_id, signing_date, partner_contact, org_type, country,
+            collaboration_scope, executing_unit_id, vlu_contact, tasks_ay24_25,
+            next_steps, past_activities, related_data, working_dir } = req.body;
         const [result] = await pool.query(
-            `INSERT INTO mous (
-                mou_code, enterprise_id, signing_date, partner_contact, org_type, country, 
-                collaboration_scope, executing_unit_id, vlu_contact, tasks_ay24_25, 
-                next_steps, past_activities, related_data, working_dir
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-            [
-                mou_code, enterprise_id, signing_date || null, partner_contact, org_type, country, 
-                collaboration_scope, executing_unit_id || null, vlu_contact, tasks_ay24_25, 
-                next_steps, past_activities, related_data, working_dir
-            ]
+            `INSERT INTO mous (mou_code, enterprise_id, signing_date, partner_contact, org_type, country,
+                collaboration_scope, executing_unit_id, vlu_contact, tasks_ay24_25,
+                next_steps, past_activities, related_data, working_dir)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [mou_code, enterprise_id, signing_date || null, partner_contact, org_type, country,
+                collaboration_scope, executing_unit_id || null, vlu_contact, tasks_ay24_25,
+                next_steps, past_activities, related_data, working_dir]
         );
         res.status(201).json({ id: result.insertId, message: 'Created successfully' });
     } catch (error) {
@@ -51,19 +61,17 @@ exports.create = async (req, res) => {
 exports.update = async (req, res) => {
     try {
         const { id } = req.params;
-        const { mou_code, enterprise_id, signing_date, partner_contact, org_type, country, collaboration_scope, executing_unit_id, vlu_contact, tasks_ay24_25, next_steps, past_activities, related_data, working_dir } = req.body;
-        
+        const { mou_code, enterprise_id, signing_date, partner_contact, org_type, country,
+            collaboration_scope, executing_unit_id, vlu_contact, tasks_ay24_25,
+            next_steps, past_activities, related_data, working_dir } = req.body;
         await pool.query(
-            `UPDATE mous SET 
-                mou_code=?, enterprise_id=?, signing_date=?, partner_contact=?, org_type=?, country=?, 
-                collaboration_scope=?, executing_unit_id=?, vlu_contact=?, tasks_ay24_25=?, 
-                next_steps=?, past_activities=?, related_data=?, working_dir=?
-            WHERE id=?`,
-            [
-                mou_code, enterprise_id, signing_date || null, partner_contact, org_type, country, 
-                collaboration_scope, executing_unit_id || null, vlu_contact, tasks_ay24_25, 
-                next_steps, past_activities, related_data, working_dir, id
-            ]
+            `UPDATE mous SET mou_code=?, enterprise_id=?, signing_date=?, partner_contact=?,
+                org_type=?, country=?, collaboration_scope=?, executing_unit_id=?, vlu_contact=?,
+                tasks_ay24_25=?, next_steps=?, past_activities=?, related_data=?, working_dir=?
+             WHERE id=?`,
+            [mou_code, enterprise_id, signing_date || null, partner_contact, org_type, country,
+                collaboration_scope, executing_unit_id || null, vlu_contact, tasks_ay24_25,
+                next_steps, past_activities, related_data, working_dir, id]
         );
         res.status(200).json({ message: 'Updated successfully' });
     } catch (error) {
@@ -77,5 +85,250 @@ exports.remove = async (req, res) => {
         res.status(200).json({ message: 'Deleted successfully' });
     } catch (error) {
         res.status(500).json({ message: error.message });
+    }
+};
+
+// ==================== EXPORT PDF (Roboto TTF - Unicode safe) ====================
+
+exports.generatePdf = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const [rows] = await pool.query(`
+            SELECT m.*, e.name as enterprise_name, e.tax_code,
+                   d.name as executing_unit_name,
+                   ea.building_street, ea.district, ea.province,
+                   er.title, er.full_name, er.phone
+            FROM mous m
+            JOIN enterprises e ON m.enterprise_id = e.id
+            LEFT JOIN departments d ON m.executing_unit_id = d.id
+            LEFT JOIN enterprise_addresses ea ON ea.enterprise_id = e.id AND ea.is_main = 1
+            LEFT JOIN enterprise_representatives er ON er.enterprise_id = e.id AND er.is_primary = 1
+            WHERE m.id = ?
+        `, [id]);
+
+        if (rows.length === 0) return res.status(404).json({ message: 'MOU not found' });
+
+        const mou = rows[0];
+        const s = (v) => v || '';
+
+        const signingDate = mou.signing_date
+            ? new Date(mou.signing_date).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })
+            : '__/__/____';
+        const today = new Date().toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+
+        const doc = new PDFDocument({
+            size: 'A4',
+            margins: { top: 60, bottom: 60, left: 70, right: 70 },
+            info: { Title: 'Bien Ban Ghi Nho', Author: 'Van Lang University' }
+        });
+
+        // Register Roboto for Vietnamese Unicode support
+        doc.registerFont('R', FONTS.regular);
+        doc.registerFont('B', FONTS.bold);
+        doc.registerFont('I', FONTS.italic);
+
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename="MOU_${mou.mou_code.replace(/\//g, '-')}.pdf"`);
+        doc.pipe(res);
+
+        const PW = doc.page.width;  // 595
+        const ML = 70, MR = 525;
+
+        const line = (y, color = '#bbbbbb', w = 0.8) =>
+            doc.moveTo(ML, y).lineTo(MR, y).strokeColor(color).lineWidth(w).stroke();
+
+        // ===== HEADER =====
+        doc.rect(0, 0, PW, 112).fill('#1a3c6e');
+
+        // Ben trai: VLU
+        doc.font('B').fontSize(8).fillColor('#ffffff')
+            .text('CONG HOA XA HOI CHU NGHIA VIET NAM', ML, 16, { width: 210, align: 'center' });
+        doc.font('R').fontSize(7.5).fillColor('#99ccff')
+            .text('Doc lap - Tu do - Hanh phuc', ML, 28, { width: 210, align: 'center' });
+        doc.font('B').fontSize(9.5).fillColor('#ffffff')
+            .text('TRUONG DAI HOC VAN LANG', ML, 45, { width: 210, align: 'center' });
+        doc.font('R').fontSize(7).fillColor('#99ccff')
+            .text('69/68 Dang Thuy Tram, P.13, Q.Binh Thanh, TP.HCM', ML, 59, { width: 210, align: 'center' });
+
+        // Ben phai: Tieu de
+        doc.font('B').fontSize(21).fillColor('#ffffff')
+            .text('BIEN BAN GHI NHO', 295, 18, { width: 230, align: 'center' });
+        doc.font('R').fontSize(9).fillColor('#FFD700')
+            .text('MEMORANDUM OF UNDERSTANDING', 295, 48, { width: 230, align: 'center' });
+        doc.font('B').fontSize(9).fillColor('#99ccff')
+            .text('Ma so: ' + mou.mou_code, 295, 65, { width: 230, align: 'center' });
+
+        // ===== INFO BOX =====
+        doc.roundedRect(ML, 120, 455, 50, 5).fill('#EEF4FF')
+            .roundedRect(ML, 120, 455, 50, 5).strokeColor('#1a3c6e').lineWidth(1).stroke();
+
+        doc.font('B').fontSize(8.5).fillColor('#1a3c6e')
+            .text('Ngay ky ket:', 85, 130)
+            .text('Loai to chuc:', 250, 130)
+            .text('Quoc gia:', 410, 130);
+        doc.font('R').fontSize(9).fillColor('#111111')
+            .text(signingDate, 85, 143)
+            .text(s(mou.org_type) || 'Doanh nghiep', 250, 143)
+            .text(s(mou.country) || 'Viet Nam', 410, 143);
+
+        // ===== SECTION I =====
+        doc.font('B').fontSize(11).fillColor('#1a3c6e').text('I. CAC BEN THAM GIA', ML, 182);
+        line(197, '#1a3c6e', 1);
+
+        // Box Ben A
+        doc.roundedRect(ML, 203, 215, 92, 4).fill('#F0F8FF');
+        doc.font('B').fontSize(9).fillColor('#1a3c6e').text('BEN A (TRUONG DH VAN LANG)', 80, 210, { width: 195 });
+        doc.font('R').fontSize(8.5).fillColor('#333333')
+            .text('Dia chi: 69/68 Dang Thuy Tram, P.13,', 80, 226, { width: 195 })
+            .text('Q.Binh Thanh, TP. Ho Chi Minh', 80, 238, { width: 195 })
+            .text('Dau moi: ' + (s(mou.vlu_contact) || 'Ban QHDN'), 80, 256, { width: 195 })
+            .text('Don vi: ' + (s(mou.executing_unit_name) || 'Phong QHDN'), 80, 270, { width: 195 });
+
+        // Box Ben B
+        const entUpper = s(mou.enterprise_name).toUpperCase();
+        const addr = [mou.building_street, mou.district, mou.province].filter(Boolean).join(', ') || 'Viet Nam';
+        doc.roundedRect(300, 203, 225, 92, 4).fill('#FFF8F0');
+        doc.font('B').fontSize(9).fillColor('#b84000').text('BEN B (' + entUpper + ')', 310, 210, { width: 205 });
+        doc.font('R').fontSize(8.5).fillColor('#333333')
+            .text('Dia chi: ' + addr, 310, 226, { width: 205 })
+            .text('MST: ' + (s(mou.tax_code) || '---'), 310, 250, { width: 205 })
+            .text('Dai dien: ' + s(mou.title) + ' ' + (s(mou.full_name) || '---'), 310, 263, { width: 205 })
+            .text('Dien thoai: ' + (s(mou.phone) || '---'), 310, 276, { width: 205 });
+
+        // ===== SECTION II =====
+        let cy = 310;
+        doc.font('B').fontSize(11).fillColor('#1a3c6e').text('II. PHAM VI HOP TAC', ML, cy);
+        line(cy + 15, '#1a3c6e', 1);
+        cy += 22;
+        doc.font('R').fontSize(9.5).fillColor('#222222')
+            .text(s(mou.collaboration_scope) || 'Hai ben hop tac trong dao tao, thuc tap sinh vien, hoi thao chuyen nganh va cac hoat dong hoc thuat khac.',
+                ML, cy, { width: 455, align: 'justify', lineGap: 3 });
+
+        // ===== SECTION III =====
+        cy = doc.y + 12;
+        doc.font('B').fontSize(11).fillColor('#1a3c6e').text('III. NOI DUNG TRIEN KHAI', ML, cy);
+        line(cy + 15, '#1a3c6e', 1);
+        cy += 22;
+        doc.font('R').fontSize(9.5).fillColor('#222222')
+            .text(s(mou.tasks_ay24_25) || 'Theo ke hoach duoc hai ben thong nhat trong tung hoc ky.',
+                ML, cy, { width: 455, align: 'justify', lineGap: 3 });
+
+        // ===== SECTION IV =====
+        cy = doc.y + 12;
+        doc.font('B').fontSize(11).fillColor('#1a3c6e').text('IV. KE HOACH TIEP THEO', ML, cy);
+        line(cy + 15, '#1a3c6e', 1);
+        cy += 22;
+        doc.font('R').fontSize(9.5).fillColor('#222222')
+            .text(s(mou.next_steps) || 'Hai ben se hop ban cu the de xac dinh lo trinh trien khai.',
+                ML, cy, { width: 455, align: 'justify', lineGap: 3 });
+
+        // ===== SIGNATURES =====
+        const sy = Math.max(doc.y + 42, 668);
+        line(sy - 6, '#1a3c6e', 1);
+        doc.font('I').fontSize(8.5).fillColor('#555555')
+            .text('TP. Ho Chi Minh, ngay ' + today, ML, sy, { align: 'center', width: 455 });
+
+        doc.font('B').fontSize(10).fillColor('#1a3c6e')
+            .text('DAI DIEN BEN A', ML, sy + 14, { width: 200, align: 'center' })
+            .text('DAI DIEN BEN B', 295, sy + 14, { width: 200, align: 'center' });
+        doc.font('R').fontSize(8.5).fillColor('#555555')
+            .text('TRUONG DAI HOC VAN LANG', ML, sy + 27, { width: 200, align: 'center' })
+            .text(entUpper, 295, sy + 27, { width: 200, align: 'center' });
+
+        doc.moveTo(90, sy + 95).lineTo(250, sy + 95).strokeColor('#aaa').lineWidth(0.5).stroke();
+        doc.moveTo(315, sy + 95).lineTo(475, sy + 95).strokeColor('#aaa').lineWidth(0.5).stroke();
+        doc.font('I').fontSize(7.5).fillColor('#999999')
+            .text('(Ky, ghi ro ho ten, dong dau)', ML, sy + 99, { width: 200, align: 'center' })
+            .text('(Ky, ghi ro ho ten, dong dau)', 295, sy + 99, { width: 200, align: 'center' });
+
+        // ===== FOOTER =====
+        doc.rect(0, doc.page.height - 26, PW, 26).fill('#1a3c6e');
+        doc.font('R').fontSize(7.5).fillColor('#99ccff')
+            .text('Bien ban ghi nho so: ' + mou.mou_code + '  |  Truong Dai hoc Van Lang (c) ' + new Date().getFullYear(),
+                0, doc.page.height - 17, { align: 'center', width: PW });
+
+        doc.end();
+
+    } catch (error) {
+        console.error('PDF generation error:', error);
+        if (!res.headersSent) res.status(500).json({ message: error.message });
+    }
+};
+
+// ==================== AI SCAN DOCUMENT ====================
+
+exports.scanDocument = async (req, res) => {
+    try {
+        if (!req.file) return res.status(400).json({ message: 'Vui long upload file anh hoac PDF' });
+
+        const apiKey = process.env.GEMINI_API_KEY;
+        if (!apiKey) return res.status(500).json({ message: 'GEMINI_API_KEY chua duoc cau hinh' });
+
+        const genAI = new GoogleGenerativeAI(apiKey);
+        const model = genAI.getGenerativeModel({ model: 'gemini-3.1-flash-lite' });
+
+        const fileBuffer = fs.readFileSync(req.file.path);
+        const base64Data = fileBuffer.toString('base64');
+
+        let mimeType = req.file.mimetype;
+        if (!mimeType || mimeType === 'application/octet-stream') {
+            const ext = path.extname(req.file.originalname).toLowerCase();
+            const mm = { '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png', '.gif': 'image/gif', '.webp': 'image/webp', '.pdf': 'application/pdf' };
+            mimeType = mm[ext] || 'image/jpeg';
+        }
+
+        const prompt = `Ban la chuyen gia trich xuat thong tin tu tai lieu hop dong/bien ban ghi nho (MOU).
+Doc tai lieu nay va trich xuat cac truong sau. Tra ve KET QUA DUY NHAT dang JSON hop le (khong them text ngoai JSON):
+
+{
+  "mou_code": "Ma bien ban (VD: MOU-2024-001, neu khong co hay tao dua theo context)",
+  "enterprise_name": "Ten day du cua cong ty/to chuc doi tac (Ben B)",
+  "signing_date": "Ngay ky dinh dang YYYY-MM-DD (neu co, neu khong de null)",
+  "partner_contact": "Ten nguoi dai dien/lien he cua doi tac",
+  "org_type": "Loai to chuc (VD: Tap doan, Cong ty TNHH, Truong dai hoc...)",
+  "country": "Quoc gia cua doi tac",
+  "collaboration_scope": "Noi dung/pham vi hop tac chinh (tom tat ngan gon)",
+  "vlu_contact": "Ten nguoi dai dien cua Truong Dai hoc Van Lang (Ben A)",
+  "tasks_ay24_25": "Cac nhiem vu/cong tac da/se trien khai",
+  "next_steps": "Buoc tiep theo hoac ke hoach sap toi",
+  "past_activities": "Cac hoat dong da thuc hien truoc do (neu co)",
+  "related_data": "So lieu lien quan (neu co)",
+  "tax_code": "Ma so thue cua doi tac (neu co)"
+}
+
+Neu khong tim thay thong tin, de null. Tra ve JSON thuan tuy khong co markdown.`;
+
+        const result = await model.generateContent([prompt, { inlineData: { data: base64Data, mimeType } }]);
+        const responseText = result.response.text();
+
+        let extractedData;
+        try {
+            const clean = responseText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+            extractedData = JSON.parse(clean);
+        } catch {
+            const m = responseText.match(/\{[\s\S]*\}/);
+            if (m) extractedData = JSON.parse(m[0]);
+            else throw new Error('AI khong tra ve JSON hop le');
+        }
+
+        try { fs.unlinkSync(req.file.path); } catch (e) { }
+
+        let enterprise_id = null;
+        if (extractedData.enterprise_name) {
+            const words = extractedData.enterprise_name.toLowerCase().split(' ').slice(0, 3).join('%');
+            const [ents] = await pool.query(`SELECT id, name FROM enterprises WHERE LOWER(name) LIKE ? LIMIT 1`, [`%${words}%`]);
+            if (ents.length > 0) {
+                enterprise_id = ents[0].id;
+                extractedData.matched_enterprise = ents[0].name;
+            }
+        }
+
+        res.status(200).json({ success: true, extracted: { ...extractedData, enterprise_id } });
+
+    } catch (error) {
+        if (req.file?.path) { try { fs.unlinkSync(req.file.path); } catch (e) { } }
+        console.error('AI Scan error:', error);
+        res.status(500).json({ success: false, message: 'Loi phan tich tai lieu: ' + error.message });
     }
 };

@@ -1,11 +1,15 @@
-import React, { useEffect, useState } from 'react';
-import { Table, Button, Modal, Form, Input, Select, DatePicker, message, Space, Tooltip, Row, Col } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, LinkOutlined, SearchOutlined } from '@ant-design/icons';
+import React, { useEffect, useState, useRef } from 'react';
+import { Table, Button, Modal, Form, Input, Select, DatePicker, message, Space, Tooltip, Row, Col, Upload, Spin, Tag, Alert } from 'antd';
+import {
+    PlusOutlined, EditOutlined, DeleteOutlined, LinkOutlined, SearchOutlined,
+    FilePdfOutlined, ScanOutlined, InboxOutlined, CheckCircleOutlined, RobotOutlined, DownloadOutlined
+} from '@ant-design/icons';
 import api from '../utils/api';
 import dayjs from 'dayjs';
 
 const { Option } = Select;
 const { TextArea } = Input;
+const { Dragger } = Upload;
 
 const MOUList = () => {
     const [data, setData] = useState([]);
@@ -16,6 +20,16 @@ const MOUList = () => {
     const [editingId, setEditingId] = useState(null);
     const [form] = Form.useForm();
     const [searchText, setSearchText] = useState('');
+
+    // AI Scan states
+    const [isScanModalOpen, setIsScanModalOpen] = useState(false);
+    const [scanning, setScanning] = useState(false);
+    const [scanResult, setScanResult] = useState(null);
+    const [scanError, setScanError] = useState(null);
+    const [uploadedFile, setUploadedFile] = useState(null);
+
+    // PDF Export state
+    const [exportingId, setExportingId] = useState(null);
 
     useEffect(() => {
         fetchMOUs();
@@ -53,7 +67,6 @@ const MOUList = () => {
                 ...values,
                 signing_date: values.signing_date ? values.signing_date.format('YYYY-MM-DD') : null,
             };
-
             if (editingId) {
                 await api.put(`/mous/${editingId}`, payload);
                 message.success('Cập nhật thành công!');
@@ -95,7 +108,80 @@ const MOUList = () => {
         setIsModalOpen(true);
     };
 
-    const filteredData = data.filter(item => 
+    // ==================== PDF EXPORT ====================
+    const handleExportPdf = async (record) => {
+        setExportingId(record.id);
+        try {
+            const response = await api.get(`/mous/${record.id}/export-pdf`, { responseType: 'blob' });
+            const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `MOU_${record.mou_code.replace(/\//g, '-')}.pdf`);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            window.URL.revokeObjectURL(url);
+            message.success(`Đã xuất PDF: ${record.mou_code}`);
+        } catch (error) {
+            message.error('Lỗi khi xuất PDF. Vui lòng thử lại!');
+        } finally {
+            setExportingId(null);
+        }
+    };
+
+    // ==================== AI SCAN ====================
+    const handleScanDocument = async () => {
+        if (!uploadedFile) {
+            message.warning('Vui lòng chọn file để scan!');
+            return;
+        }
+        setScanning(true);
+        setScanResult(null);
+        setScanError(null);
+        try {
+            const formData = new FormData();
+            formData.append('file', uploadedFile);
+            const response = await api.post('/mous/scan-document', formData, {
+                headers: { 'Content-Type': 'multipart/form-data' },
+                timeout: 60000,
+            });
+            setScanResult(response.data.extracted);
+            message.success('AI đã phân tích xong tài liệu!');
+        } catch (error) {
+            const msg = error.response?.data?.message || 'Lỗi kết nối AI. Vui lòng thử lại!';
+            setScanError(msg);
+            message.error(msg);
+        } finally {
+            setScanning(false);
+        }
+    };
+
+    const handleApplyScanResult = () => {
+        if (!scanResult) return;
+        const fields = {
+            mou_code: scanResult.mou_code,
+            enterprise_id: scanResult.enterprise_id || undefined,
+            signing_date: scanResult.signing_date ? dayjs(scanResult.signing_date) : null,
+            partner_contact: scanResult.partner_contact,
+            org_type: scanResult.org_type,
+            country: scanResult.country,
+            collaboration_scope: scanResult.collaboration_scope,
+            vlu_contact: scanResult.vlu_contact,
+            tasks_ay24_25: scanResult.tasks_ay24_25,
+            next_steps: scanResult.next_steps,
+            past_activities: scanResult.past_activities,
+            related_data: scanResult.related_data,
+        };
+        // Remove nulls
+        Object.keys(fields).forEach(k => fields[k] == null && delete fields[k]);
+        form.setFieldsValue(fields);
+        setEditingId(null);
+        setIsScanModalOpen(false);
+        setIsModalOpen(true);
+        message.success('Đã điền thông tin từ AI vào form. Vui lòng kiểm tra và lưu!');
+    };
+
+    const filteredData = data.filter(item =>
         (item.mou_code?.toLowerCase().includes(searchText.toLowerCase())) ||
         (item.enterprise_name?.toLowerCase().includes(searchText.toLowerCase()))
     );
@@ -105,14 +191,14 @@ const MOUList = () => {
             title: 'Mã Biên bản',
             dataIndex: 'mou_code',
             key: 'mou_code',
-            width: 120,
+            width: 130,
             render: (text) => <span className="font-semibold text-blue-600">{text}</span>
         },
         {
             title: 'Tên đối tác',
             dataIndex: 'enterprise_name',
             key: 'enterprise_name',
-            width: 250,
+            width: 220,
             ellipsis: true,
             render: (text) => <span className="font-semibold text-slate-800">{text}</span>
         },
@@ -120,20 +206,22 @@ const MOUList = () => {
             title: 'Ngày ký',
             dataIndex: 'signing_date',
             key: 'signing_date',
-            width: 120,
-            render: (date) => date ? dayjs(date).format('DD/MM/YYYY') : '---'
+            width: 110,
+            render: (date) => date ? dayjs(date).format('DD/MM/YYYY') : <span className="text-slate-400">---</span>
         },
         {
             title: 'Đơn vị triển khai',
             dataIndex: 'executing_unit_name',
             key: 'executing_unit_name',
-            width: 180,
+            width: 160,
+            ellipsis: true,
         },
         {
             title: 'Loại tổ chức',
             dataIndex: 'org_type',
             key: 'org_type',
-            width: 150,
+            width: 130,
+            render: (text) => text ? <Tag color="blue">{text}</Tag> : null,
         },
         {
             title: 'Quốc gia',
@@ -144,7 +232,7 @@ const MOUList = () => {
         {
             title: 'Thao tác',
             key: 'action',
-            width: 150,
+            width: 180,
             align: 'center',
             render: (_, record) => (
                 <Space>
@@ -153,6 +241,14 @@ const MOUList = () => {
                             <Button type="text" icon={<LinkOutlined />} onClick={() => window.open(record.working_dir, '_blank')} />
                         </Tooltip>
                     )}
+                    <Tooltip title="Xuất PDF Hợp đồng">
+                        <Button
+                            type="text"
+                            icon={<FilePdfOutlined className="text-red-500" />}
+                            loading={exportingId === record.id}
+                            onClick={() => handleExportPdf(record)}
+                        />
+                    </Tooltip>
                     <Button type="text" icon={<EditOutlined className="text-blue-500" />} onClick={() => openEditModal(record)} />
                     <Button type="text" danger icon={<DeleteOutlined />} onClick={() => handleDelete(record.id)} />
                 </Space>
@@ -160,25 +256,70 @@ const MOUList = () => {
         }
     ];
 
+    // ==================== SCAN RESULT PREVIEW ====================
+    const ScanResultPreview = ({ result }) => {
+        const fields = [
+            { label: 'Mã biên bản', key: 'mou_code' },
+            { label: 'Tên đối tác', key: 'enterprise_name' },
+            { label: 'Doanh nghiệp khớp DB', key: 'matched_enterprise' },
+            { label: 'Ngày ký', key: 'signing_date' },
+            { label: 'Người liên hệ đối tác', key: 'partner_contact' },
+            { label: 'Loại tổ chức', key: 'org_type' },
+            { label: 'Quốc gia', key: 'country' },
+            { label: 'Phạm vi hợp tác', key: 'collaboration_scope' },
+            { label: 'Đầu mối VLU', key: 'vlu_contact' },
+            { label: 'Công tác đã triển khai', key: 'tasks_ay24_25' },
+            { label: 'Bước tiếp theo', key: 'next_steps' },
+        ];
+        return (
+            <div className="mt-3 bg-green-50 border border-green-200 rounded-lg p-4 max-h-64 overflow-y-auto">
+                <div className="flex items-center gap-2 mb-3">
+                    <CheckCircleOutlined className="text-green-500 text-lg" />
+                    <span className="font-semibold text-green-700">AI đã trích xuất thành công:</span>
+                    {result.matched_enterprise && (
+                        <Tag color="green">Khớp: {result.matched_enterprise}</Tag>
+                    )}
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                    {fields.map(f => result[f.key] ? (
+                        <div key={f.key} className="text-sm">
+                            <span className="text-slate-500 font-medium">{f.label}: </span>
+                            <span className="text-slate-800">{result[f.key]}</span>
+                        </div>
+                    ) : null)}
+                </div>
+            </div>
+        );
+    };
+
     return (
         <div className="p-6 h-full bg-slate-50 min-h-screen">
             <div className="bg-white rounded-xl shadow-sm border border-slate-200">
+                {/* Header */}
                 <div className="p-5 border-b border-slate-100 flex flex-col sm:flex-row justify-between items-start sm:items-center bg-white rounded-t-xl gap-4">
                     <div>
                         <h2 className="text-xl font-bold m-0 text-slate-800">Quản lý Biên Bản Ghi Nhớ (MOU)</h2>
                         <p className="text-sm text-slate-500 m-0">Danh sách thống kê các MOU đã ký với Đối tác/Doanh nghiệp</p>
                     </div>
-                    <div className="flex gap-3 w-full sm:w-auto">
-                        <Input 
-                            placeholder="Tìm mã MOU, đối tác..." 
+                    <div className="flex gap-2 w-full sm:w-auto flex-wrap">
+                        <Input
+                            placeholder="Tìm mã MOU, đối tác..."
                             prefix={<SearchOutlined className="text-slate-400" />}
                             value={searchText}
                             onChange={(e) => setSearchText(e.target.value)}
-                            className="w-full sm:w-64 rounded-lg"
+                            className="w-full sm:w-56 rounded-lg"
                         />
-                        <Button 
-                            type="primary" 
-                            icon={<PlusOutlined />} 
+                        <Button
+                            icon={<ScanOutlined />}
+                            onClick={() => { setScanResult(null); setScanError(null); setUploadedFile(null); setIsScanModalOpen(true); }}
+                            className="rounded-lg border-purple-400 text-purple-600 hover:bg-purple-50"
+                            style={{ borderColor: '#9333ea', color: '#9333ea' }}
+                        >
+                            Scan AI
+                        </Button>
+                        <Button
+                            type="primary"
+                            icon={<PlusOutlined />}
                             onClick={() => { setEditingId(null); form.resetFields(); setIsModalOpen(true); }}
                             className="bg-blue-600 shadow-sm rounded-lg"
                         >
@@ -186,18 +327,19 @@ const MOUList = () => {
                         </Button>
                     </div>
                 </div>
-                
-                <Table 
-                    columns={columns} 
-                    dataSource={filteredData} 
-                    loading={loading} 
-                    rowKey="id" 
+
+                <Table
+                    columns={columns}
+                    dataSource={filteredData}
+                    loading={loading}
+                    rowKey="id"
                     pagination={{ pageSize: 12 }}
                     className="border-none"
                     scroll={{ x: 'max-content' }}
                 />
             </div>
 
+            {/* ==================== ADD/EDIT MODAL ==================== */}
             <Modal
                 title={editingId ? "Cập nhật Biên bản ghi nhớ (MOU)" : "Thêm mới Biên bản ghi nhớ (MOU)"}
                 open={isModalOpen}
@@ -221,7 +363,6 @@ const MOUList = () => {
                             </Form.Item>
                         </Col>
                     </Row>
-                    
                     <Row gutter={16}>
                         <Col span={8}>
                             <Form.Item name="signing_date" label="Ngày ký kết">
@@ -239,7 +380,6 @@ const MOUList = () => {
                             </Form.Item>
                         </Col>
                     </Row>
-
                     <Row gutter={16}>
                         <Col span={12}>
                             <Form.Item name="partner_contact" label="Đầu mối liên hệ của đối tác">
@@ -252,7 +392,6 @@ const MOUList = () => {
                             </Form.Item>
                         </Col>
                     </Row>
-                    
                     <Row gutter={16}>
                         <Col span={12}>
                             <Form.Item name="executing_unit_id" label="Đơn vị triển khai">
@@ -267,11 +406,9 @@ const MOUList = () => {
                             </Form.Item>
                         </Col>
                     </Row>
-                    
                     <Form.Item name="collaboration_scope" label="Mảng hợp tác">
                         <TextArea rows={2} placeholder="Nội dung mảng hợp tác..." className="rounded-lg" />
                     </Form.Item>
-                    
                     <Row gutter={16}>
                         <Col span={12}>
                             <Form.Item name="tasks_ay24_25" label="Công tác đã triển khai NH 24-25">
@@ -284,7 +421,6 @@ const MOUList = () => {
                             </Form.Item>
                         </Col>
                     </Row>
-
                     <Row gutter={16}>
                         <Col span={12}>
                             <Form.Item name="past_activities" label="Hoạt động cũ">
@@ -297,7 +433,6 @@ const MOUList = () => {
                             </Form.Item>
                         </Col>
                     </Row>
-
                     <div className="flex justify-end gap-3 pt-4 border-t border-slate-100 mt-4">
                         <Button onClick={() => setIsModalOpen(false)} size="large" className="rounded-lg">Hủy</Button>
                         <Button type="primary" htmlType="submit" size="large" className="bg-blue-600 rounded-lg">
@@ -305,6 +440,116 @@ const MOUList = () => {
                         </Button>
                     </div>
                 </Form>
+            </Modal>
+
+            {/* ==================== AI SCAN MODAL ==================== */}
+            <Modal
+                title={
+                    <div className="flex items-center gap-2">
+                        <RobotOutlined className="text-purple-600 text-xl" />
+                        <span className="text-lg font-bold text-slate-800">Scan Tài Liệu MOU bằng Gemini AI</span>
+                    </div>
+                }
+                open={isScanModalOpen}
+                onCancel={() => setIsScanModalOpen(false)}
+                footer={null}
+                width={680}
+                destroyOnClose
+            >
+                <div className="mt-4">
+                    {/* Instructions */}
+                    <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 mb-4">
+                        <p className="text-sm text-purple-700 m-0">
+                            <strong>Hướng dẫn:</strong> Upload ảnh chụp hoặc file PDF của hợp đồng/biên bản ghi nhớ MOU.
+                            Gemini AI sẽ tự động đọc và trích xuất thông tin để điền vào form.
+                        </p>
+                    </div>
+
+                    {/* Upload Area */}
+                    <Dragger
+                        beforeUpload={(file) => {
+                            setUploadedFile(file);
+                            setScanResult(null);
+                            setScanError(null);
+                            return false; // Prevent auto upload
+                        }}
+                        accept=".jpg,.jpeg,.png,.gif,.webp,.pdf"
+                        maxCount={1}
+                        showUploadList={uploadedFile ? { showRemoveIcon: true } : false}
+                        onRemove={() => setUploadedFile(null)}
+                        className="rounded-lg"
+                    >
+                        <p className="ant-upload-drag-icon">
+                            <InboxOutlined className="text-purple-400 text-4xl" />
+                        </p>
+                        <p className="ant-upload-text text-slate-700">Kéo thả file hoặc nhấn để chọn</p>
+                        <p className="ant-upload-hint text-slate-400 text-xs">
+                            Hỗ trợ: JPG, PNG, WEBP, PDF • Tối đa 15MB
+                        </p>
+                    </Dragger>
+
+                    {uploadedFile && (
+                        <div className="mt-3 flex items-center gap-2 bg-slate-50 px-3 py-2 rounded-lg border border-slate-200">
+                            <FilePdfOutlined className="text-red-400" />
+                            <span className="text-sm text-slate-700 flex-1 truncate">{uploadedFile.name}</span>
+                            <span className="text-xs text-slate-400">{(uploadedFile.size / 1024).toFixed(1)} KB</span>
+                        </div>
+                    )}
+
+                    {/* Scan Button */}
+                    <div className="mt-4 flex justify-center">
+                        <Button
+                            type="primary"
+                            size="large"
+                            icon={scanning ? <Spin size="small" /> : <ScanOutlined />}
+                            onClick={handleScanDocument}
+                            disabled={!uploadedFile || scanning}
+                            loading={scanning}
+                            style={{ background: '#9333ea', borderColor: '#9333ea', minWidth: 200 }}
+                            className="rounded-lg"
+                        >
+                            {scanning ? 'Đang phân tích...' : 'Phân tích với Gemini AI'}
+                        </Button>
+                    </div>
+
+                    {scanning && (
+                        <div className="mt-4 text-center text-sm text-purple-600">
+                            <Spin size="small" className="mr-2" />
+                            AI đang đọc và trích xuất thông tin từ tài liệu, vui lòng đợi...
+                        </div>
+                    )}
+
+                    {/* Error */}
+                    {scanError && (
+                        <Alert
+                            message="Lỗi phân tích"
+                            description={scanError}
+                            type="error"
+                            showIcon
+                            className="mt-3 rounded-lg"
+                        />
+                    )}
+
+                    {/* Result Preview */}
+                    {scanResult && <ScanResultPreview result={scanResult} />}
+
+                    {/* Apply Button */}
+                    {scanResult && (
+                        <div className="mt-4 flex justify-end gap-3">
+                            <Button onClick={() => setIsScanModalOpen(false)} className="rounded-lg">Hủy</Button>
+                            <Button
+                                type="primary"
+                                icon={<CheckCircleOutlined />}
+                                onClick={handleApplyScanResult}
+                                style={{ background: '#9333ea', borderColor: '#9333ea' }}
+                                className="rounded-lg"
+                                size="large"
+                            >
+                                Điền vào Form & Lưu
+                            </Button>
+                        </div>
+                    )}
+                </div>
             </Modal>
         </div>
     );

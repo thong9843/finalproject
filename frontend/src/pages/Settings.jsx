@@ -1,11 +1,13 @@
 import React from 'react';
 import { Card, Form, Input, Button, Switch, Divider, message } from 'antd';
-import { UserOutlined, MailOutlined, LockOutlined, BellOutlined } from '@ant-design/icons';
+import { UserOutlined, MailOutlined, LockOutlined, BellOutlined, BulbOutlined } from '@ant-design/icons';
 import Cookies from 'js-cookie';
+import { useTheme } from '../context/ThemeContext';
 
 const Settings = () => {
     const userCookie = Cookies.get('user');
     const user = userCookie ? JSON.parse(userCookie) : {};
+    const { isDark, toggleDark } = useTheme();
 
     const handleSaveProfile = () => {
         message.success('Cập nhật thông tin thành công!');
@@ -17,19 +19,19 @@ const Settings = () => {
 
     return (
         <div className="max-w-4xl mx-auto">
-            <h1 className="text-2xl font-bold text-gray-800 mb-6">Cài đặt Hệ thống</h1>
-            
+            <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-6">Cài đặt Hệ thống</h1>
+
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {/* Cột trái: Menu điều hướng cài đặt (tuỳ chọn) có thể gom chung, nhưng đây để thiết kế hiện đại */}
+                {/* Cột trái */}
                 <div className="md:col-span-1 space-y-6">
                     <Card className="shadow-sm border-t-4 border-vluRed">
                         <div className="flex flex-col flex-wrap items-center text-center">
-                            <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mb-3">
-                                <UserOutlined className="text-3xl text-gray-400" />
+                            <div className="w-20 h-20 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mb-3">
+                                <UserOutlined className="text-3xl text-gray-400 dark:text-gray-300" />
                             </div>
-                            <h3 className="text-lg font-bold text-gray-800">{user.full_name || 'Người dùng'}</h3>
-                            <p className="text-sm text-gray-500 mb-2">{user.role || 'Vai trò'}</p>
-                            <span className="bg-red-50 text-vluRed px-3 py-1 rounded-full text-xs font-semibold">
+                            <h3 className="text-lg font-bold text-gray-800 dark:text-gray-100">{user.full_name || 'Người dùng'}</h3>
+                            <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">{user.role || 'Vai trò'}</p>
+                            <span className="bg-red-50 dark:bg-red-900/30 text-vluRed px-3 py-1 rounded-full text-xs font-semibold">
                                 Khoa ID: {user.faculty_id || 'All'}
                             </span>
                         </div>
@@ -37,17 +39,34 @@ const Settings = () => {
 
                     <Card title="Tùy chọn hiển thị" className="shadow-sm">
                         <div className="flex justify-between items-center mb-4">
-                            <span className="flex items-center gap-2"><BellOutlined /> Nhận thông báo Email</span>
+                            <span className="flex items-center gap-2 text-sm dark:text-gray-300">
+                                <BellOutlined /> Nhận thông báo Email
+                            </span>
                             <Switch defaultChecked />
                         </div>
+
+                        <Divider className="my-3" />
+
                         <div className="flex justify-between items-center">
-                            <span className="flex items-center gap-2">Chế độ tối (Dark Mode)</span>
-                            <Switch disabled />
+                            <span className="flex items-center gap-2 text-sm dark:text-gray-300">
+                                <BulbOutlined />
+                                Chế độ tối (Dark Mode)
+                            </span>
+                            <Switch
+                                checked={isDark}
+                                onChange={toggleDark}
+                                checkedChildren="🌙"
+                                unCheckedChildren="☀️"
+                            />
                         </div>
+
+                        <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">
+                            {isDark ? 'Đang dùng giao diện tối' : 'Đang dùng giao diện sáng'}
+                        </p>
                     </Card>
                 </div>
 
-                {/* Cột phải: Form thay đổi thông tin */}
+                {/* Cột phải: Form */}
                 <div className="md:col-span-2 space-y-6">
                     <Card title="Chỉnh sửa thông tin cá nhân" className="shadow-sm">
                         <Form layout="vertical" onFinish={handleSaveProfile} initialValues={{ name: user.full_name, email: user.email }}>
@@ -56,7 +75,7 @@ const Settings = () => {
                                     <Input prefix={<UserOutlined />} placeholder="Nhập họ và tên" />
                                 </Form.Item>
                                 <Form.Item label="Email" name="email">
-                                    <Input prefix={<MailOutlined />} disabled className="bg-white" />
+                                    <Input prefix={<MailOutlined />} disabled className="bg-white dark:bg-gray-700" />
                                 </Form.Item>
                             </div>
                             <Button type="primary" htmlType="submit" className="bg-vluRed">Lưu thay đổi</Button>
