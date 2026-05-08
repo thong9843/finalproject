@@ -10,6 +10,10 @@ const Sidebar = ({ isOpen, onClose }) => {
     const location = useLocation();
     const { isDark } = useTheme();
 
+    const userCookie = Cookies.get('user');
+    const user = userCookie ? JSON.parse(userCookie) : null;
+    const isAdmin = user && user.role === 'ADMIN';
+
     const items = [
         {
             key: '/dashboard',
@@ -73,7 +77,11 @@ const Sidebar = ({ isOpen, onClose }) => {
                 {
                     key: '/activity-types',
                     label: 'Loại hình hoạt động',
-                }
+                },
+                ...(isAdmin ? [{
+                    key: '/users',
+                    label: 'Quản lý người dùng',
+                }] : [])
             ]
         },
     ];

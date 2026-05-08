@@ -14,6 +14,7 @@ import KanbanBoard from './pages/KanbanBoard';
 import CalendarView from './pages/CalendarView';
 import ActivityTypes from './pages/ActivityTypes';
 import MOUList from './pages/MOUList';
+import UserList from './pages/UserList';
 import Cookies from 'js-cookie';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
 
@@ -61,6 +62,7 @@ const App = () => {
                             <Route path="reports/activities" element={<ReportActivities />} />
                             <Route path="activity-types" element={<ActivityTypes />} />
                             <Route path="mous" element={<MOUList />} />
+                            <Route path="users" element={<UserList />} />
                         </Route>
                     </Routes>
                 </BrowserRouter>
