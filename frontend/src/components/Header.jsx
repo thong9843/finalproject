@@ -55,7 +55,7 @@ const Header = ({ onMenuToggle }) => {
                     dataSource={upcomingEvents}
                     renderItem={item => (
                         <List.Item
-                            className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 px-2 rounded transition-colors"
+                            className="cursor-pointer hover:bg-gray-50 dark:bg-gray-800/50 dark:hover:bg-gray-700 px-2 rounded transition-colors"
                             onClick={() => navigate('/calendar')}
                         >
                             <List.Item.Meta

@@ -211,12 +211,12 @@ const EnterpriseList = () => {
     );
 
     const columns = [
-        { title: 'Tên Doanh nghiệp', dataIndex: 'name', key: 'name', width: 220, render: (text) => <span className="font-semibold text-slate-800">{text}</span> },
+        { title: 'Tên Doanh nghiệp', dataIndex: 'name', key: 'name', width: 220, render: (text) => <span className="font-semibold text-slate-800 dark:text-gray-100">{text}</span> },
         {
             title: 'Đại diện liên hệ', key: 'contact', width: 230,
             render: (_, r) => (
                 <div className="text-xs">
-                    <div className="font-medium text-slate-700">{r.rep_title} {r.rep_full_name} {r.rep_role && `- ${r.rep_role}`}</div>
+                    <div className="font-medium text-slate-700 dark:text-gray-200">{r.rep_title} {r.rep_full_name} {r.rep_role && `- ${r.rep_role}`}</div>
                     <div className="text-gray-500 mt-0.5">{r.rep_phone || 'Chưa có SĐT'}</div>
                     <div className="text-gray-400">{r.rep_email || 'Chưa có Email'}</div>
                 </div>
@@ -270,10 +270,10 @@ const EnterpriseList = () => {
     ];
 
     return (
-        <div className="p-6 bg-slate-50 min-h-screen">
+        <div>
             <div className="flex justify-between items-center mb-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-slate-800 m-0">Quản lý Doanh nghiệp</h1>
+                    <h1 className="text-2xl font-bold text-slate-800 dark:text-gray-100 m-0">Quản lý Doanh nghiệp</h1>
                     <p className="text-sm text-slate-500 m-0">Cập nhật thông tin Doanh nghiệp & Đầu mối liên hệ Đối tác</p>
                 </div>
                 <div className="flex gap-3">
@@ -286,12 +286,12 @@ const EnterpriseList = () => {
             </div>
 
             {/* Search + Filter bar */}
-            <div className="flex gap-3 mb-4 items-center">
+            <div className="flex flex-wrap gap-3 mb-4 items-center">
                 <input
                     placeholder="Tìm kiếm theo tên, mã thuế, đại diện..."
                     value={searchText}
                     onChange={e => setSearchText(e.target.value)}
-                    className="border border-slate-200 rounded-lg px-3 py-2 text-sm w-72 focus:outline-none focus:ring-2 focus:ring-blue-300"
+                    className="border border-slate-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm w-72 max-w-full focus:outline-none focus:ring-2 focus:ring-blue-300"
                 />
                 <Popover content={filterContent} title="Bộ lọc nâng cao" trigger="click" placement="bottomLeft">
                     <Button icon={<FilterOutlined />} size="large" className="rounded-lg text-gray-600">
@@ -301,7 +301,8 @@ const EnterpriseList = () => {
             </div>
 
             <Table columns={columns} dataSource={filteredData} rowKey="id" loading={loading}
-                className="shadow-sm border border-slate-200 bg-white rounded-xl"
+                className="shadow-sm border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-xl overflow-hidden"
+                scroll={{ x: 'max-content' }}
                 pagination={{ pageSize: 12 }} />
 
             <Modal
@@ -364,8 +365,8 @@ const EnterpriseList = () => {
                     </Row>
 
                     {/* Đại diện chính */}
-                    <div className="bg-slate-50 p-4 rounded-xl mb-4 border border-slate-100">
-                        <h4 className="text-slate-700 font-bold mb-3 flex items-center gap-2"><UserOutlined /> Đại diện liên hệ chính</h4>
+                    <div className="bg-slate-50 dark:bg-gray-800/50 p-4 rounded-xl mb-4 border border-slate-100 dark:border-gray-700">
+                        <h4 className="text-slate-700 dark:text-gray-200 font-bold mb-3 flex items-center gap-2"><UserOutlined /> Đại diện liên hệ chính</h4>
                         <Row gutter={16}>
                             <Col span={5}>
                                 <Form.Item name="rep_title" label="Danh xưng">
@@ -428,7 +429,7 @@ const EnterpriseList = () => {
                         </Row>
                     </div>
 
-                    <div className="flex justify-end gap-3 pt-4 mt-2 border-t border-slate-100">
+                    <div className="flex justify-end gap-3 pt-4 mt-2 border-t border-slate-100 dark:border-gray-700">
                         <Button onClick={() => setIsModalVisible(false)} size="large" className="rounded-lg">Hủy</Button>
                         <Button type="primary" htmlType="submit" size="large" className="bg-blue-600 rounded-lg">Lưu vào Hệ thống</Button>
                     </div>
@@ -439,13 +440,13 @@ const EnterpriseList = () => {
                 title={<span className="font-bold flex items-center gap-2"><UnorderedListOutlined /> {selectedEnterprise?.name}</span>}
                 placement="right" width={720}
                 onClose={() => setIsDrawerVisible(false)}
-                open={isDrawerVisible} className="bg-slate-50"
+                open={isDrawerVisible} className="bg-slate-50 dark:bg-gray-800/50"
             >
                 {selectedEnterprise && (
                     <div className="flex flex-col gap-6">
-                        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-                            <h3 className="text-lg font-bold text-slate-800 mb-4 border-b pb-2">Thông tin Chi tiết</h3>
-                            <Descriptions column={2} layout="vertical" size="small" bordered className="bg-white">
+                        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-slate-200 dark:border-gray-700">
+                            <h3 className="text-lg font-bold text-slate-800 dark:text-gray-100 mb-4 border-b pb-2">Thông tin Chi tiết</h3>
+                            <Descriptions column={2} layout="vertical" size="small" bordered className="bg-white dark:bg-gray-800">
                                 <Descriptions.Item label="Mã số thuế"><span className="font-medium">{selectedEnterprise.tax_code || '---'}</span></Descriptions.Item>
                                 <Descriptions.Item label="Quy mô"><Tag color="geekblue">{selectedEnterprise.scale_name || '---'}</Tag></Descriptions.Item>
                                 <Descriptions.Item label="Lĩnh vực" span={2}>
@@ -459,8 +460,8 @@ const EnterpriseList = () => {
                         </div>
 
                         {selectedEnterprise.representatives?.length > 0 && (
-                            <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-                                <h3 className="text-lg font-bold text-slate-800 mb-4 border-b pb-2">Đại diện Liên hệ</h3>
+                            <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-slate-200 dark:border-gray-700">
+                                <h3 className="text-lg font-bold text-slate-800 dark:text-gray-100 mb-4 border-b pb-2">Đại diện Liên hệ</h3>
                                 {selectedEnterprise.representatives.map(rep => (
                                     <div key={rep.id} className="flex items-start gap-3 mb-3 pb-3 border-b border-slate-50 last:border-0">
                                         {rep.is_primary && <Tag color="gold">Chính</Tag>}
@@ -474,29 +475,29 @@ const EnterpriseList = () => {
                         )}
 
                         {selectedEnterprise.addresses?.length > 0 && (
-                            <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-                                <h3 className="text-lg font-bold text-slate-800 mb-4 border-b pb-2">Địa chỉ</h3>
+                            <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-slate-200 dark:border-gray-700">
+                                <h3 className="text-lg font-bold text-slate-800 dark:text-gray-100 mb-4 border-b pb-2">Địa chỉ</h3>
                                 {selectedEnterprise.addresses.map(addr => (
                                     <div key={addr.id} className="mb-4 last:mb-0">
                                         {addr.is_main && <Tag color="blue" className="mb-2">Chính</Tag>}
                                         <Descriptions column={1} size="small" className="ml-1" colon={false}>
-                                            <Descriptions.Item label={<span className="text-gray-500 w-28 inline-block">Đường/Tòa nhà</span>}><span className="font-medium text-slate-700">{addr.building_street || '---'}</span></Descriptions.Item>
-                                            <Descriptions.Item label={<span className="text-gray-500 w-28 inline-block">Quận/Huyện</span>}><span className="font-medium text-slate-700">{addr.district || '---'}</span></Descriptions.Item>
-                                            <Descriptions.Item label={<span className="text-gray-500 w-28 inline-block">Tỉnh/Thành</span>}><span className="font-medium text-slate-700">{addr.province || '---'}</span></Descriptions.Item>
-                                            <Descriptions.Item label={<span className="text-gray-500 w-28 inline-block">Quốc gia</span>}><span className="font-medium text-slate-700">{addr.country || '---'}</span></Descriptions.Item>
+                                            <Descriptions.Item label={<span className="text-gray-500 w-28 inline-block">Đường/Tòa nhà</span>}><span className="font-medium text-slate-700 dark:text-gray-200">{addr.building_street || '---'}</span></Descriptions.Item>
+                                            <Descriptions.Item label={<span className="text-gray-500 w-28 inline-block">Quận/Huyện</span>}><span className="font-medium text-slate-700 dark:text-gray-200">{addr.district || '---'}</span></Descriptions.Item>
+                                            <Descriptions.Item label={<span className="text-gray-500 w-28 inline-block">Tỉnh/Thành</span>}><span className="font-medium text-slate-700 dark:text-gray-200">{addr.province || '---'}</span></Descriptions.Item>
+                                            <Descriptions.Item label={<span className="text-gray-500 w-28 inline-block">Quốc gia</span>}><span className="font-medium text-slate-700 dark:text-gray-200">{addr.country || '---'}</span></Descriptions.Item>
                                         </Descriptions>
                                     </div>
                                 ))}
                             </div>
                         )}
 
-                        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-                            <h3 className="text-lg font-bold text-slate-800 mb-4 border-b pb-2">Timeline Hoạt động</h3>
+                        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-slate-200 dark:border-gray-700">
+                            <h3 className="text-lg font-bold text-slate-800 dark:text-gray-100 mb-4 border-b pb-2">Timeline Hoạt động</h3>
                             {selectedEnterprise.activities?.length > 0 ? (
                                 <Timeline>
                                     {selectedEnterprise.activities.map(act => (
                                         <Timeline.Item key={act.id} color={act.status === 'Đã triển khai' ? 'green' : 'blue'}>
-                                            <p className="font-semibold text-slate-700 m-0">{act.title}</p>
+                                            <p className="font-semibold text-slate-700 dark:text-gray-200 m-0">{act.title}</p>
                                             <p className="text-slate-500 text-sm m-0 mt-1">
                                                 {act.start_date && dayjs(act.start_date).format('DD/MM/YYYY')}
                                                 {act.type_names && <> • <Tag color="cyan" className="ml-1">{act.type_names}</Tag></>}

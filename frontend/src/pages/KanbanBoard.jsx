@@ -9,21 +9,21 @@ const { Option } = Select;
 const { TextArea } = Input;
 
 const ENTERPRISE_STATUSES = [
-  { name: 'Tiềm năng', color: 'bg-blue-500', hex: '#3b82f6', tagConfig: { bg: 'bg-blue-50', text: 'text-blue-600', border: 'border-blue-100' } },
-  { name: 'Liên hệ', color: 'bg-cyan-500', hex: '#06b6d4', tagConfig: { bg: 'bg-cyan-50', text: 'text-cyan-600', border: 'border-cyan-100' } },
-  { name: 'Đàm phán', color: 'bg-purple-500', hex: '#a855f7', tagConfig: { bg: 'bg-purple-50', text: 'text-purple-600', border: 'border-purple-100' } },
-  { name: 'Đề xuất', color: 'bg-orange-500', hex: '#f97316', tagConfig: { bg: 'bg-orange-50', text: 'text-orange-600', border: 'border-orange-100' } },
-  { name: 'Đã ký hợp tác', color: 'bg-green-500', hex: '#22c55e', tagConfig: { bg: 'bg-green-50', text: 'text-green-600', border: 'border-green-100' } },
-  { name: 'Đang triển khai', color: 'bg-teal-500', hex: '#14b8a6', tagConfig: { bg: 'bg-teal-50', text: 'text-teal-600', border: 'border-teal-100' } },
-  { name: 'Đã hoàn thành', color: 'bg-indigo-500', hex: '#6366f1', tagConfig: { bg: 'bg-indigo-50', text: 'text-indigo-600', border: 'border-indigo-100' } },
-  { name: 'Đã tạm ngưng', color: 'bg-red-500', hex: '#ef4444', tagConfig: { bg: 'bg-red-50', text: 'text-red-600', border: 'border-red-100' } },
+  { name: 'Tiềm năng', color: 'bg-blue-500', hex: '#3b82f6', tagConfig: { bg: 'bg-blue-50 dark:bg-blue-500/10', text: 'text-blue-600 dark:text-blue-400', border: 'border-blue-100 dark:border-blue-500/20' } },
+  { name: 'Liên hệ', color: 'bg-cyan-500', hex: '#06b6d4', tagConfig: { bg: 'bg-cyan-50 dark:bg-cyan-500/10', text: 'text-cyan-600 dark:text-cyan-400', border: 'border-cyan-100 dark:border-cyan-500/20' } },
+  { name: 'Đàm phán', color: 'bg-purple-500', hex: '#a855f7', tagConfig: { bg: 'bg-purple-50 dark:bg-purple-500/10', text: 'text-purple-600 dark:text-purple-400', border: 'border-purple-100 dark:border-purple-500/20' } },
+  { name: 'Đề xuất', color: 'bg-orange-500', hex: '#f97316', tagConfig: { bg: 'bg-orange-50 dark:bg-orange-500/10', text: 'text-orange-600 dark:text-orange-400', border: 'border-orange-100 dark:border-orange-500/20' } },
+  { name: 'Đã ký hợp tác', color: 'bg-green-500', hex: '#22c55e', tagConfig: { bg: 'bg-green-50 dark:bg-green-500/10', text: 'text-green-600 dark:text-green-400', border: 'border-green-100 dark:border-green-500/20' } },
+  { name: 'Đang triển khai', color: 'bg-teal-500', hex: '#14b8a6', tagConfig: { bg: 'bg-teal-50 dark:bg-teal-500/10', text: 'text-teal-600 dark:text-teal-400', border: 'border-teal-100 dark:border-teal-500/20' } },
+  { name: 'Đã hoàn thành', color: 'bg-indigo-500', hex: '#6366f1', tagConfig: { bg: 'bg-indigo-50 dark:bg-indigo-500/10', text: 'text-indigo-600 dark:text-indigo-400', border: 'border-indigo-100 dark:border-indigo-500/20' } },
+  { name: 'Đã tạm ngưng', color: 'bg-red-500', hex: '#ef4444', tagConfig: { bg: 'bg-red-50 dark:bg-red-500/10', text: 'text-red-600 dark:text-red-400', border: 'border-red-100 dark:border-red-500/20' } },
 ];
 
 const ACTIVITY_STATUSES = [
-  { name: 'Đề xuất', color: 'bg-orange-500', hex: '#f97316', tagConfig: { bg: 'bg-orange-50', text: 'text-orange-600', border: 'border-orange-100' } },
-  { name: 'Phê duyệt nội bộ', color: 'bg-purple-500', hex: '#a855f7', tagConfig: { bg: 'bg-purple-50', text: 'text-purple-600', border: 'border-purple-100' } },
-  { name: 'Đã triển khai', color: 'bg-blue-500', hex: '#3b82f6', tagConfig: { bg: 'bg-blue-50', text: 'text-blue-600', border: 'border-blue-100' } },
-  { name: 'Đã kết thúc', color: 'bg-green-500', hex: '#22c55e', tagConfig: { bg: 'bg-green-50', text: 'text-green-600', border: 'border-green-100' } },
+  { name: 'Đề xuất', color: 'bg-orange-500', hex: '#f97316', tagConfig: { bg: 'bg-orange-50 dark:bg-orange-500/10', text: 'text-orange-600 dark:text-orange-400', border: 'border-orange-100 dark:border-orange-500/20' } },
+  { name: 'Phê duyệt nội bộ', color: 'bg-purple-500', hex: '#a855f7', tagConfig: { bg: 'bg-purple-50 dark:bg-purple-500/10', text: 'text-purple-600 dark:text-purple-400', border: 'border-purple-100 dark:border-purple-500/20' } },
+  { name: 'Đã triển khai', color: 'bg-blue-500', hex: '#3b82f6', tagConfig: { bg: 'bg-blue-50 dark:bg-blue-500/10', text: 'text-blue-600 dark:text-blue-400', border: 'border-blue-100 dark:border-blue-500/20' } },
+  { name: 'Đã kết thúc', color: 'bg-green-500', hex: '#22c55e', tagConfig: { bg: 'bg-green-50 dark:bg-green-500/10', text: 'text-green-600 dark:text-green-400', border: 'border-green-100 dark:border-green-500/20' } },
 ];
 
 const KanbanBoard = () => {
@@ -264,11 +264,11 @@ const KanbanBoard = () => {
   const currentConfig = view === 'ENTERPRISE' ? ENTERPRISE_STATUSES : ACTIVITY_STATUSES;
 
   return (
-    <div className="flex flex-col h-[calc(100vh-8rem)] w-full min-w-0 bg-slate-50 border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+    <div className="flex flex-col h-[calc(100vh-8rem)] w-full min-w-0 bg-slate-50 dark:bg-gray-800/50 border border-slate-200 dark:border-gray-700 rounded-xl overflow-hidden shadow-sm">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center px-6 py-5 bg-white border-b border-slate-200 gap-4 shrink-0">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center px-6 py-5 bg-white dark:bg-gray-800 border-b border-slate-200 dark:border-gray-700 gap-4 shrink-0">
         <div>
-          <Title level={4} className="!m-0 text-slate-800 font-bold">
+          <Title level={4} className="!m-0 text-slate-800 dark:text-gray-100 font-bold">
             {view === 'ENTERPRISE' ? 'Bảng Kanban Doanh Nghiệp' : 'Bảng Kanban Hoạt Động'}
           </Title>
           <Text type="secondary" className="text-sm">Quản lý và cập nhật tiến độ công việc một cách trực quan</Text>
@@ -297,7 +297,7 @@ const KanbanBoard = () => {
       </div>
 
       {/* Board Columns container */}
-      <div ref={boardRef} className="flex-1 overflow-x-auto overflow-y-hidden w-full min-h-0 bg-slate-50/50 p-6 will-change-scroll custom-scroller">
+      <div ref={boardRef} className="flex-1 overflow-x-auto overflow-y-hidden w-full min-h-0 bg-slate-50 dark:bg-gray-800/50 p-6 will-change-scroll custom-scroller">
         {loading ? (
           <div className="w-full h-full flex justify-center items-center"><Spin size="large" /></div>
         ) : (
@@ -310,7 +310,7 @@ const KanbanBoard = () => {
               return (
                 <div 
                   key={status} 
-                  className={`bg-slate-100/70 rounded-2xl w-[320px] flex flex-col h-full border border-slate-200/60 shadow-sm transition-all duration-200 ${isDragOver ? 'ring-2 ring-blue-400 bg-blue-50/50 scale-[1.02]' : ''}`}
+                  className={`bg-slate-100/70 rounded-2xl w-[320px] flex flex-col h-full border border-slate-200 dark:border-gray-700/60 shadow-sm transition-all duration-200 ${isDragOver ? 'ring-2 ring-blue-400 bg-blue-50/50 scale-[1.02]' : ''}`}
                   onDragOver={(e) => onDragOver(e, status)}
                   onDragLeave={onDragLeave}
                   onDrop={(e) => onDrop(e, status)}
@@ -320,9 +320,9 @@ const KanbanBoard = () => {
                     <div className="flex justify-between items-center">
                       <div className="flex items-center gap-2">
                         <div className={`w-3 h-3 rounded-full ${colConfig.color} shadow-sm`}></div>
-                        <h3 className="font-bold text-slate-700 text-sm">{status}</h3>
+                        <h3 className="font-bold text-slate-700 dark:text-gray-200 text-sm">{status}</h3>
                       </div>
-                      <span className="bg-white text-slate-500 font-semibold text-xs px-2.5 py-1 rounded-full shadow-sm border border-slate-200">
+                      <span className="bg-white dark:bg-gray-800 text-slate-500 font-semibold text-xs px-2.5 py-1 rounded-full shadow-sm border border-slate-200 dark:border-gray-700">
                         {columnItems.length}
                       </span>
                     </div>
@@ -373,7 +373,7 @@ const KanbanBoard = () => {
                           trigger={['contextMenu']} 
                         >
                           <div
-                            className={`group bg-white rounded-xl p-4 border border-slate-200 shadow-sm hover:shadow hover:border-blue-300 transition-all cursor-grab active:cursor-grabbing ${isDragged ? 'opacity-40 rotate-2 scale-95 ring-2 ring-blue-400 border-none' : ''}`}
+                            className={`group bg-white dark:bg-gray-800 rounded-xl p-4 border border-slate-200 dark:border-gray-700 shadow-sm hover:shadow hover:border-blue-300 transition-all cursor-grab active:cursor-grabbing ${isDragged ? 'opacity-40 rotate-2 scale-95 ring-2 ring-blue-400 border-none' : ''}`}
                             draggable
                             onDragStart={(e) => onDragStart(e, item)}
                             onDragEnd={onDragEnd}
@@ -385,7 +385,7 @@ const KanbanBoard = () => {
                               </div>
 
                               <Tooltip title={itemName}>
-                                <div className="font-semibold text-slate-800 text-sm line-clamp-2 leading-snug w-[90%]">
+                                <div className="font-semibold text-slate-800 dark:text-gray-100 text-sm line-clamp-2 leading-snug w-[90%]">
                                   {itemName}
                                 </div>
                               </Tooltip>
@@ -401,7 +401,7 @@ const KanbanBoard = () => {
                                       <ProjectOutlined className="mr-1.5" /> {itemIndustry || 'Chưa phân loại'}
                                     </span>
                                     {item.start_date && (
-                                      <span className="text-xs px-2 py-1 bg-slate-50 text-slate-600 rounded-md font-medium border border-slate-200 flex items-center">
+                                      <span className="text-xs px-2 py-1 bg-slate-50 dark:bg-gray-800/50 text-slate-600 rounded-md font-medium border border-slate-200 dark:border-gray-700 flex items-center">
                                         <CalendarOutlined className="mr-1.5" /> {dayjs(item.start_date).format('DD/MM/YYYY')}
                                       </span>
                                     )}
@@ -409,7 +409,7 @@ const KanbanBoard = () => {
                                 )}
                               </div>
                               
-                              <div className="pt-3 mt-1 border-t border-slate-100 flex justify-between items-center">
+                              <div className="pt-3 mt-1 border-t border-slate-100 dark:border-gray-700 flex justify-between items-center">
                                 <div className="text-xs text-slate-400 font-medium flex items-center">
                                   <PushpinOutlined className="mr-1" /> ID: {item.id}
                                 </div>
@@ -435,7 +435,7 @@ const KanbanBoard = () => {
                     })}
                     
                     {columnItems.length === 0 && (
-                      <div className={`h-28 flex flex-col items-center justify-center text-sm rounded-xl border-2 border-dashed transition-colors ${isDragOver ? 'border-blue-400 text-blue-600 bg-blue-50/50' : 'border-slate-200 text-slate-400'}`}>
+                      <div className={`h-28 flex flex-col items-center justify-center text-sm rounded-xl border-2 border-dashed transition-colors ${isDragOver ? 'border-blue-400 text-blue-600 bg-blue-50/50' : 'border-slate-200 dark:border-gray-700 text-slate-400'}`}>
                         <div className={`p-2 rounded-full mb-2 ${isDragOver ? 'bg-blue-100' : 'bg-slate-100'}`}>
                           <PlusOutlined className={isDragOver ? 'text-blue-500' : 'text-slate-400'} />
                         </div>
@@ -543,7 +543,7 @@ const KanbanBoard = () => {
             </>
           )}
 
-          <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-slate-100">
+          <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-slate-100 dark:border-gray-700">
             <Button size="large" onClick={() => { setIsModalOpen(false); setEditingId(null); }} className="rounded-lg font-medium">Hủy</Button>
             <Button size="large" type="primary" htmlType="submit" loading={submitting} className="bg-blue-600 hover:bg-blue-500 rounded-lg shadow-sm font-medium border-none">
               {editingId ? 'Cập Nhật Tùy Chọn' : 'Lưu Thành Công'}

@@ -184,17 +184,17 @@ const ReportStudents = () => {
     };
 
     return (
-        <div className="p-6 bg-white min-h-screen">
+        <div>
             <div className="flex justify-between items-center mb-6">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-800">Sinh viên thực tập theo công ty</h1>
+                    <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100">Sinh viên thực tập theo công ty</h1>
                     <p className="text-gray-400 text-sm">Biểu đồ thống kê phân bổ sinh viên tại các doanh nghiệp liên kết</p>
                 </div>
                 <Button icon={<DownloadOutlined />} onClick={handleExport} type="primary" className="bg-vluRed h-10 px-5 rounded-lg">Xuất Báo Cáo</Button>
             </div>
 
             {/* Period Selector */}
-            <div className="bg-gradient-to-r from-slate-50 to-gray-50 rounded-2xl p-4 mb-6 border border-gray-100 flex flex-wrap items-center gap-4">
+            <div className="bg-gradient-to-r from-slate-50 to-gray-50 rounded-2xl p-4 mb-6 border border-gray-100 dark:border-gray-700 flex flex-wrap items-center gap-4">
                 <div className="flex items-center gap-2 text-gray-500">
                     <CalendarOutlined className="text-lg" />
                     <span className="text-sm font-medium">Khoảng thời gian:</span>
@@ -206,7 +206,7 @@ const ReportStudents = () => {
                         setPeriod(val);
                         if (val !== 'custom') setCustomRange(null);
                     }}
-                    className="bg-white shadow-sm"
+                    className="bg-white dark:bg-gray-800 shadow-sm"
                 />
                 {period === 'custom' && (
                     <RangePicker

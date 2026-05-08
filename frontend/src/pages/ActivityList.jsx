@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Card, Row, Col, Tag, Form, Select, Button, Modal, message, Input, DatePicker, Statistic, Spin, Empty, Tooltip, Drawer, Descriptions, Popover, Badge, Divider } from 'antd';
+import { Card, Row, Col, Tag, Form, Select, Button, Modal, message, Input, DatePicker, Statistic, Spin, Empty, Tooltip, Drawer, Descriptions, Popover, Badge, Divider, Pagination } from 'antd';
 import { PlusOutlined, CheckCircleOutlined, ClockCircleOutlined, SyncOutlined, CheckOutlined, PauseCircleOutlined, TeamOutlined, BankOutlined, CalendarOutlined, UploadOutlined, SearchOutlined, EditOutlined, DeleteOutlined, UserOutlined, AppstoreOutlined, UnorderedListOutlined, DownloadOutlined, FilterOutlined, SortAscendingOutlined, ClearOutlined } from '@ant-design/icons';
 import ImportModal from '../components/ImportModal';
 import api from '../utils/api';
@@ -28,6 +28,12 @@ const ActivityList = () => {
     const [selectedActivity, setSelectedActivity] = useState(null);
     const [sortOption, setSortOption] = useState(null);
     const [dateRange, setDateRange] = useState(null);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pageSize, setPageSize] = useState(12);
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchText, filterType, filterStatus, filterEnterprise, dateRange, sortOption]);
 
     useEffect(() => {
         fetchData();
@@ -191,6 +197,8 @@ const ActivityList = () => {
         }
     });
 
+    const paginatedData = filteredData.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
     const activeCount = filteredData.filter(item => item.status === 'Đã triển khai').length;
     const completedCount = filteredData.filter(item => item.status === 'Đã kết thúc').length;
     const pendingCount = filteredData.filter(item => item.status === 'Đề xuất' || item.status === 'Phê duyệt nội bộ').length;
@@ -223,9 +231,9 @@ const ActivityList = () => {
     return (
         <div>
             {/* Header */}
-            <div className="flex justify-between items-center mb-6">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-800 transition-colors">Hoạt động hợp tác</h1>
+                    <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100 transition-colors">Hoạt động hợp tác</h1>
                     <p className="text-gray-400 text-sm">{data.length} hoạt động · {stats?.active || 0} đang diễn ra</p>
                 </div>
                 <div className="flex gap-3">
@@ -318,7 +326,7 @@ const ActivityList = () => {
             </div>
 
             {/* Search + Filters */}
-            <div className="bg-white rounded-xl p-4 mb-6 shadow-sm border border-gray-100 flex flex-wrap items-center gap-3 transition-colors">
+            <div className="bg-white dark:bg-gray-800 rounded-xl p-4 mb-6 shadow-sm border border-gray-100 dark:border-gray-700 flex flex-wrap items-center gap-3 transition-colors">
                 <Input
                     placeholder="Tìm kiếm hoạt động, doanh nghiệp..."
                     prefix={<SearchOutlined className="text-gray-300" />}
@@ -385,11 +393,11 @@ const ActivityList = () => {
                     </Button>
                 </Popover>
 
-                <div className="flex border border-gray-200 rounded-lg overflow-hidden transition-colors h-10">
-                    <button onClick={() => setViewMode('grid')} className={`p-2 px-3 transition-colors ${viewMode === 'grid' ? 'bg-white text-gray-800' : 'text-gray-400 hover:text-gray-600'}`}>
+                <div className="flex border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden transition-colors h-10">
+                    <button onClick={() => setViewMode('grid')} className={`p-2 px-3 transition-colors ${viewMode === 'grid' ? 'bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100' : 'text-gray-400 hover:text-gray-600'}`}>
                         <AppstoreOutlined />
                     </button>
-                    <button onClick={() => setViewMode('list')} className={`p-2 px-3 transition-colors ${viewMode === 'list' ? 'bg-white text-gray-800' : 'text-gray-400 hover:text-gray-600'}`}>
+                    <button onClick={() => setViewMode('list')} className={`p-2 px-3 transition-colors ${viewMode === 'list' ? 'bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100' : 'text-gray-400 hover:text-gray-600'}`}>
                         <UnorderedListOutlined />
                     </button>
                 </div>
@@ -400,14 +408,14 @@ const ActivityList = () => {
                 <div className="flex justify-center py-20"><Spin size="large" /></div>
             ) : filteredData.length > 0 ? (
                 <Row gutter={[20, 20]}>
-                    {filteredData.map(item => {
+                    {paginatedData.map(item => {
                         const sc = statusConfig[item.status] || { color: '#8c8c8c', bg: '#fafafa', icon: <ClockCircleOutlined /> };
                         const tc = typeConfig[item.type] || typeConfig['Khác'];
                         const tags = item.type ? item.type.split(' ').slice(0, 2) : [];
 
                         return (
                             <Col xs={24} sm={viewMode === 'list' ? 24 : 12} lg={viewMode === 'list' ? 24 : 8} key={item.id}>
-                                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all h-full flex flex-col overflow-hidden group cursor-pointer"
+                                <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md transition-all h-full flex flex-col overflow-hidden group cursor-pointer"
                                     onClick={(e) => {
                                         if (e.target.closest('.action-buttons')) return;
                                         setSelectedActivity(item);
@@ -423,7 +431,7 @@ const ActivityList = () => {
                                                     {typeIcons[item.type] || '📋'}
                                                 </div>
                                                 <div className="flex-1 min-w-0">
-                                                    <h3 className="font-bold text-gray-800 text-[15px] leading-snug line-clamp-2 mb-1 transition-colors">
+                                                    <h3 className="font-bold text-gray-800 dark:text-gray-100 text-[15px] leading-snug line-clamp-2 mb-1 transition-colors">
                                                         {item.title}
                                                     </h3>
                                                     <div className="flex items-center gap-1.5 text-gray-400 text-xs transition-colors">
@@ -470,7 +478,7 @@ const ActivityList = () => {
                                     </div>
 
                                     {/* Card Footer */}
-                                    <div className="px-5 py-3 border-t border-gray-50 flex items-center justify-between bg-white/50 transition-colors action-buttons">
+                                    <div className="px-5 py-3 border-t border-gray-50 flex items-center justify-between bg-white dark:bg-gray-800/50 transition-colors action-buttons">
                                         <Select
                                             size="small"
                                             value={item.status}
@@ -516,6 +524,22 @@ const ActivityList = () => {
                 </Row>
             ) : (
                 <Empty description="Không tìm thấy hoạt động nào" className="mt-20" />
+            )}
+
+            {filteredData.length > 0 && (
+                <div className="flex justify-center mt-8 pb-4">
+                    <Pagination
+                        current={currentPage}
+                        pageSize={pageSize}
+                        total={filteredData.length}
+                        onChange={(page, size) => {
+                            setCurrentPage(page);
+                            setPageSize(size);
+                        }}
+                        showSizeChanger
+                        pageSizeOptions={['12', '24', '48', '96']}
+                    />
+                </div>
             )}
 
             {/* Modal Form */}
@@ -606,23 +630,23 @@ const ActivityList = () => {
                 title={<span className="font-bold flex items-center gap-2"><UnorderedListOutlined /> Chi tiết Hoạt động</span>}
                 placement="right" width={600}
                 onClose={() => setIsDrawerVisible(false)}
-                open={isDrawerVisible} className="bg-slate-50"
+                open={isDrawerVisible} className="bg-slate-50 dark:bg-gray-800/50"
             >
                 {selectedActivity && (
                     <div className="flex flex-col gap-6">
-                        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-slate-200 dark:border-gray-700">
                             <div className="flex justify-between items-start mb-4">
-                                <h2 className="text-xl font-bold text-slate-800 m-0 leading-tight">{selectedActivity.title}</h2>
+                                <h2 className="text-xl font-bold text-slate-800 dark:text-gray-100 m-0 leading-tight">{selectedActivity.title}</h2>
                                 <Tag color={statusConfig[selectedActivity.status]?.color} className="m-0 flex-shrink-0">
                                     {selectedActivity.status}
                                 </Tag>
                             </div>
                             <div className="flex items-center gap-2 text-gray-500 mb-6">
                                 <BankOutlined className="text-blue-500" />
-                                <span className="font-medium text-slate-700">{selectedActivity.enterprise_name}</span>
+                                <span className="font-medium text-slate-700 dark:text-gray-200">{selectedActivity.enterprise_name}</span>
                             </div>
 
-                            <Descriptions column={1} layout="horizontal" size="small" bordered className="bg-white">
+                            <Descriptions column={1} layout="horizontal" size="small" bordered className="bg-white dark:bg-gray-800">
                                 <Descriptions.Item label="Loại hình">
                                     {selectedActivity.type_names ? selectedActivity.type_names.split(', ').map(t => <Tag key={t} color="blue">{t}</Tag>) : '---'}
                                 </Descriptions.Item>
@@ -636,18 +660,18 @@ const ActivityList = () => {
                         </div>
 
                         {selectedActivity.detail && (
-                            <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-                                <h3 className="text-lg font-bold text-slate-800 mb-3 border-b pb-2">Mô tả nội dung</h3>
+                            <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-slate-200 dark:border-gray-700">
+                                <h3 className="text-lg font-bold text-slate-800 dark:text-gray-100 mb-3 border-b pb-2">Mô tả nội dung</h3>
                                 <div className="text-slate-600 whitespace-pre-wrap">{selectedActivity.detail}</div>
                             </div>
                         )}
 
-                        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-                            <h3 className="text-lg font-bold text-slate-800 mb-3 border-b pb-2">Thống kê</h3>
+                        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-slate-200 dark:border-gray-700">
+                            <h3 className="text-lg font-bold text-slate-800 dark:text-gray-100 mb-3 border-b pb-2">Thống kê</h3>
                             <div className="flex items-center gap-3">
                                 <TeamOutlined className="text-2xl text-purple-500" />
                                 <div>
-                                    <div className="text-2xl font-bold text-slate-800">{selectedActivity.student_count || 0}</div>
+                                    <div className="text-2xl font-bold text-slate-800 dark:text-gray-100">{selectedActivity.student_count || 0}</div>
                                     <div className="text-sm text-gray-500">Sinh viên tham gia</div>
                                 </div>
                             </div>

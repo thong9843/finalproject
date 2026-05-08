@@ -116,11 +116,11 @@ const ActivityTypes = () => {
     ];
 
     return (
-        <div className="p-6 h-full bg-slate-50 min-h-screen">
-            <div className="bg-white rounded-xl shadow-sm border border-slate-200">
-                <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-white rounded-t-xl">
+        <div>
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-slate-200 dark:border-gray-700">
+                <div className="p-5 border-b border-slate-100 dark:border-gray-700 flex justify-between items-center bg-white dark:bg-gray-800 rounded-t-xl">
                     <div>
-                        <h2 className="text-xl font-bold m-0 text-slate-800">Quản lý Loại Hình Hoạt Động</h2>
+                        <h2 className="text-xl font-bold m-0 text-slate-800 dark:text-gray-100">Quản lý Loại Hình Hoạt Động</h2>
                         <p className="text-sm text-slate-500 m-0">Định nghĩa danh mục Loại hình hợp tác đặc thù theo từng Khoa</p>
                     </div>
                     <Button 
@@ -138,6 +138,7 @@ const ActivityTypes = () => {
                         dataSource={data} 
                         loading={loading} 
                         rowKey="id" 
+                        scroll={{ x: 'max-content' }}
                         pagination={false}
                         className="m-0 border-none"
                     />
@@ -161,7 +162,7 @@ const ActivityTypes = () => {
                             {faculties.map(f => <Option key={f.id} value={f.id}>{f.name}</Option>)}
                         </Select>
                     </Form.Item>
-                    <div className="flex justify-end gap-3 pt-4 border-t border-slate-100 mt-6">
+                    <div className="flex justify-end gap-3 pt-4 border-t border-slate-100 dark:border-gray-700 mt-6">
                         <Button onClick={() => setIsModalOpen(false)} size="large" className="rounded-lg">Hủy</Button>
                         <Button type="primary" htmlType="submit" size="large" className="bg-blue-600 rounded-lg">
                             {editingId ? "Cập nhật" : "Lưu"}

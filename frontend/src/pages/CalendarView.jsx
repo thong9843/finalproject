@@ -76,7 +76,7 @@ const CalendarView = () => {
         return (
             <ul className="m-0 p-0 list-none">
                 {listData.map((item) => (
-                    <li key={item.id} onClick={(e) => { e.stopPropagation(); openEditModal(item.activity); }} className="cursor-pointer truncate text-xs mb-1 hover:bg-gray-100:bg-gray-700 p-1 rounded transition-colors text-slate-800">
+                    <li key={item.id} onClick={(e) => { e.stopPropagation(); openEditModal(item.activity); }} className="cursor-pointer truncate text-xs mb-1 hover:bg-gray-100:bg-gray-700 p-1 rounded transition-colors text-slate-800 dark:text-gray-100">
                         <Badge status={item.type} text={<span className="">{item.content}</span>} />
                     </li>
                 ))}
@@ -212,7 +212,7 @@ const CalendarView = () => {
     };
 
     return (
-        <div className="p-6 bg-white min-h-[calc(100vh-4rem)]">
+        <div>
             <div className="flex justify-between items-center mb-6">
                 <Title level={3} className="!m-0">Lịch sự kiện</Title>
                 <div className="flex gap-3">
@@ -225,7 +225,7 @@ const CalendarView = () => {
                 </div>
             </div>
             <Spin spinning={loading}>
-                <div className="border border-slate-200 bg-white rounded-lg p-4 shadow-sm">
+                <div className="border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm">
                     <Calendar 
                         cellRender={cellRender} 
                         value={selectedDate}

@@ -25,7 +25,7 @@ const Login = () => {
     };
 
     return (
-        <div className="min-h-screen bg-white flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+        <div className="min-h-screen bg-white dark:bg-gray-800 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
             <Card className="w-full max-w-md shadow-lg rounded-xl">
                 <div className="flex flex-col items-center mb-8">
                     <img 
@@ -33,7 +33,7 @@ const Login = () => {
                         alt="VLU Logo" 
                         className="h-20 mb-4 object-contain"
                     />
-                    <h2 className="text-2xl font-bold text-gray-800">Enterprise Link Manager</h2>
+                    <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100">Enterprise Link Manager</h2>
                 </div>
 
                 <Form name="login" onFinish={onFinish} size="large">

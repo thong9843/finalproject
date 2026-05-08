@@ -237,7 +237,7 @@ const StudentList = () => {
             dataIndex: 'student_code', 
             key: 'student_code', 
             width: 100,
-            render: (text) => <span className="font-semibold text-gray-700">{text}</span>
+            render: (text) => <span className="font-semibold text-gray-700 dark:text-gray-200">{text}</span>
         },
         { 
             title: 'Họ tên', 
@@ -245,7 +245,7 @@ const StudentList = () => {
             width: 200,
             render: (_, record) => (
                 <div>
-                    <div className="font-semibold text-gray-800">{record.name}</div>
+                    <div className="font-semibold text-gray-800 dark:text-gray-100">{record.name}</div>
                     <div className="text-xs text-gray-400">{record.email}</div>
                 </div>
             )
@@ -303,11 +303,11 @@ const StudentList = () => {
     ];
 
     return (
-        <div className="p-6 bg-white min-h-screen">
+        <div>
             {/* Header */}
             <div className="flex justify-between items-center mb-6">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-800">Quản lý sinh viên</h1>
+                    <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100">Quản lý sinh viên</h1>
                     <p className="text-gray-400 text-sm">{data.length} sinh viên · {stats?.active || 0} đang thực tập</p>
                 </div>
                 <div className="flex gap-3">
@@ -364,25 +364,25 @@ const StudentList = () => {
 
             {/* Filter Tabs + Search + Filter Popover */}
             <div className="flex justify-between items-center mb-4">
-                <div className="flex gap-1 bg-white rounded-lg p-1 border border-transparent">
+                <div className="flex gap-1 bg-white dark:bg-gray-800 rounded-lg p-1 border border-transparent">
                     {tabs.map(tab => (
                         <button
                             key={tab.key}
                             onClick={() => setActiveTab(tab.key)}
                             className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all
                                 ${activeTab === tab.key 
-                                    ? 'bg-white shadow-sm text-vluRed' 
-                                    : 'text-gray-500 hover:text-gray-800:text-gray-200'}`}
+                                    ? 'bg-white dark:bg-gray-800 shadow-sm text-vluRed' 
+                                    : 'text-gray-500 hover:text-gray-800 dark:text-gray-100:text-gray-200'}`}
                         >
                             {tab.label}
                         </button>
                     ))}
                 </div>
-                <div className="flex gap-2 items-center">
+                <div className="flex flex-wrap gap-2 items-center mt-2 sm:mt-0 w-full sm:w-auto">
                     <Input 
                         placeholder="Tìm kiếm sinh viên..." 
                         prefix={<SearchOutlined className="text-gray-300" />}
-                        className="w-64 rounded-lg"
+                        className="w-full sm:w-64 rounded-lg"
                         value={searchText}
                         onChange={e => setSearchText(e.target.value)}
                         allowClear
@@ -396,12 +396,13 @@ const StudentList = () => {
             </div>
 
             {/* Table */}
-            <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
                 <Table 
                     columns={columns} 
                     dataSource={filteredData} 
                     rowKey="id" 
                     loading={loading}
+                    scroll={{ x: 'max-content' }}
                     pagination={{ pageSize: 10, showSizeChanger: false }}
                     className="student-table"
                     size="middle"

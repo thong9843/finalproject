@@ -200,7 +200,7 @@ const MOUList = () => {
             key: 'enterprise_name',
             width: 220,
             ellipsis: true,
-            render: (text) => <span className="font-semibold text-slate-800">{text}</span>
+            render: (text) => <span className="font-semibold text-slate-800 dark:text-gray-100">{text}</span>
         },
         {
             title: 'Ngày ký',
@@ -284,7 +284,7 @@ const MOUList = () => {
                     {fields.map(f => result[f.key] ? (
                         <div key={f.key} className="text-sm">
                             <span className="text-slate-500 font-medium">{f.label}: </span>
-                            <span className="text-slate-800">{result[f.key]}</span>
+                            <span className="text-slate-800 dark:text-gray-100">{result[f.key]}</span>
                         </div>
                     ) : null)}
                 </div>
@@ -293,12 +293,12 @@ const MOUList = () => {
     };
 
     return (
-        <div className="p-6 h-full bg-slate-50 min-h-screen">
-            <div className="bg-white rounded-xl shadow-sm border border-slate-200">
+        <div>
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-slate-200 dark:border-gray-700">
                 {/* Header */}
-                <div className="p-5 border-b border-slate-100 flex flex-col sm:flex-row justify-between items-start sm:items-center bg-white rounded-t-xl gap-4">
+                <div className="p-5 border-b border-slate-100 dark:border-gray-700 flex flex-col sm:flex-row justify-between items-start sm:items-center bg-white dark:bg-gray-800 rounded-t-xl gap-4">
                     <div>
-                        <h2 className="text-xl font-bold m-0 text-slate-800">Quản lý Biên Bản Ghi Nhớ (MOU)</h2>
+                        <h2 className="text-xl font-bold m-0 text-slate-800 dark:text-gray-100">Quản lý Biên Bản Ghi Nhớ (MOU)</h2>
                         <p className="text-sm text-slate-500 m-0">Danh sách thống kê các MOU đã ký với Đối tác/Doanh nghiệp</p>
                     </div>
                     <div className="flex gap-2 w-full sm:w-auto flex-wrap">
@@ -433,7 +433,7 @@ const MOUList = () => {
                             </Form.Item>
                         </Col>
                     </Row>
-                    <div className="flex justify-end gap-3 pt-4 border-t border-slate-100 mt-4">
+                    <div className="flex justify-end gap-3 pt-4 border-t border-slate-100 dark:border-gray-700 mt-4">
                         <Button onClick={() => setIsModalOpen(false)} size="large" className="rounded-lg">Hủy</Button>
                         <Button type="primary" htmlType="submit" size="large" className="bg-blue-600 rounded-lg">
                             {editingId ? "Cập nhật" : "Lưu Biên bản"}
@@ -447,7 +447,7 @@ const MOUList = () => {
                 title={
                     <div className="flex items-center gap-2">
                         <RobotOutlined className="text-purple-600 text-xl" />
-                        <span className="text-lg font-bold text-slate-800">Scan Tài Liệu MOU bằng Gemini AI</span>
+                        <span className="text-lg font-bold text-slate-800 dark:text-gray-100">Scan Tài Liệu MOU bằng Gemini AI</span>
                     </div>
                 }
                 open={isScanModalOpen}
@@ -482,16 +482,16 @@ const MOUList = () => {
                         <p className="ant-upload-drag-icon">
                             <InboxOutlined className="text-purple-400 text-4xl" />
                         </p>
-                        <p className="ant-upload-text text-slate-700">Kéo thả file hoặc nhấn để chọn</p>
+                        <p className="ant-upload-text text-slate-700 dark:text-gray-200">Kéo thả file hoặc nhấn để chọn</p>
                         <p className="ant-upload-hint text-slate-400 text-xs">
                             Hỗ trợ: JPG, PNG, WEBP, PDF • Tối đa 15MB
                         </p>
                     </Dragger>
 
                     {uploadedFile && (
-                        <div className="mt-3 flex items-center gap-2 bg-slate-50 px-3 py-2 rounded-lg border border-slate-200">
+                        <div className="mt-3 flex items-center gap-2 bg-slate-50 dark:bg-gray-800/50 px-3 py-2 rounded-lg border border-slate-200 dark:border-gray-700">
                             <FilePdfOutlined className="text-red-400" />
-                            <span className="text-sm text-slate-700 flex-1 truncate">{uploadedFile.name}</span>
+                            <span className="text-sm text-slate-700 dark:text-gray-200 flex-1 truncate">{uploadedFile.name}</span>
                             <span className="text-xs text-slate-400">{(uploadedFile.size / 1024).toFixed(1)} KB</span>
                         </div>
                     )}

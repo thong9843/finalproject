@@ -222,12 +222,12 @@ const Dashboard = () => {
     return (
         <div>
             <div className="mb-8">
-                <AntTitle level={2} className="!mb-1 !text-gray-800">Tổng quan hệ thống</AntTitle>
+                <AntTitle level={2} className="!mb-1 !text-gray-800 dark:!text-gray-100">Tổng quan hệ thống</AntTitle>
                 <Text type="secondary">Theo dõi các chỉ số quan trọng và hoạt động hợp tác doanh nghiệp</Text>
             </div>
 
             {/* Period Selector */}
-            <div className="bg-white rounded-2xl p-4 mb-8 border border-gray-100 shadow-sm flex flex-wrap items-center gap-4">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 mb-8 border border-gray-100 dark:border-gray-700 shadow-sm flex flex-wrap items-center gap-4">
                 <div className="flex items-center gap-2 text-gray-500">
                     <CalendarOutlined className="text-lg" />
                     <span className="text-sm font-medium">Khoảng thời gian:</span>
@@ -239,7 +239,7 @@ const Dashboard = () => {
                         setPeriod(val);
                         if (val !== 'custom') setCustomRange(null);
                     }}
-                    className="bg-gray-50"
+                    className="bg-gray-50 dark:bg-gray-800/50"
                 />
                 {period === 'custom' && (
                     <RangePicker
@@ -283,25 +283,25 @@ const Dashboard = () => {
             {/* Row 2: Charts */}
             <Row gutter={[24, 24]} className="mb-8">
                 <Col xs={24} lg={8}>
-                    <Card title={<span className="font-semibold text-gray-700">Quy mô doanh nghiệp</span>} className="shadow-sm rounded-xl h-full border-gray-100 hover:shadow-md transition-shadow">
+                    <Card title={<span className="font-semibold text-gray-700 dark:text-gray-200">Quy mô doanh nghiệp</span>} className="shadow-sm rounded-xl h-full border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow">
                         <div className="h-64 flex justify-center relative">
                             <Doughnut data={scaleData} options={doughnutOptions} />
                             <div className="absolute top-[45%] left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none">
                                 <p className="text-gray-400 text-xs m-0">Tổng</p>
-                                <p className="text-2xl font-bold text-gray-700 m-0">{totals.totalEnterprises}</p>
+                                <p className="text-2xl font-bold text-gray-700 dark:text-gray-200 m-0">{totals.totalEnterprises}</p>
                             </div>
                         </div>
                     </Card>
                 </Col>
                 <Col xs={24} lg={8}>
-                    <Card title={<span className="font-semibold text-gray-700">Trạng thái hợp tác</span>} className="shadow-sm rounded-xl h-full border-gray-100 hover:shadow-md transition-shadow">
+                    <Card title={<span className="font-semibold text-gray-700 dark:text-gray-200">Trạng thái hợp tác</span>} className="shadow-sm rounded-xl h-full border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow">
                         <div className="h-64">
                             <Bar data={statusData} options={barOptions} />
                         </div>
                     </Card>
                 </Col>
                 <Col xs={24} lg={8}>
-                    <Card title={<span className="font-semibold text-gray-700">{`Loại hình hoạt động (${getPeriodTitle()})`}</span>} className="shadow-sm rounded-xl h-full border-gray-100 hover:shadow-md transition-shadow">
+                    <Card title={<span className="font-semibold text-gray-700 dark:text-gray-200">{`Loại hình hoạt động (${getPeriodTitle()})`}</span>} className="shadow-sm rounded-xl h-full border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow">
                         <div className="h-64 flex justify-center relative">
                             <Doughnut data={actTypeData} options={doughnutOptions} />
                         </div>
@@ -312,7 +312,7 @@ const Dashboard = () => {
             {/* Row 3: Fields & Upcoming */}
             <Row gutter={[24, 24]}>
                 <Col xs={24} lg={14}>
-                    <Card title={<span className="font-semibold text-gray-700">Doanh nghiệp theo lĩnh vực</span>} className="shadow-sm rounded-xl h-full border-gray-100 hover:shadow-md transition-shadow">
+                    <Card title={<span className="font-semibold text-gray-700 dark:text-gray-200">Doanh nghiệp theo lĩnh vực</span>} className="shadow-sm rounded-xl h-full border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow">
                         <div className="h-[350px]">
                             <Bar data={fieldsData} options={horizontalBarOptions} />
                         </div>
@@ -323,10 +323,10 @@ const Dashboard = () => {
                         title={
                             <div className="flex items-center gap-2">
                                 <CalendarOutlined className="text-vluRed" />
-                                <span className="font-semibold text-gray-700">Hoạt động sắp diễn ra</span>
+                                <span className="font-semibold text-gray-700 dark:text-gray-200">Hoạt động sắp diễn ra</span>
                             </div>
                         }
-                        className="shadow-sm rounded-xl h-full border-gray-100 hover:shadow-md transition-shadow"
+                        className="shadow-sm rounded-xl h-full border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow"
                         bodyStyle={{ padding: '0 24px' }}
                     >
                         {upcomingActivities && upcomingActivities.length > 0 ? (
@@ -337,14 +337,14 @@ const Dashboard = () => {
                                     const date = dayjs(item.start_date);
                                     const isToday = date.isSame(dayjs(), 'day');
                                     return (
-                                        <List.Item className="py-4 border-b border-gray-100 last:border-0 hover:bg-gray-50 transition-colors px-2 -mx-2 rounded-lg group cursor-pointer">
+                                        <List.Item className="py-4 border-b border-gray-100 dark:border-gray-700 last:border-0 hover:bg-gray-50 dark:bg-gray-800/50 transition-colors px-2 -mx-2 rounded-lg group cursor-pointer">
                                             <div className="flex items-start gap-4 w-full">
-                                                <div className={`flex flex-col items-center justify-center min-w-[60px] h-[60px] rounded-lg ${isToday ? 'bg-red-50 border border-red-200' : 'bg-gray-50 border border-gray-200'}`}>
+                                                <div className={`flex flex-col items-center justify-center min-w-[60px] h-[60px] rounded-lg ${isToday ? 'bg-red-50 border border-red-200' : 'bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700'}`}>
                                                     <span className={`text-xs font-medium uppercase ${isToday ? 'text-red-500' : 'text-gray-500'}`}>{date.format('MMM')}</span>
-                                                    <span className={`text-xl font-bold ${isToday ? 'text-red-600' : 'text-gray-700'}`}>{date.format('DD')}</span>
+                                                    <span className={`text-xl font-bold ${isToday ? 'text-red-600' : 'text-gray-700 dark:text-gray-200'}`}>{date.format('DD')}</span>
                                                 </div>
                                                 <div className="flex-1 min-w-0">
-                                                    <h4 className="text-sm font-semibold text-gray-800 mb-1 truncate pr-4 group-hover:text-vluRed transition-colors" title={item.title}>
+                                                    <h4 className="text-sm font-semibold text-gray-800 dark:text-gray-100 mb-1 truncate pr-4 group-hover:text-vluRed transition-colors" title={item.title}>
                                                         {item.title}
                                                     </h4>
                                                     <div className="flex items-center gap-2 text-xs text-gray-500">

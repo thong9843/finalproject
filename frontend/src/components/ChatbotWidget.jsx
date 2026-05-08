@@ -102,7 +102,7 @@ const ChatbotWidget = () => {
             {/* Chat Popup */}
             {isOpen && (
                 <div 
-                    className="fixed bottom-6 right-6 z-50 flex flex-col bg-white rounded-2xl overflow-hidden"
+                    className="fixed bottom-6 right-6 z-50 flex flex-col bg-white dark:bg-gray-800 rounded-2xl overflow-hidden"
                     style={{ 
                         width: 400, 
                         height: 560, 
@@ -145,7 +145,7 @@ const ChatbotWidget = () => {
                                     className={`max-w-[80%] px-4 py-2.5 rounded-2xl text-sm leading-relaxed ${
                                         msg.role === 'user' 
                                             ? 'bg-gradient-to-br from-red-500 to-red-600 text-white rounded-br-md' 
-                                            : 'bg-white text-gray-700 shadow-sm border border-gray-100 rounded-bl-md'
+                                            : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 shadow-sm border border-gray-100 dark:border-gray-700 rounded-bl-md'
                                     }`}
                                 >
                                     {renderContent(msg.content)}
@@ -163,7 +163,7 @@ const ChatbotWidget = () => {
                                 <div className="w-7 h-7 bg-red-100 rounded-full flex items-center justify-center mr-2 flex-shrink-0">
                                     <RobotOutlined className="text-red-500 text-xs" />
                                 </div>
-                                <div className="bg-white px-4 py-3 rounded-2xl rounded-bl-md shadow-sm border border-gray-100">
+                                <div className="bg-white dark:bg-gray-800 px-4 py-3 rounded-2xl rounded-bl-md shadow-sm border border-gray-100 dark:border-gray-700">
                                     <div className="flex gap-1">
                                         <div className="w-2 h-2 bg-gray-300 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
                                         <div className="w-2 h-2 bg-gray-300 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
@@ -177,12 +177,12 @@ const ChatbotWidget = () => {
 
                     {/* Quick Questions (only show if few messages) */}
                     {messages.length <= 2 && (
-                        <div className="px-4 py-2 flex gap-2 flex-wrap flex-shrink-0 bg-white border-t border-gray-100">
+                        <div className="px-4 py-2 flex gap-2 flex-wrap flex-shrink-0 bg-white dark:bg-gray-800 border-t border-gray-100 dark:border-gray-700">
                             {quickQuestions.map((q, i) => (
                                 <button 
                                     key={i}
                                     onClick={() => { setInputValue(q); }}
-                                    className="text-xs bg-white border border-gray-200 px-3 py-1.5 rounded-full text-gray-600 hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-all focus:outline-none"
+                                    className="text-xs bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 px-3 py-1.5 rounded-full text-gray-600 hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-all focus:outline-none"
                                 >
                                     {q}
                                 </button>
@@ -191,7 +191,7 @@ const ChatbotWidget = () => {
                     )}
 
                     {/* Input */}
-                    <div className="px-4 py-3 border-t border-gray-100 flex-shrink-0 bg-white">
+                    <div className="px-4 py-3 border-t border-gray-100 dark:border-gray-700 flex-shrink-0 bg-white dark:bg-gray-800">
                         <div className="flex items-center gap-2">
                             <input
                                 ref={inputRef}
@@ -201,7 +201,7 @@ const ChatbotWidget = () => {
                                 onKeyDown={handleKeyDown}
                                 placeholder="Nhập câu hỏi..."
                                 disabled={loading}
-                                className="flex-1 bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-red-300 focus:ring-2 focus:ring-red-100 transition-all placeholder-gray-400"
+                                className="flex-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-red-300 focus:ring-2 focus:ring-red-100 transition-all placeholder-gray-400"
                             />
                             <button
                                 onClick={handleSend}
