@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Card, Row, Col, Tag, Form, Select, Button, Modal, message, Input, DatePicker, Statistic, Spin, Empty, Tooltip, Drawer, Descriptions, Popover, Badge, Divider, Pagination } from 'antd';
+import { Card, Row, Col, Tag, Form, Select, Button, Modal, message, Input, DatePicker, Statistic, Spin, Empty, Tooltip, Drawer, Descriptions, Popover, Badge, Divider, Pagination, Checkbox, Space } from 'antd';
 import { PlusOutlined, CheckCircleOutlined, ClockCircleOutlined, SyncOutlined, CheckOutlined, PauseCircleOutlined, TeamOutlined, BankOutlined, CalendarOutlined, UploadOutlined, SearchOutlined, EditOutlined, DeleteOutlined, UserOutlined, AppstoreOutlined, UnorderedListOutlined, DownloadOutlined, FilterOutlined, SortAscendingOutlined, ClearOutlined } from '@ant-design/icons';
 import ImportModal from '../components/ImportModal';
 import api from '../utils/api';
@@ -30,6 +30,7 @@ const ActivityList = () => {
     const [dateRange, setDateRange] = useState(null);
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(12);
+    const [selectedActivities, setSelectedActivities] = useState([]);
 
     useEffect(() => {
         setCurrentPage(1);
@@ -119,9 +120,65 @@ const ActivityList = () => {
             message.success('Xóa thành công');
             fetchData();
             fetchStats();
+            setSelectedActivities(prev => prev.filter(aid => aid !== id));
         } catch (error) {
             message.error('Lỗi khi xóa');
         }
+    };
+
+    const handleBulkDelete = () => {
+        Modal.confirm({
+            title: `Xác nhận xóa ${selectedActivities.length} hoạt động?`,
+            content: 'Hành động này không thể hoàn tác.',
+            onOk: async () => {
+                setLoading(true);
+                try {
+                    await Promise.all(selectedActivities.map(id => api.delete(`/activities/${id}`)));
+                    message.success(`Đã xóa thành công ${selectedActivities.length} hoạt động`);
+                    setSelectedActivities([]);
+                    fetchData();
+                    fetchStats();
+                } catch (error) {
+                    message.error('Có lỗi xảy ra khi xóa hàng loạt');
+                } finally {
+                    setLoading(false);
+                }
+            }
+        });
+    };
+
+    const handleBulkUpdateStatus = (status) => {
+        Modal.confirm({
+            title: `Xác nhận chuyển ${selectedActivities.length} hoạt động sang "${status}"?`,
+            onOk: async () => {
+                setLoading(true);
+                try {
+                    await Promise.all(selectedActivities.map(id => api.put(`/activities/${id}/status`, { status })));
+                    message.success(`Cập nhật trạng thái thành công cho ${selectedActivities.length} hoạt động`);
+                    setSelectedActivities([]);
+                    fetchData();
+                    fetchStats();
+                } catch (error) {
+                    message.error('Có lỗi xảy ra khi cập nhật hàng loạt');
+                } finally {
+                    setLoading(false);
+                }
+            }
+        });
+    };
+
+    const removeAccents = (str) => {
+        if (!str) return '';
+        return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    };
+
+    const filterOptionIgnoreCase = (input, option) => 
+        removeAccents(option?.children || '').includes(removeAccents(input));
+
+    const handleToggleActivity = (id) => {
+        setSelectedActivities(prev => 
+            prev.includes(id) ? prev.filter(aid => aid !== id) : [...prev, id]
+        );
     };
 
     const handleUpdateStatus = async (id, status) => {
@@ -403,6 +460,29 @@ const ActivityList = () => {
                 </div>
             </div>
 
+            {/* Action Bar for Bulk Selection */}
+            {selectedActivities.length > 0 && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4 flex justify-between items-center animate-fade-in">
+                    <span className="text-blue-700 font-medium ml-2">Đã chọn {selectedActivities.length} hoạt động</span>
+                    <Space>
+                        <Select
+                            placeholder="Đổi trạng thái..."
+                            onChange={handleBulkUpdateStatus}
+                            className="w-44"
+                            size="small"
+                        >
+                            <Option value="Đề xuất">Đề xuất</Option>
+                            <Option value="Phê duyệt nội bộ">Phê duyệt nội bộ</Option>
+                            <Option value="Đã triển khai">Đã triển khai</Option>
+                            <Option value="Đã kết thúc">Đã kết thúc</Option>
+                        </Select>
+                        <Button size="small" danger icon={<DeleteOutlined />} onClick={handleBulkDelete}>
+                            Xóa đã chọn
+                        </Button>
+                    </Space>
+                </div>
+            )}
+
             {/* Activity Cards */}
             {loading ? (
                 <div className="flex justify-center py-20"><Spin size="large" /></div>
@@ -415,16 +495,23 @@ const ActivityList = () => {
 
                         return (
                             <Col xs={24} sm={viewMode === 'list' ? 24 : 12} lg={viewMode === 'list' ? 24 : 8} key={item.id}>
-                                <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md transition-all h-full flex flex-col overflow-hidden group cursor-pointer"
+                                <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md transition-all h-full flex flex-col overflow-hidden group cursor-pointer relative"
                                     onClick={(e) => {
-                                        if (e.target.closest('.action-buttons')) return;
+                                        if (e.target.closest('.action-buttons') || e.target.closest('.ant-checkbox-wrapper')) return;
                                         setSelectedActivity(item);
                                         setIsDrawerVisible(true);
                                     }}
                                 >
+                                    <div className="absolute top-3 right-3 z-10">
+                                        <Checkbox 
+                                            checked={selectedActivities.includes(item.id)} 
+                                            onChange={() => handleToggleActivity(item.id)}
+                                            className="scale-110"
+                                        />
+                                    </div>
                                     {/* Card Header */}
                                     <div className="p-5 pb-3 flex-1">
-                                        <div className="flex justify-between items-start mb-3">
+                                        <div className="flex justify-between items-start mb-3 pr-6">
                                             <div className="flex items-start gap-3 flex-1">
                                                 <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 text-lg shadow-sm"
                                                     style={{ backgroundColor: tc.bg }}>
@@ -557,7 +644,7 @@ const ActivityList = () => {
                     <Row gutter={16}>
                         <Col span={12}>
                             <Form.Item name="enterprise_id" label="Doanh nghiệp liên kết" rules={[{ required: true }]}>
-                                <Select showSearch placeholder="Chọn doanh nghiệp" optionFilterProp="children">
+                                <Select showSearch placeholder="Chọn doanh nghiệp" filterOption={filterOptionIgnoreCase}>
                                     {enterprises.map(e => (
                                         <Option key={e.id} value={e.id}>{e.name}</Option>
                                     ))}
@@ -566,7 +653,7 @@ const ActivityList = () => {
                         </Col>
                         <Col span={12}>
                             <Form.Item name="type_ids" label="Loại hình hoạt động">
-                                <Select mode="multiple" placeholder="Chọn loại hình" showSearch>
+                                <Select mode="multiple" placeholder="Chọn loại hình" showSearch filterOption={filterOptionIgnoreCase}>
                                     {activityTypes.map(act => (
                                         <Option key={act.id} value={act.id}>{act.name}</Option>
                                     ))}
@@ -575,7 +662,7 @@ const ActivityList = () => {
                         </Col>
                     </Row>
                     <Form.Item name="target_ids" label="Đối tượng hướng tới">
-                        <Select mode="multiple" placeholder="Chọn đối tượng" showSearch>
+                        <Select mode="multiple" placeholder="Chọn đối tượng" showSearch filterOption={filterOptionIgnoreCase}>
                             {targets.map(t => (
                                 <Option key={t.id} value={t.id}>{t.name}</Option>
                             ))}

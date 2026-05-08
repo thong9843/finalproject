@@ -23,6 +23,8 @@ const StudentList = () => {
     const [dateRange, setDateRange] = useState(null);
     const [filterEnterprise, setFilterEnterprise] = useState(null);
     const [filterMajor, setFilterMajor] = useState(null);
+    const [filterGpa, setFilterGpa] = useState(null);
+    const [selectedRowKeys, setSelectedRowKeys] = useState([]);
 
     useEffect(() => {
         fetchData();
@@ -89,10 +91,71 @@ const StudentList = () => {
             message.success('Xóa thành công');
             fetchData();
             fetchStats();
+            setSelectedRowKeys(prev => prev.filter(key => key !== id));
         } catch (error) {
             message.error('Lỗi khi xóa dữ liệu');
         }
     };
+
+    const handleBulkDelete = () => {
+        Modal.confirm({
+            title: `Xác nhận xóa ${selectedRowKeys.length} sinh viên?`,
+            content: 'Hành động này không thể hoàn tác.',
+            onOk: async () => {
+                setLoading(true);
+                try {
+                    await Promise.all(selectedRowKeys.map(id => api.delete(`/students/${id}`)));
+                    message.success(`Đã xóa thành công ${selectedRowKeys.length} sinh viên`);
+                    setSelectedRowKeys([]);
+                    fetchData();
+                    fetchStats();
+                } catch (error) {
+                    message.error('Có lỗi xảy ra khi xóa hàng loạt');
+                } finally {
+                    setLoading(false);
+                }
+            }
+        });
+    };
+
+    const handleBulkUpdateStatus = (status) => {
+        Modal.confirm({
+            title: `Xác nhận chuyển ${selectedRowKeys.length} sinh viên sang "${status}"?`,
+            onOk: async () => {
+                setLoading(true);
+                try {
+                    await Promise.all(selectedRowKeys.map(id => {
+                        const student = data.find(item => item.id === id);
+                        if (!student) return Promise.resolve();
+                        const payload = {
+                            ...student,
+                            status,
+                            class: student.class,
+                            start_date: student.start_date ? dayjs(student.start_date).format('YYYY-MM-DD') : null,
+                            end_date: student.end_date ? dayjs(student.end_date).format('YYYY-MM-DD') : null
+                        };
+                        return api.put(`/students/${id}`, payload);
+                    }));
+                    message.success(`Cập nhật trạng thái thành công cho ${selectedRowKeys.length} sinh viên`);
+                    setSelectedRowKeys([]);
+                    fetchData();
+                    fetchStats();
+                } catch (error) {
+                    message.error('Có lỗi xảy ra khi cập nhật hàng loạt');
+                } finally {
+                    setLoading(false);
+                }
+            }
+        });
+    };
+
+    const removeAccents = (str) => {
+        if (!str) return '';
+        return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    };
+
+    const filterOptionIgnoreCase = (input, option) => 
+        removeAccents(option?.children || '').includes(removeAccents(input));
 
     const handleExport = () => {
         const exportData = data.map(item => ({
@@ -161,12 +224,22 @@ const StudentList = () => {
         const matchTab = activeTab === 'all' || item.status === activeTab;
         const matchEnterprise = !filterEnterprise || item.enterprise_id === filterEnterprise;
         const matchMajor = !filterMajor || item.major === filterMajor;
+        
+        let matchGpa = true;
+        if (filterGpa) {
+            const gpa = parseFloat(item.gpa) || 0;
+            if (filterGpa === 'excellent') matchGpa = gpa >= 8.0;
+            else if (filterGpa === 'good') matchGpa = gpa >= 7.0 && gpa < 8.0;
+            else if (filterGpa === 'average') matchGpa = gpa >= 5.0 && gpa < 7.0;
+            else if (filterGpa === 'poor') matchGpa = gpa < 5.0;
+        }
+
         let matchDateRange = true;
         if (dateRange && dateRange[0] && dateRange[1]) {
             const startDate = dayjs(item.start_date);
             matchDateRange = item.start_date && startDate.isAfter(dateRange[0].startOf('day').subtract(1, 'ms')) && startDate.isBefore(dateRange[1].endOf('day').add(1, 'ms'));
         }
-        return matchSearch && matchTab && matchEnterprise && matchMajor && matchDateRange;
+        return matchSearch && matchTab && matchEnterprise && matchMajor && matchGpa && matchDateRange;
     }).sort((a, b) => {
         if (!sortOption) return 0;
         switch (sortOption) {
@@ -182,7 +255,7 @@ const StudentList = () => {
         }
     });
 
-    const activeFilterCount = [sortOption, dateRange, filterEnterprise, filterMajor].filter(v => v !== null && v !== undefined).length;
+    const activeFilterCount = [sortOption, dateRange, filterEnterprise, filterMajor, filterGpa].filter(v => v !== null && v !== undefined).length;
 
     const sortOptions = [
         { value: 'name_asc', label: '🔤 Tên (A → Z)' },
@@ -217,16 +290,22 @@ const StudentList = () => {
             <div>
                 <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5 flex items-center gap-1"><FilterOutlined /> Bộ lọc</div>
                 <div className="flex flex-col gap-2">
-                    <Select allowClear placeholder="Doanh nghiệp thực tập" onChange={setFilterEnterprise} value={filterEnterprise} className="w-full" showSearch optionFilterProp="children">
+                    <Select allowClear placeholder="Doanh nghiệp thực tập" onChange={setFilterEnterprise} value={filterEnterprise} className="w-full" showSearch filterOption={filterOptionIgnoreCase}>
                         {enterprises.map(e => <Option key={e.id} value={e.id}>{e.name}</Option>)}
                     </Select>
-                    <Select allowClear placeholder="Ngành học" onChange={setFilterMajor} value={filterMajor} className="w-full" showSearch>
+                    <Select allowClear placeholder="Ngành học" onChange={setFilterMajor} value={filterMajor} className="w-full" showSearch filterOption={filterOptionIgnoreCase}>
                         {uniqueMajors.map(m => <Option key={m} value={m}>{m}</Option>)}
+                    </Select>
+                    <Select allowClear placeholder="Mức GPA" onChange={setFilterGpa} value={filterGpa} className="w-full">
+                        <Option value="excellent">Giỏi / Xuất sắc (≥ 8.0)</Option>
+                        <Option value="good">Khá (7.0 - 7.9)</Option>
+                        <Option value="average">Trung bình (5.0 - 6.9)</Option>
+                        <Option value="poor">Yếu (&lt; 5.0)</Option>
                     </Select>
                 </div>
             </div>
             <Button icon={<ClearOutlined />} type="default" block onClick={() => {
-                setSortOption(null); setDateRange(null); setFilterEnterprise(null); setFilterMajor(null);
+                setSortOption(null); setDateRange(null); setFilterEnterprise(null); setFilterMajor(null); setFilterGpa(null);
             }}>Xóa tất cả bộ lọc</Button>
         </div>
     );
@@ -395,9 +474,35 @@ const StudentList = () => {
                 </div>
             </div>
 
+            {/* Action Bar for Bulk Selection */}
+            {selectedRowKeys.length > 0 && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4 flex justify-between items-center animate-fade-in">
+                    <span className="text-blue-700 font-medium ml-2">Đã chọn {selectedRowKeys.length} sinh viên</span>
+                    <Space>
+                        <Select
+                            placeholder="Đổi trạng thái..."
+                            onChange={handleBulkUpdateStatus}
+                            className="w-40"
+                            size="small"
+                        >
+                            <Option value="Đang thực tập">Đang thực tập</Option>
+                            <Option value="Hoàn thành">Hoàn thành</Option>
+                            <Option value="Chờ phân công">Chờ phân công</Option>
+                        </Select>
+                        <Button size="small" danger icon={<DeleteOutlined />} onClick={handleBulkDelete}>
+                            Xóa đã chọn
+                        </Button>
+                    </Space>
+                </div>
+            )}
+
             {/* Table */}
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
                 <Table 
+                    rowSelection={{
+                        selectedRowKeys,
+                        onChange: setSelectedRowKeys,
+                    }}
                     columns={columns} 
                     dataSource={filteredData} 
                     rowKey="id" 
@@ -460,7 +565,7 @@ const StudentList = () => {
                         </Col>
                         <Col span={12}>
                             <Form.Item name="enterprise_id" label="Công ty thực tập">
-                                <Select allowClear showSearch placeholder="Chọn công ty" optionFilterProp="children">
+                                <Select allowClear showSearch placeholder="Chọn công ty" filterOption={filterOptionIgnoreCase}>
                                     {enterprises.map(e => (
                                         <Option key={e.id} value={e.id}>{e.name}</Option>
                                     ))}

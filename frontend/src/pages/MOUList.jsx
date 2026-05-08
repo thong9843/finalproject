@@ -23,6 +23,7 @@ const MOUList = () => {
 
     // AI Scan states
     const [isScanModalOpen, setIsScanModalOpen] = useState(false);
+    const [selectedRowKeys, setSelectedRowKeys] = useState([]);
     const [scanning, setScanning] = useState(false);
     const [scanResult, setScanResult] = useState(null);
     const [scanError, setScanError] = useState(null);
@@ -92,8 +93,29 @@ const MOUList = () => {
                     await api.delete(`/mous/${id}`);
                     message.success('Xóa thành công!');
                     fetchMOUs();
+                    setSelectedRowKeys(prev => prev.filter(key => key !== id));
                 } catch (error) {
                     message.error('Lỗi khi xóa!');
+                }
+            }
+        });
+    };
+
+    const handleBulkDelete = () => {
+        Modal.confirm({
+            title: `Xác nhận xóa ${selectedRowKeys.length} biên bản MOU?`,
+            content: 'Hành động này không thể hoàn tác.',
+            onOk: async () => {
+                setLoading(true);
+                try {
+                    await Promise.all(selectedRowKeys.map(id => api.delete(`/mous/${id}`)));
+                    message.success(`Đã xóa thành công ${selectedRowKeys.length} biên bản MOU`);
+                    setSelectedRowKeys([]);
+                    fetchMOUs();
+                } catch (error) {
+                    message.error('Có lỗi xảy ra khi xóa hàng loạt');
+                } finally {
+                    setLoading(false);
                 }
             }
         });
@@ -107,6 +129,14 @@ const MOUList = () => {
         });
         setIsModalOpen(true);
     };
+
+    const removeAccents = (str) => {
+        if (!str) return '';
+        return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    };
+
+    const filterOptionIgnoreCase = (input, option) => 
+        removeAccents(option?.children || '').includes(removeAccents(input));
 
     // ==================== PDF EXPORT ====================
     const handleExportPdf = async (record) => {
@@ -328,7 +358,21 @@ const MOUList = () => {
                     </div>
                 </div>
 
+                {/* Action Bar for Bulk Selection */}
+                {selectedRowKeys.length > 0 && (
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-3 mx-5 mb-4 flex justify-between items-center animate-fade-in">
+                        <span className="text-red-700 font-medium ml-2">Đã chọn {selectedRowKeys.length} biên bản MOU</span>
+                        <Button size="small" danger icon={<DeleteOutlined />} onClick={handleBulkDelete}>
+                            Xóa đã chọn
+                        </Button>
+                    </div>
+                )}
+
                 <Table
+                    rowSelection={{
+                        selectedRowKeys,
+                        onChange: setSelectedRowKeys,
+                    }}
                     columns={columns}
                     dataSource={filteredData}
                     loading={loading}
@@ -357,7 +401,7 @@ const MOUList = () => {
                         </Col>
                         <Col span={16}>
                             <Form.Item name="enterprise_id" label="Tên đối tác (Doanh nghiệp)" rules={[{ required: true, message: 'Vui lòng chọn đối tác!' }]}>
-                                <Select showSearch placeholder="Chọn đối tác..." optionFilterProp="children" className="rounded-lg">
+                                <Select showSearch placeholder="Chọn đối tác..." filterOption={filterOptionIgnoreCase} className="rounded-lg">
                                     {enterprises.map(e => <Option key={e.id} value={e.id}>{e.name}</Option>)}
                                 </Select>
                             </Form.Item>
@@ -395,7 +439,7 @@ const MOUList = () => {
                     <Row gutter={16}>
                         <Col span={12}>
                             <Form.Item name="executing_unit_id" label="Đơn vị triển khai">
-                                <Select showSearch allowClear placeholder="Chọn bộ môn/đơn vị triển khai..." optionFilterProp="children" className="rounded-lg">
+                                <Select showSearch allowClear placeholder="Chọn bộ môn/đơn vị triển khai..." filterOption={filterOptionIgnoreCase} className="rounded-lg">
                                     {departments.map(d => <Option key={d.id} value={d.id}>{d.name}</Option>)}
                                 </Select>
                             </Form.Item>

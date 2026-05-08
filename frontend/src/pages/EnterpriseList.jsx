@@ -28,6 +28,7 @@ const EnterpriseList = () => {
     const [selectedEnterprise, setSelectedEnterprise] = useState(null);
     const [showImport, setShowImport] = useState(false);
     const [sortOption, setSortOption] = useState(null);
+    const [selectedRowKeys, setSelectedRowKeys] = useState([]);
 
     useEffect(() => {
         fetchData();
@@ -91,9 +92,71 @@ const EnterpriseList = () => {
             await api.delete(`/enterprises/${id}`);
             message.success('Xóa thành công');
             fetchData();
+            setSelectedRowKeys(prev => prev.filter(key => key !== id));
         } catch (error) {
             message.error(error.response?.data?.message || 'Lỗi khi xóa dữ liệu');
         }
+    };
+
+    const handleBulkDelete = () => {
+        Modal.confirm({
+            title: `Xác nhận xóa ${selectedRowKeys.length} doanh nghiệp?`,
+            content: 'Hành động này không thể hoàn tác.',
+            onOk: async () => {
+                setLoading(true);
+                try {
+                    await Promise.all(selectedRowKeys.map(id => api.delete(`/enterprises/${id}`)));
+                    message.success(`Đã xóa thành công ${selectedRowKeys.length} doanh nghiệp`);
+                    setSelectedRowKeys([]);
+                    fetchData();
+                } catch (error) {
+                    message.error('Có lỗi xảy ra khi xóa hàng loạt');
+                } finally {
+                    setLoading(false);
+                }
+            }
+        });
+    };
+
+    const handleBulkUpdateStatus = (status) => {
+        Modal.confirm({
+            title: `Xác nhận chuyển ${selectedRowKeys.length} doanh nghiệp sang "${status}"?`,
+            onOk: async () => {
+                setLoading(true);
+                try {
+                    await Promise.all(selectedRowKeys.map(id => {
+                        const ent = data.find(item => item.id === id);
+                        if (!ent) return Promise.resolve();
+                        const payload = {
+                            name: ent.name,
+                            tax_code: ent.tax_code,
+                            scale_id: ent.scale_id,
+                            is_hcmc: ent.is_hcmc,
+                            status: status,
+                            department_id: ent.department_id,
+                            rep_title: ent.rep_title,
+                            rep_full_name: ent.rep_full_name,
+                            rep_role: ent.rep_role,
+                            rep_phone: ent.rep_phone,
+                            rep_email: ent.rep_email,
+                            building_street: ent.building_street,
+                            district: ent.district,
+                            province: ent.province,
+                            country: ent.country,
+                            field_ids: ent.field_ids ? ent.field_ids.split(',').map(Number) : []
+                        };
+                        return api.put(`/enterprises/${id}`, payload);
+                    }));
+                    message.success(`Cập nhật trạng thái thành công cho ${selectedRowKeys.length} doanh nghiệp`);
+                    setSelectedRowKeys([]);
+                    fetchData();
+                } catch (error) {
+                    message.error('Có lỗi xảy ra khi cập nhật hàng loạt');
+                } finally {
+                    setLoading(false);
+                }
+            }
+        });
     };
 
     const handleViewTimeline = async (record) => {
@@ -300,7 +363,35 @@ const EnterpriseList = () => {
                 </Popover>
             </div>
 
-            <Table columns={columns} dataSource={filteredData} rowKey="id" loading={loading}
+            {/* Action Bar for Bulk Selection */}
+            {selectedRowKeys.length > 0 && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4 flex justify-between items-center animate-fade-in">
+                    <span className="text-blue-700 font-medium ml-2">Đã chọn {selectedRowKeys.length} doanh nghiệp</span>
+                    <Space>
+                        <Select
+                            placeholder="Đổi trạng thái..."
+                            onChange={handleBulkUpdateStatus}
+                            className="w-48"
+                            size="small"
+                        >
+                            {Object.keys(statusColors).map(s => <Option key={s} value={s}>{s}</Option>)}
+                        </Select>
+                        <Button size="small" danger icon={<DeleteOutlined />} onClick={handleBulkDelete}>
+                            Xóa đã chọn
+                        </Button>
+                    </Space>
+                </div>
+            )}
+
+            <Table 
+                rowSelection={{
+                    selectedRowKeys,
+                    onChange: setSelectedRowKeys,
+                }}
+                columns={columns} 
+                dataSource={filteredData} 
+                rowKey="id" 
+                loading={loading}
                 className="shadow-sm border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-xl overflow-hidden"
                 scroll={{ x: 'max-content' }}
                 pagination={{ pageSize: 12 }} />
