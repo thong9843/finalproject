@@ -39,3 +39,6 @@ coverage/
 .env
 
 backend/.env
+
+# Firebase service account
+backend/src/config/serviceAccountKey.json

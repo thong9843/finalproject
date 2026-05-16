@@ -1,0 +1,96 @@
+<mxfile host="Electron">
+  <diagram id="business-process" name="Main Process">
+    <mxGraphModel dx="1414" dy="841" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="header" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=18;fontStyle=1" value="MAIN BUSINESS PROCESS - VLU ENTERPRISE MANAGEMENT" vertex="1">
+          <mxGeometry height="40" width="560" x="140" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="lane1" parent="1" style="swimlane;whiteSpace=wrap;html=1;startSize=30;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="Admin / Faculty" vertex="1">
+          <mxGeometry height="760" width="220" x="80" y="100" as="geometry" />
+        </mxCell>
+        <mxCell id="step4" parent="lane1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="Receive &amp; Assign&#xa;Students (Import)" vertex="1">
+          <mxGeometry height="60" width="160" x="30" y="360" as="geometry" />
+        </mxCell>
+        <mxCell id="step2" parent="lane1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="Sign Agreement&#xa;(MOU)" vertex="1">
+          <mxGeometry height="60" width="160" x="30" y="260" as="geometry" />
+        </mxCell>
+        <mxCell id="step1" parent="lane1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="Add / Import&#xa;Enterprise" vertex="1">
+          <mxGeometry height="60" width="160" x="30" y="160" as="geometry" />
+        </mxCell>
+        <mxCell id="hSbEg-CRmSFJrCqSc-lJ-1" parent="lane1" style="whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;rounded=1;verticalAlign=middle;align=center;" value="Store Enterprise &amp;amp; Representative Info" vertex="1">
+          <mxGeometry height="60" width="160" x="270" y="160" as="geometry" />
+        </mxCell>
+        <mxCell id="hSbEg-CRmSFJrCqSc-lJ-2" edge="1" parent="lane1" source="step1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" target="hSbEg-CRmSFJrCqSc-lJ-1" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="hSbEg-CRmSFJrCqSc-lJ-6" edge="1" parent="lane1" source="hSbEg-CRmSFJrCqSc-lJ-5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="step1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="hSbEg-CRmSFJrCqSc-lJ-5" parent="lane1" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#a20025;fontColor=#ffffff;strokeColor=#6F0000;verticalAlign=middle;" value="Start" vertex="1">
+          <mxGeometry height="60" width="60" x="80" y="70" as="geometry" />
+        </mxCell>
+        <mxCell id="hSbEg-CRmSFJrCqSc-lJ-8" parent="lane1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;rounded=1;" value="End" vertex="1">
+          <mxGeometry height="50" width="50" x="85" y="660" as="geometry" />
+        </mxCell>
+        <mxCell id="lane2" parent="1" style="swimlane;whiteSpace=wrap;html=1;startSize=30;fillColor=#f5f5f5;fontColor=#333333;strokeColor=#666666;" value="System" vertex="1">
+          <mxGeometry height="760" width="240" x="300" y="100" as="geometry" />
+        </mxCell>
+        <mxCell id="db2" parent="lane2" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;fontColor=#333333;strokeColor=#666666;" value="Manage Activity&#xa;Status (Kanban)" vertex="1">
+          <mxGeometry height="60" width="140" x="50" y="460" as="geometry" />
+        </mxCell>
+        <mxCell id="step7" parent="lane2" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="View Dashboard &amp;&#xa;Export Reports" vertex="1">
+          <mxGeometry height="60" width="160" x="-190" y="550" as="geometry" />
+        </mxCell>
+        <mxCell id="e9" edge="1" parent="lane2" source="db3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;entryX=1;entryY=0.5;" target="step7">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="db3" parent="lane2" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;fontColor=#333333;strokeColor=#666666;" value="Aggregate Data&#xa;&amp; Statistical Analysis" vertex="1">
+          <mxGeometry height="60" width="140" x="50" y="550" as="geometry" />
+        </mxCell>
+        <mxCell id="lane3" parent="1" style="swimlane;whiteSpace=wrap;html=1;startSize=30;fillColor=#d5e8d4;strokeColor=#82b366;" value="Enterprise / Student" vertex="1">
+          <mxGeometry height="760" width="220" x="540" y="100" as="geometry" />
+        </mxCell>
+        <mxCell id="step3" parent="lane3" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" value="Propose Activities&#xa;(Internships, Seminars...)" vertex="1">
+          <mxGeometry height="60" width="160" x="30" y="260" as="geometry" />
+        </mxCell>
+        <mxCell id="step5" parent="lane3" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" value="Participate in&#xa;Activities / Internships" vertex="1">
+          <mxGeometry height="60" width="160" x="30" y="460" as="geometry" />
+        </mxCell>
+        <mxCell id="step6" parent="lane3" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" value="Evaluate Collaboration&#xa;Level (Rating)" vertex="1">
+          <mxGeometry height="60" width="160" x="30" y="550" as="geometry" />
+        </mxCell>
+        <mxCell id="e2" edge="1" parent="1" source="step1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;entryX=0.5;entryY=0;" target="step2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e3" edge="1" parent="1" source="step2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;entryX=0;entryY=0.5;" target="step3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e5" edge="1" parent="1" source="step4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;entryX=0.5;entryY=0;" target="step5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e6" edge="1" parent="1" source="step5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;entryX=1;entryY=0.5;" target="db2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e7" edge="1" parent="1" source="step5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;entryX=0.5;entryY=0;" target="step6">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="hSbEg-CRmSFJrCqSc-lJ-3" edge="1" parent="1" source="step6" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" target="db3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="hSbEg-CRmSFJrCqSc-lJ-4" edge="1" parent="1" source="step3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="step4">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="650" y="440" />
+              <mxPoint x="190" y="440" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="hSbEg-CRmSFJrCqSc-lJ-9" edge="1" parent="1" source="step7" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" target="hSbEg-CRmSFJrCqSc-lJ-8" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

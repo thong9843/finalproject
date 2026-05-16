@@ -15,6 +15,7 @@ const MOUList = () => {
     const [data, setData] = useState([]);
     const [enterprises, setEnterprises] = useState([]);
     const [departments, setDepartments] = useState([]);
+    const [activities, setActivities] = useState([]);
     const [loading, setLoading] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingId, setEditingId] = useState(null);
@@ -51,12 +52,14 @@ const MOUList = () => {
 
     const fetchOptions = async () => {
         try {
-            const [entRes, deptRes] = await Promise.all([
+            const [entRes, deptRes, actRes] = await Promise.all([
                 api.get('/enterprises'),
-                api.get('/structure/departments')
+                api.get('/structure/departments'),
+                api.get('/activities')
             ]);
             setEnterprises(entRes.data);
             setDepartments(deptRes.data);
+            setActivities(actRes.data);
         } catch (error) {
             console.error('Lỗi tải option', error);
         }
@@ -186,11 +189,76 @@ const MOUList = () => {
         }
     };
 
-    const handleApplyScanResult = () => {
+    const handleApplyScanResult = async () => {
         if (!scanResult) return;
+
+        let finalEnterpriseId = scanResult.enterprise_id;
+        let finalActivityId = scanResult.activity_id;
+
+        // 1. Tự động hỏi tạo Doanh nghiệp nếu chưa có
+        if (scanResult.enterprise_name && !finalEnterpriseId) {
+            const confirmed = await new Promise((resolve) => {
+                Modal.confirm({
+                    title: 'Doanh nghiệp chưa tồn tại',
+                    content: `Doanh nghiệp "${scanResult.enterprise_name}" chưa có trên hệ thống. Bạn có muốn tạo mới không?`,
+                    okText: 'Tạo mới',
+                    cancelText: 'Bỏ qua',
+                    onOk: () => resolve(true),
+                    onCancel: () => resolve(false)
+                });
+            });
+
+            if (confirmed) {
+                try {
+                    const res = await api.post('/enterprises', {
+                        name: scanResult.enterprise_name,
+                        tax_code: scanResult.tax_code || null,
+                        status: 'Tiềm năng'
+                    });
+                    finalEnterpriseId = res.data.id;
+                    await fetchOptions(); // Cập nhật lại danh sách doanh nghiệp
+                    message.success('Tạo doanh nghiệp thành công!');
+                } catch (error) {
+                    message.error('Lỗi khi tạo doanh nghiệp!');
+                }
+            }
+        }
+
+        // 2. Tự động hỏi tạo Hoạt động nếu chưa có
+        if (scanResult.activity_name && !finalActivityId && finalEnterpriseId) {
+            const confirmed = await new Promise((resolve) => {
+                Modal.confirm({
+                    title: 'Hoạt động chưa tồn tại',
+                    content: `Hoạt động "${scanResult.activity_name}" chưa có trên hệ thống. Bạn có muốn tạo mới cho doanh nghiệp này không?`,
+                    okText: 'Tạo mới',
+                    cancelText: 'Bỏ qua',
+                    onOk: () => resolve(true),
+                    onCancel: () => resolve(false)
+                });
+            });
+
+            if (confirmed) {
+                try {
+                    const res = await api.post('/activities', {
+                        title: scanResult.activity_name,
+                        enterprise_id: finalEnterpriseId,
+                        status: 'Đề xuất',
+                        detail: scanResult.collaboration_scope || ''
+                    });
+                    finalActivityId = res.data.id;
+                    await fetchOptions(); // Cập nhật lại danh sách hoạt động
+                    message.success('Tạo hoạt động thành công!');
+                } catch (error) {
+                    message.error('Lỗi khi tạo hoạt động!');
+                }
+            }
+        }
+
         const fields = {
             mou_code: scanResult.mou_code,
-            enterprise_id: scanResult.enterprise_id || undefined,
+            enterprise_id: finalEnterpriseId || undefined,
+            activity_id: finalActivityId || undefined,
+            file_url: scanResult.file_url || undefined,
             signing_date: scanResult.signing_date ? dayjs(scanResult.signing_date) : null,
             partner_contact: scanResult.partner_contact,
             org_type: scanResult.org_type,
@@ -208,7 +276,21 @@ const MOUList = () => {
         setEditingId(null);
         setIsScanModalOpen(false);
         setIsModalOpen(true);
-        message.success('Đã điền thông tin từ AI vào form. Vui lòng kiểm tra và lưu!');
+        message.success('Đã điền thông tin vào form. Vui lòng kiểm tra và lưu!');
+    };
+
+    const handleSmartPdfAction = (record) => {
+        if (record.file_url) {
+            window.open(record.file_url, '_blank');
+        } else {
+            Modal.confirm({
+                title: 'Chưa có file scan đính kèm',
+                content: 'Biên bản này chưa có tài liệu gốc trên hệ thống (Cloud). Bạn có muốn hệ thống tự động xuất file PDF mẫu không?',
+                okText: 'Xuất PDF',
+                cancelText: 'Huỷ',
+                onOk: () => handleExportPdf(record)
+            });
+        }
     };
 
     const filteredData = data.filter(item =>
@@ -231,6 +313,14 @@ const MOUList = () => {
             width: 220,
             ellipsis: true,
             render: (text) => <span className="font-semibold text-slate-800 dark:text-gray-100">{text}</span>
+        },
+        {
+            title: 'Hoạt động liên kết',
+            dataIndex: 'activity_title',
+            key: 'activity_title',
+            width: 200,
+            ellipsis: true,
+            render: (text) => text ? <Tag color="purple" className="whitespace-normal text-xs">{text}</Tag> : <span className="text-slate-400 text-xs">Chưa liên kết</span>
         },
         {
             title: 'Ngày ký',
@@ -271,12 +361,12 @@ const MOUList = () => {
                             <Button type="text" icon={<LinkOutlined />} onClick={() => window.open(record.working_dir, '_blank')} />
                         </Tooltip>
                     )}
-                    <Tooltip title="Xuất PDF Hợp đồng">
+                    <Tooltip title={record.file_url ? "Xem tài liệu (Cloud)" : "Xuất PDF Hợp đồng mẫu"}>
                         <Button
                             type="text"
-                            icon={<FilePdfOutlined className="text-red-500" />}
+                            icon={record.file_url ? <InboxOutlined className="text-purple-500" /> : <FilePdfOutlined className="text-red-500" />}
                             loading={exportingId === record.id}
-                            onClick={() => handleExportPdf(record)}
+                            onClick={() => handleSmartPdfAction(record)}
                         />
                     </Tooltip>
                     <Button type="text" icon={<EditOutlined className="text-blue-500" />} onClick={() => openEditModal(record)} />
@@ -292,6 +382,8 @@ const MOUList = () => {
             { label: 'Mã biên bản', key: 'mou_code' },
             { label: 'Tên đối tác', key: 'enterprise_name' },
             { label: 'Doanh nghiệp khớp DB', key: 'matched_enterprise' },
+            { label: 'Hoạt động liên quan', key: 'activity_name' },
+            { label: 'Hoạt động khớp DB', key: 'matched_activity' },
             { label: 'Ngày ký', key: 'signing_date' },
             { label: 'Người liên hệ đối tác', key: 'partner_contact' },
             { label: 'Loại tổ chức', key: 'org_type' },
@@ -302,7 +394,7 @@ const MOUList = () => {
             { label: 'Bước tiếp theo', key: 'next_steps' },
         ];
         return (
-            <div className="mt-3 bg-green-50 border border-green-200 rounded-lg p-4 max-h-64 overflow-y-auto">
+            <div className="mt-3 bg-green-50 border border-green-200 rounded-lg p-4 max-h-80 overflow-y-auto">
                 <div className="flex items-center gap-2 mb-3">
                     <CheckCircleOutlined className="text-green-500 text-lg" />
                     <span className="font-semibold text-green-700">AI đã trích xuất thành công:</span>
@@ -310,6 +402,17 @@ const MOUList = () => {
                         <Tag color="green">Khớp: {result.matched_enterprise}</Tag>
                     )}
                 </div>
+
+                {result.firebase_error && (
+                    <Alert
+                        message="Lỗi Upload lên Cloud"
+                        description={result.firebase_error}
+                        type="warning"
+                        showIcon
+                        className="mb-3"
+                    />
+                )}
+
                 <div className="grid grid-cols-2 gap-2">
                     {fields.map(f => result[f.key] ? (
                         <div key={f.key} className="text-sm">
@@ -340,12 +443,12 @@ const MOUList = () => {
                             className="w-full sm:w-56 rounded-lg"
                         />
                         <Button
-                            icon={<ScanOutlined />}
+                            icon={<InboxOutlined />}
                             onClick={() => { setScanResult(null); setScanError(null); setUploadedFile(null); setIsScanModalOpen(true); }}
                             className="rounded-lg border-purple-400 text-purple-600 hover:bg-purple-50"
                             style={{ borderColor: '#9333ea', color: '#9333ea' }}
                         >
-                            Scan AI
+                            Import
                         </Button>
                         <Button
                             type="primary"
@@ -393,6 +496,7 @@ const MOUList = () => {
                 destroyOnClose
             >
                 <Form layout="vertical" form={form} onFinish={handleSave} className="mt-4">
+                    <Form.Item name="file_url" hidden><Input /></Form.Item>
                     <Row gutter={16}>
                         <Col span={8}>
                             <Form.Item name="mou_code" label="Mã biên bản" rules={[{ required: true, message: 'Vui lòng nhập!' }]}>
@@ -419,8 +523,18 @@ const MOUList = () => {
                             </Form.Item>
                         </Col>
                         <Col span={8}>
-                            <Form.Item name="country" label="Quốc gia đối tác">
-                                <Input placeholder="VD: Việt Nam, Nhật Bản..." className="rounded-lg" />
+                            <Form.Item noStyle dependencies={['enterprise_id']}>
+                                {({ getFieldValue }) => {
+                                    const entId = getFieldValue('enterprise_id');
+                                    const filtered = activities.filter(a => Number(a.enterprise_id) === Number(entId));
+                                    return (
+                                        <Form.Item name="activity_id" label="Hoạt động liên kết">
+                                            <Select showSearch allowClear placeholder={`Chọn hoạt động (${filtered.length} mục)`} filterOption={filterOptionIgnoreCase} className="rounded-lg" disabled={!entId}>
+                                                {filtered.map(a => <Option key={a.id} value={a.id}>{a.title}</Option>)}
+                                            </Select>
+                                        </Form.Item>
+                                    );
+                                }}
                             </Form.Item>
                         </Col>
                     </Row>
@@ -437,6 +551,11 @@ const MOUList = () => {
                         </Col>
                     </Row>
                     <Row gutter={16}>
+                        <Col span={12}>
+                            <Form.Item name="country" label="Quốc gia đối tác">
+                                <Input placeholder="VD: Việt Nam, Nhật Bản..." className="rounded-lg" />
+                            </Form.Item>
+                        </Col>
                         <Col span={12}>
                             <Form.Item name="executing_unit_id" label="Đơn vị triển khai">
                                 <Select showSearch allowClear placeholder="Chọn bộ môn/đơn vị triển khai..." filterOption={filterOptionIgnoreCase} className="rounded-lg">
@@ -491,7 +610,7 @@ const MOUList = () => {
                 title={
                     <div className="flex items-center gap-2">
                         <RobotOutlined className="text-purple-600 text-xl" />
-                        <span className="text-lg font-bold text-slate-800 dark:text-gray-100">Scan Tài Liệu MOU bằng Gemini AI</span>
+                        <span className="text-lg font-bold text-slate-800 dark:text-gray-100">Import Tài Liệu MOU bằng AI</span>
                     </div>
                 }
                 open={isScanModalOpen}

@@ -290,3 +290,66 @@ exports.updateStatus = async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 };
+
+exports.getDuplicates = async (req, res) => {
+    try {
+        // Find duplicate names
+        const duplicateQuery = `
+            SELECT name, COUNT(*) as count 
+            FROM enterprises 
+            GROUP BY name 
+            HAVING count > 1
+        `;
+        const [duplicateNames] = await pool.query(duplicateQuery);
+        
+        if (duplicateNames.length === 0) {
+            return res.status(200).json([]);
+        }
+
+        const names = duplicateNames.map(d => d.name);
+
+        // Get details of those duplicates
+        const query = `
+            SELECT e.*, s.name as scale_name, f.name as faculty_name,
+                (SELECT COUNT(DISTINCT act.id) FROM activities act WHERE act.enterprise_id = e.id) as activity_count
+            FROM enterprises e
+            LEFT JOIN scales s ON e.scale_id = s.id
+            LEFT JOIN faculties f ON e.faculty_id = f.id
+            WHERE e.name IN (?)
+            ORDER BY e.name ASC, e.created_at DESC
+        `;
+        
+        const [enterprises] = await pool.query(query, [names]);
+
+        // Group by name
+        const grouped = duplicateNames.map(d => {
+            return {
+                name: d.name,
+                count: d.count,
+                enterprises: enterprises.filter(e => e.name === d.name)
+            };
+        });
+
+        res.status(200).json(grouped);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+exports.removeActivitiesOnly = async (req, res) => {
+    try {
+        const id = req.params.id;
+        let query = 'DELETE FROM activities WHERE enterprise_id = ?';
+        let params = [id];
+
+        if (req.user.role !== 'ADMIN') {
+            query += ' AND faculty_id = ?';
+            params.push(req.user.faculty_id);
+        }
+
+        await pool.query(query, params);
+        res.status(200).json({ message: 'Deleted activities successfully' });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};

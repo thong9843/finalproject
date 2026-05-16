@@ -132,9 +132,12 @@ CREATE TABLE IF NOT EXISTS mous (
     past_activities TEXT,
     related_data TEXT,
     working_dir VARCHAR(500),
+    activity_id INT NULL,
+    file_url VARCHAR(500),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (enterprise_id) REFERENCES enterprises(id) ON DELETE CASCADE,
-    FOREIGN KEY (executing_unit_id) REFERENCES departments(id) ON DELETE SET NULL
+    FOREIGN KEY (executing_unit_id) REFERENCES departments(id) ON DELETE SET NULL,
+    FOREIGN KEY (activity_id) REFERENCES activities(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 14. activities (UPDATED - removed type/description, added detail/collaboration_date)

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { message, Card, Select, Typography, Spin, Badge, Button, Modal, Form, Input, DatePicker, Tag, Tooltip, Dropdown, Menu, Row, Col } from 'antd';
+import { message, Card, Select, Typography, Spin, Badge, Button, Modal, Form, Input, DatePicker, TimePicker, Tag, Tooltip, Dropdown, Menu, Row, Col } from 'antd';
 import { PlusOutlined, BankOutlined, ProjectOutlined, CalendarOutlined, PushpinOutlined, MoreOutlined, DragOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import api from '../utils/api';
 import dayjs from 'dayjs';
@@ -141,30 +141,22 @@ const KanbanBoard = () => {
     }
   };
 
-  const handleSave = async (values) => {
+  const submitActivitySave = async (values) => {
     setSubmitting(true);
     try {
-      if (view === 'ENTERPRISE') {
-        if (editingId) {
-          await api.put(`/enterprises/${editingId}`, values);
-          message.success('Cập nhật doanh nghiệp thành công');
-        } else {
-          await api.post('/enterprises', values);
-          message.success('Thêm doanh nghiệp thành công');
-        }
+      const payload = {
+        ...values,
+        start_date: values.start_date?.format('YYYY-MM-DD'),
+        end_date: values.end_date?.format('YYYY-MM-DD') || null,
+        start_time: values.start_time?.format('HH:mm:ss') || null,
+        end_time: values.end_time?.format('HH:mm:ss') || null,
+      };
+      if (editingId) {
+        await api.put(`/activities/${editingId}`, payload);
+        message.success('Cập nhật hoạt động thành công');
       } else {
-        const payload = {
-          ...values,
-          start_date: values.start_date?.format('YYYY-MM-DD'),
-          end_date: values.end_date?.format('YYYY-MM-DD'),
-        };
-        if (editingId) {
-          await api.put(`/activities/${editingId}`, payload);
-          message.success('Cập nhật hoạt động thành công');
-        } else {
-          await api.post('/activities', payload);
-          message.success('Thêm hoạt động thành công');
-        }
+        await api.post('/activities', payload);
+        message.success('Thêm hoạt động thành công');
       }
       setIsModalOpen(false);
       setEditingId(null);
@@ -174,6 +166,77 @@ const KanbanBoard = () => {
       message.error(`Lỗi khi lưu: ${error.response?.data?.message || 'Không xác định'}`);
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleSave = async (values) => {
+    if (view === 'ENTERPRISE') {
+      setSubmitting(true);
+      try {
+        if (editingId) {
+          await api.put(`/enterprises/${editingId}`, values);
+          message.success('Cập nhật doanh nghiệp thành công');
+        } else {
+          await api.post('/enterprises', values);
+          message.success('Thêm doanh nghiệp thành công');
+        }
+        setIsModalOpen(false);
+        setEditingId(null);
+        form.resetFields();
+        fetchItems();
+      } catch (error) {
+        message.error(`Lỗi khi lưu: ${error.response?.data?.message || 'Không xác định'}`);
+      } finally {
+        setSubmitting(false);
+      }
+    } else {
+      // Validate dates and times
+      if (values.start_date && values.end_date) {
+        if (values.end_date.isBefore(values.start_date, 'day')) {
+          message.error('Ngày kết thúc không được nhỏ hơn ngày bắt đầu');
+          return;
+        }
+        if (values.start_date.isSame(values.end_date, 'day') && values.start_time && values.end_time) {
+          if (values.end_time.isBefore(values.start_time, 'second') || values.end_time.isSame(values.start_time, 'second')) {
+            message.error('Thời gian kết thúc phải lớn hơn thời gian bắt đầu khi trong cùng một ngày');
+            return;
+          }
+        }
+      }
+
+      // Check overlap
+      const sDate = values.start_date.format('YYYY-MM-DD');
+      const eDate = values.end_date ? values.end_date.format('YYYY-MM-DD') : sDate;
+      const sTime = values.start_time ? values.start_time.format('HH:mm:ss') : '00:00:00';
+      const eTime = values.end_time ? values.end_time.format('HH:mm:ss') : '23:59:59';
+      const newStart = dayjs(`${sDate} ${sTime}`);
+      const newEnd = dayjs(`${eDate} ${eTime}`);
+
+      const isOverlap = items.some(act => {
+        if (act.id === editingId) return false;
+
+        if (!act.start_date) return false;
+        const actSDate = dayjs(act.start_date).format('YYYY-MM-DD');
+        const actEDate = act.end_date ? dayjs(act.end_date).format('YYYY-MM-DD') : actSDate;
+        const actSTime = act.start_time || '00:00:00';
+        const actETime = act.end_time || '23:59:59';
+
+        const actStart = dayjs(`${actSDate} ${actSTime}`);
+        const actEnd = dayjs(`${actEDate} ${actETime}`);
+
+        return newStart.isBefore(actEnd) && newEnd.isAfter(actStart);
+      });
+
+      if (isOverlap) {
+        Modal.confirm({
+          title: 'Cảnh báo trùng lặp thời gian',
+          content: 'Thời gian của hoạt động này đang bị trùng với một hoạt động khác. Bạn có chắc chắn muốn tiếp tục lưu?',
+          onOk: () => submitActivitySave(values),
+        });
+        return;
+      }
+
+      submitActivitySave(values);
     }
   };
 
@@ -245,6 +308,8 @@ const KanbanBoard = () => {
         ...item,
         start_date: item.start_date ? dayjs(item.start_date) : null,
         end_date: item.end_date ? dayjs(item.end_date) : null,
+        start_time: item.start_time ? dayjs(`1970-01-01 ${item.start_time}`) : null,
+        end_time: item.end_time ? dayjs(`1970-01-01 ${item.end_time}`) : null,
       });
     }
     setIsModalOpen(true);
@@ -530,6 +595,14 @@ const KanbanBoard = () => {
                 </Form.Item>
                 <Form.Item name="end_date" label={<span className="font-medium">Đến ngày</span>} className="flex-1">
                   <DatePicker format="DD/MM/YYYY" className="w-full rounded-lg" size="large" />
+                </Form.Item>
+              </div>
+              <div className="flex gap-4">
+                <Form.Item name="start_time" label={<span className="font-medium">Giờ bắt đầu</span>} className="flex-1">
+                  <TimePicker format="HH:mm" className="w-full rounded-lg" size="large" />
+                </Form.Item>
+                <Form.Item name="end_time" label={<span className="font-medium">Giờ kết thúc</span>} className="flex-1">
+                  <TimePicker format="HH:mm" className="w-full rounded-lg" size="large" />
                 </Form.Item>
               </div>
               <Form.Item name="description" label={<span className="font-medium">Mô tả chi tiết</span>}>

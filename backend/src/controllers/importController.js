@@ -42,6 +42,7 @@ const importEnterprises = async (req, res) => {
     try {
         const rows = parseFileToJSON(req.file.buffer, req.file.originalname);
         let inserted = 0;
+        let skipped = 0;
         let errors = [];
 
         for (let i = 0; i < rows.length; i++) {
@@ -73,21 +74,37 @@ const importEnterprises = async (req, res) => {
 
                 if (!name) { errors.push(`Dòng ${i + 2}: Thiếu tên doanh nghiệp`); continue; }
 
-                // 1. Map scale string to scale_id
+                // 1. Check if enterprise already exists (by tax_code or name)
+                let checkQuery = 'SELECT id FROM enterprises WHERE name = ?';
+                let checkParams = [name];
+                if (tax_code) {
+                    checkQuery += ' OR tax_code = ?';
+                    checkParams.push(tax_code);
+                }
+                const [existingEnt] = await conn.query(checkQuery, checkParams);
+                if (existingEnt.length > 0) {
+                    skipped++;
+                    errors.push(`Dòng ${i + 2}: Đã tồn tại doanh nghiệp với Tên hoặc Mã số thuế này`);
+                    await conn.rollback();
+                    conn.release();
+                    continue;
+                }
+
+                // 2. Map scale string to scale_id
                 let scale_id = null;
                 if (scaleStr) {
                     const [scaleRows] = await conn.query('SELECT id FROM scales WHERE name LIKE ? LIMIT 1', [`%${scaleStr}%`]);
                     if (scaleRows.length > 0) scale_id = scaleRows[0].id;
                 }
 
-                // 2. Insert into enterprises
+                // 3. Insert into enterprises
                 const [result] = await conn.query(
                     'INSERT INTO enterprises (name, tax_code, scale_id, is_hcmc, status, department_id, faculty_id) VALUES (?, ?, ?, ?, ?, ?, ?)',
                     [name, tax_code, scale_id, is_hcmc, status, department_id, facultyId]
                 );
                 const enterpriseId = result.insertId;
 
-                // 3. Insert into enterprise_representatives
+                // 4. Insert into enterprise_representatives
                 if (rep_full_name || rep_phone || rep_email) {
                     await conn.query(
                         'INSERT INTO enterprise_representatives (enterprise_id, title, full_name, role, phone, email, is_primary) VALUES (?, ?, ?, ?, ?, ?, 1)',
@@ -95,7 +112,7 @@ const importEnterprises = async (req, res) => {
                     );
                 }
 
-                // 4. Insert into enterprise_addresses
+                // 5. Insert into enterprise_addresses
                 if (building_street || district || province) {
                     await conn.query(
                         'INSERT INTO enterprise_addresses (enterprise_id, building_street, district, province, country, is_main) VALUES (?, ?, ?, ?, ?, 1)',
@@ -103,7 +120,7 @@ const importEnterprises = async (req, res) => {
                     );
                 }
 
-                // 5. Insert into enterprise_fields (many-to-many)
+                // 6. Insert into enterprise_fields (many-to-many)
                 if (fieldStr) {
                     const fieldNames = fieldStr.split(',').map(s => s.trim()).filter(Boolean);
                     for (const fn of fieldNames) {
@@ -124,7 +141,7 @@ const importEnterprises = async (req, res) => {
             }
         }
 
-        res.json({ message: `Import thành công ${inserted}/${rows.length} doanh nghiệp`, inserted, total: rows.length, errors });
+        res.json({ message: `Import hoàn tất. Thêm mới: ${inserted}, Bỏ qua (trùng): ${skipped}, Lỗi: ${errors.length}`, inserted, skipped, total: rows.length, errors });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
@@ -135,6 +152,7 @@ const importActivities = async (req, res) => {
     try {
         const rows = parseFileToJSON(req.file.buffer, req.file.originalname);
         let inserted = 0;
+        let skipped = 0;
         let errors = [];
 
         for (let i = 0; i < rows.length; i++) {
@@ -173,6 +191,15 @@ const importActivities = async (req, res) => {
 
                 if (!title) { errors.push(`Dòng ${i + 2}: Thiếu tên hoạt động`); continue; }
                 if (!enterprise_id) { errors.push(`Dòng ${i + 2}: Thiếu mã doanh nghiệp (ID)`); continue; }
+
+                const [existingAct] = await conn.query('SELECT id FROM activities WHERE title = ? AND enterprise_id = ?', [title, enterprise_id]);
+                if (existingAct.length > 0) {
+                    skipped++;
+                    errors.push(`Dòng ${i + 2}: Đã tồn tại hoạt động này cho doanh nghiệp (ID: ${enterprise_id})`);
+                    await conn.rollback();
+                    conn.release();
+                    continue;
+                }
 
                 // 1. Insert into activities
                 const [result] = await conn.query(
@@ -213,7 +240,7 @@ const importActivities = async (req, res) => {
             }
         }
 
-        res.json({ message: `Import thành công ${inserted}/${rows.length} hoạt động`, inserted, total: rows.length, errors });
+        res.json({ message: `Import hoàn tất. Thêm mới: ${inserted}, Bỏ qua (trùng): ${skipped}, Lỗi: ${errors.length}`, inserted, skipped, total: rows.length, errors });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
@@ -224,6 +251,7 @@ const importStudents = async (req, res) => {
     try {
         const rows = parseFileToJSON(req.file.buffer, req.file.originalname);
         let inserted = 0;
+        let skipped = 0;
         let errors = [];
 
         for (let i = 0; i < rows.length; i++) {
@@ -253,6 +281,13 @@ const importStudents = async (req, res) => {
 
                 if (!student_code || !name) { errors.push(`Dòng ${i + 2}: Thiếu MSSV hoặc Họ tên`); continue; }
 
+                const [existingStu] = await pool.query('SELECT id FROM students WHERE student_code = ?', [student_code]);
+                if (existingStu.length > 0) {
+                    skipped++;
+                    errors.push(`Dòng ${i + 2}: Đã tồn tại sinh viên với MSSV ${student_code}`);
+                    continue;
+                }
+
                 const facultyId = req.user.role === 'ADMIN' ? (r['faculty_id'] || null) : req.user.faculty_id;
 
                 await pool.query(
@@ -266,7 +301,7 @@ const importStudents = async (req, res) => {
             }
         }
 
-        res.json({ message: `Import thành công ${inserted}/${rows.length} sinh viên`, inserted, total: rows.length, errors });
+        res.json({ message: `Import hoàn tất. Thêm mới: ${inserted}, Bỏ qua (trùng): ${skipped}, Lỗi: ${errors.length}`, inserted, skipped, total: rows.length, errors });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }

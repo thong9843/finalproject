@@ -17,26 +17,34 @@ const ImportModal = ({ open, onClose, onSuccess, type, templateColumns }) => {
         students: 'Sinh viên',
     };
 
-    const handleUpload = async (file) => {
-        setUploading(true);
-        setResult(null);
-        const formData = new FormData();
-        formData.append('file', file);
+    const handleUpload = (file) => {
+        Modal.confirm({
+            title: 'Xác nhận Import dữ liệu',
+            content: `Bạn có chắc chắn muốn import dữ liệu từ file "${file.name}" vào hệ thống không?`,
+            okText: 'Đồng ý Import',
+            cancelText: 'Huỷ',
+            onOk: async () => {
+                setUploading(true);
+                setResult(null);
+                const formData = new FormData();
+                formData.append('file', file);
 
-        try {
-            const res = await api.post(`/import/${type}`, formData, {
-                headers: { 'Content-Type': 'multipart/form-data' },
-            });
-            setResult(res.data);
-            if (res.data.inserted > 0) {
-                message.success(res.data.message);
-                onSuccess?.();
+                try {
+                    const res = await api.post(`/import/${type}`, formData, {
+                        headers: { 'Content-Type': 'multipart/form-data' },
+                    });
+                    setResult(res.data);
+                    if (res.data.inserted > 0) {
+                        message.success(res.data.message);
+                        onSuccess?.();
+                    }
+                } catch (error) {
+                    message.error(error.response?.data?.message || 'Lỗi khi import file');
+                } finally {
+                    setUploading(false);
+                }
             }
-        } catch (error) {
-            message.error(error.response?.data?.message || 'Lỗi khi import file');
-        } finally {
-            setUploading(false);
-        }
+        });
         return false; // Prevent default upload
     };
 

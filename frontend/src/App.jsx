@@ -15,6 +15,7 @@ import CalendarView from './pages/CalendarView';
 import ActivityTypes from './pages/ActivityTypes';
 import MOUList from './pages/MOUList';
 import UserList from './pages/UserList';
+import DuplicateDataTool from './pages/DuplicateDataTool';
 import Cookies from 'js-cookie';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
 
@@ -63,6 +64,7 @@ const App = () => {
                             <Route path="activity-types" element={<ActivityTypes />} />
                             <Route path="mous" element={<MOUList />} />
                             <Route path="users" element={<UserList />} />
+                            <Route path="duplicates" element={<DuplicateDataTool />} />
                         </Route>
                     </Routes>
                 </BrowserRouter>

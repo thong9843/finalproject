@@ -16,10 +16,11 @@ const FONTS = {
 exports.getAll = async (req, res) => {
     try {
         const [rows] = await pool.query(`
-            SELECT m.*, e.name as enterprise_name, d.name as executing_unit_name
+            SELECT m.*, e.name as enterprise_name, d.name as executing_unit_name, a.title as activity_title
             FROM mous m
             JOIN enterprises e ON m.enterprise_id = e.id
             LEFT JOIN departments d ON m.executing_unit_id = d.id
+            LEFT JOIN activities a ON m.activity_id = a.id
             ORDER BY m.created_at DESC
         `);
         res.status(200).json(rows);
@@ -42,15 +43,15 @@ exports.create = async (req, res) => {
     try {
         const { mou_code, enterprise_id, signing_date, partner_contact, org_type, country,
             collaboration_scope, executing_unit_id, vlu_contact, tasks_ay24_25,
-            next_steps, past_activities, related_data, working_dir } = req.body;
+            next_steps, past_activities, related_data, working_dir, activity_id, file_url } = req.body;
         const [result] = await pool.query(
             `INSERT INTO mous (mou_code, enterprise_id, signing_date, partner_contact, org_type, country,
                 collaboration_scope, executing_unit_id, vlu_contact, tasks_ay24_25,
-                next_steps, past_activities, related_data, working_dir)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                next_steps, past_activities, related_data, working_dir, activity_id, file_url)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [mou_code, enterprise_id, signing_date || null, partner_contact, org_type, country,
                 collaboration_scope, executing_unit_id || null, vlu_contact, tasks_ay24_25,
-                next_steps, past_activities, related_data, working_dir]
+                next_steps, past_activities, related_data, working_dir, activity_id || null, file_url || null]
         );
         res.status(201).json({ id: result.insertId, message: 'Created successfully' });
     } catch (error) {
@@ -63,15 +64,15 @@ exports.update = async (req, res) => {
         const { id } = req.params;
         const { mou_code, enterprise_id, signing_date, partner_contact, org_type, country,
             collaboration_scope, executing_unit_id, vlu_contact, tasks_ay24_25,
-            next_steps, past_activities, related_data, working_dir } = req.body;
+            next_steps, past_activities, related_data, working_dir, activity_id, file_url } = req.body;
         await pool.query(
             `UPDATE mous SET mou_code=?, enterprise_id=?, signing_date=?, partner_contact=?,
                 org_type=?, country=?, collaboration_scope=?, executing_unit_id=?, vlu_contact=?,
-                tasks_ay24_25=?, next_steps=?, past_activities=?, related_data=?, working_dir=?
+                tasks_ay24_25=?, next_steps=?, past_activities=?, related_data=?, working_dir=?, activity_id=?, file_url=?
              WHERE id=?`,
             [mou_code, enterprise_id, signing_date || null, partner_contact, org_type, country,
                 collaboration_scope, executing_unit_id || null, vlu_contact, tasks_ay24_25,
-                next_steps, past_activities, related_data, working_dir, id]
+                next_steps, past_activities, related_data, working_dir, activity_id || null, file_url || null, id]
         );
         res.status(200).json({ message: 'Updated successfully' });
     } catch (error) {
@@ -294,7 +295,8 @@ Doc tai lieu nay va trich xuat cac truong sau. Tra ve KET QUA DUY NHAT dang JSON
   "next_steps": "Buoc tiep theo hoac ke hoach sap toi",
   "past_activities": "Cac hoat dong da thuc hien truoc do (neu co)",
   "related_data": "So lieu lien quan (neu co)",
-  "tax_code": "Ma so thue cua doi tac (neu co)"
+  "tax_code": "Ma so thue cua doi tac (neu co)",
+  "activity_name": "Ten hoat dong/su kien/chuong trinh (activity) lien quan den MOU nay (neu co)"
 }
 
 Neu khong tim thay thong tin, de null. Tra ve JSON thuan tuy khong co markdown.`;
@@ -312,19 +314,55 @@ Neu khong tim thay thong tin, de null. Tra ve JSON thuan tuy khong co markdown.`
             else throw new Error('AI khong tra ve JSON hop le');
         }
 
-        try { fs.unlinkSync(req.file.path); } catch (e) { }
-
         let enterprise_id = null;
+        let activity_id = null;
+        let matched_activity = null;
         if (extractedData.enterprise_name) {
             const words = extractedData.enterprise_name.toLowerCase().split(' ').slice(0, 3).join('%');
             const [ents] = await pool.query(`SELECT id, name FROM enterprises WHERE LOWER(name) LIKE ? LIMIT 1`, [`%${words}%`]);
             if (ents.length > 0) {
                 enterprise_id = ents[0].id;
                 extractedData.matched_enterprise = ents[0].name;
+
+                // Attempt to match activity if enterprise found
+                if (extractedData.activity_name) {
+                    const actWords = extractedData.activity_name.toLowerCase().split(' ').slice(0, 3).join('%');
+                    const [acts] = await pool.query(`SELECT id, title FROM activities WHERE enterprise_id = ? AND LOWER(title) LIKE ? LIMIT 1`, [enterprise_id, `%${actWords}%`]);
+                    if (acts.length > 0) {
+                        activity_id = acts[0].id;
+                        matched_activity = acts[0].title;
+                    }
+                }
             }
         }
 
-        res.status(200).json({ success: true, extracted: { ...extractedData, enterprise_id } });
+        // --- FIREBASE STORAGE UPLOAD ---
+        let file_url = null;
+        let firebase_error = null;
+        try {
+            const bucket = require('../config/firebase');
+            if (bucket && req.file) {
+                const destFileName = `mous/${Date.now()}_${path.basename(req.file.path)}`;
+                const uploadRes = await bucket.upload(req.file.path, {
+                    destination: destFileName,
+                    metadata: {
+                        contentType: mimeType,
+                    }
+                });
+                const file = uploadRes[0];
+                const encodedPath = encodeURIComponent(file.name);
+                file_url = `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${encodedPath}?alt=media`;
+            } else if (!bucket) {
+                firebase_error = 'Firebase is not initialized (bucket is null)';
+            }
+        } catch (fbErr) {
+            console.error('Firebase upload error or not configured:', fbErr.message);
+            firebase_error = fbErr.message;
+        }
+
+        try { fs.unlinkSync(req.file.path); } catch (e) { }
+
+        res.status(200).json({ success: true, extracted: { ...extractedData, enterprise_id, activity_id, matched_activity, file_url, firebase_error } });
 
     } catch (error) {
         if (req.file?.path) { try { fs.unlinkSync(req.file.path); } catch (e) { } }

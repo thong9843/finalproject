@@ -78,10 +78,16 @@ const Sidebar = ({ isOpen, onClose }) => {
                     key: '/activity-types',
                     label: 'Loại hình hoạt động',
                 },
-                ...(isAdmin ? [{
-                    key: '/users',
-                    label: 'Quản lý người dùng',
-                }] : [])
+                ...(isAdmin ? [
+                    {
+                        key: '/users',
+                        label: 'Quản lý người dùng',
+                    },
+                    {
+                        key: '/duplicates',
+                        label: 'Xử lý dữ liệu trùng',
+                    }
+                ] : [])
             ]
         },
     ];

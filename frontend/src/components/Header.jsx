@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Dropdown, Avatar, Badge, List, Typography, Button } from 'antd';
+import { Dropdown, Avatar, Badge, List, Typography, Button, Popover } from 'antd';
 import { UserOutlined, LogoutOutlined, BellOutlined, MenuOutlined } from '@ant-design/icons';
 import Cookies from 'js-cookie';
 import { useNavigate } from 'react-router-dom';
@@ -94,14 +94,14 @@ const Header = ({ onMenuToggle }) => {
             <div className="hidden lg:flex flex-1" />
 
             {/* Notification bell */}
-            <Dropdown dropdownRender={() => notificationContent} trigger={['click']} placement="bottomRight">
+            <Popover content={notificationContent} trigger="click" placement="bottomRight" overlayInnerStyle={{ padding: 0, border: 'none', background: 'transparent', boxShadow: 'none' }}>
                 <Badge count={upcomingEvents.length} size="small">
                     <Avatar
                         className="bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
                         icon={<BellOutlined />}
                     />
                 </Badge>
-            </Dropdown>
+            </Popover>
 
             {user && (
                 <div className="flex items-center gap-2 sm:gap-3 border-l border-gray-200 dark:border-gray-600 pl-3 sm:pl-6 transition-colors duration-300">

@@ -1,6 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { Card, Row, Col, Tag, Form, Select, Button, Modal, message, Input, DatePicker, Statistic, Spin, Empty, Tooltip, Drawer, Descriptions, Popover, Badge, Divider, Pagination, Checkbox, Space } from 'antd';
-import { PlusOutlined, CheckCircleOutlined, ClockCircleOutlined, SyncOutlined, CheckOutlined, PauseCircleOutlined, TeamOutlined, BankOutlined, CalendarOutlined, UploadOutlined, SearchOutlined, EditOutlined, DeleteOutlined, UserOutlined, AppstoreOutlined, UnorderedListOutlined, DownloadOutlined, FilterOutlined, SortAscendingOutlined, ClearOutlined } from '@ant-design/icons';
+import { Card, Row, Col, Tag, Form, Select, Button, Modal, message, Input, DatePicker, TimePicker, Statistic, Spin, Empty, Tooltip, Drawer, Descriptions, Popover, Badge, Divider, Pagination, Checkbox, Space } from 'antd';
+import {
+    ClockCircleOutlined, SyncOutlined, CheckOutlined, PauseCircleOutlined,
+    UploadOutlined, DownloadOutlined, PlusOutlined, CheckCircleOutlined,
+    TeamOutlined, SearchOutlined, SortAscendingOutlined, CalendarOutlined,
+    FilterOutlined, ClearOutlined, AppstoreOutlined, UnorderedListOutlined,
+    DeleteOutlined, BankOutlined, EditOutlined
+} from '@ant-design/icons';
 import ImportModal from '../components/ImportModal';
 import api from '../utils/api';
 import dayjs from 'dayjs';
@@ -88,12 +94,14 @@ const ActivityList = () => {
         }
     };
 
-    const handleSave = async (values) => {
+    const submitSave = async (values) => {
         try {
             const formattedValues = {
                 ...values,
                 start_date: values.start_date?.format('YYYY-MM-DD'),
                 end_date: values.end_date?.format('YYYY-MM-DD') || null,
+                start_time: values.start_time?.format('HH:mm:ss') || null,
+                end_time: values.end_time?.format('HH:mm:ss') || null,
                 collaboration_date: values.collaboration_date?.format('YYYY-MM-DD') || null,
                 type_ids: values.type_ids || [],
                 target_ids: values.target_ids || [],
@@ -112,6 +120,56 @@ const ActivityList = () => {
         } catch (error) {
             message.error(error.response?.data?.message || 'Lỗi khi lưu dữ liệu');
         }
+    };
+
+    const handleSave = async (values) => {
+        // Validate dates and times
+        if (values.start_date && values.end_date) {
+            if (values.end_date.isBefore(values.start_date, 'day')) {
+                message.error('Ngày kết thúc không được nhỏ hơn ngày bắt đầu');
+                return;
+            }
+            if (values.start_date.isSame(values.end_date, 'day') && values.start_time && values.end_time) {
+                if (values.end_time.isBefore(values.start_time, 'second') || values.end_time.isSame(values.start_time, 'second')) {
+                    message.error('Thời gian kết thúc phải lớn hơn thời gian bắt đầu khi trong cùng một ngày');
+                    return;
+                }
+            }
+        }
+
+        // Check overlap
+        const sDate = values.start_date.format('YYYY-MM-DD');
+        const eDate = values.end_date ? values.end_date.format('YYYY-MM-DD') : sDate;
+        const sTime = values.start_time ? values.start_time.format('HH:mm:ss') : '00:00:00';
+        const eTime = values.end_time ? values.end_time.format('HH:mm:ss') : '23:59:59';
+        const newStart = dayjs(`${sDate} ${sTime}`);
+        const newEnd = dayjs(`${eDate} ${eTime}`);
+
+        const isOverlap = data.some(act => {
+            if (act.id === editingId) return false;
+
+            if (!act.start_date) return false;
+            const actSDate = dayjs(act.start_date).format('YYYY-MM-DD');
+            const actEDate = act.end_date ? dayjs(act.end_date).format('YYYY-MM-DD') : actSDate;
+            const actSTime = act.start_time || '00:00:00';
+            const actETime = act.end_time || '23:59:59';
+
+            const actStart = dayjs(`${actSDate} ${actSTime}`);
+            const actEnd = dayjs(`${actEDate} ${actETime}`);
+
+            return newStart.isBefore(actEnd) && newEnd.isAfter(actStart);
+        });
+
+        if (isOverlap) {
+            Modal.confirm({
+                title: 'Cảnh báo trùng lặp thời gian',
+                content: 'Thời gian của hoạt động này đang bị trùng với một hoạt động khác. Bạn có chắc chắn muốn tiếp tục lưu?',
+                onOk: () => submitSave(values),
+            });
+            return;
+        }
+
+        submitSave(values);
     };
 
     const handleDelete = async (id) => {
@@ -589,6 +647,8 @@ const ActivityList = () => {
                                                             target_ids: item.target_ids ? item.target_ids.split(',').map(Number) : [],
                                                             start_date: item.start_date ? dayjs(item.start_date) : null,
                                                             end_date: item.end_date ? dayjs(item.end_date) : null,
+                                                            start_time: item.start_time ? dayjs(`1970-01-01 ${item.start_time}`) : null,
+                                                            end_time: item.end_time ? dayjs(`1970-01-01 ${item.end_time}`) : null,
                                                             collaboration_date: item.collaboration_date ? dayjs(item.collaboration_date) : null,
                                                         });
                                                         setIsModalVisible(true);
@@ -669,22 +729,32 @@ const ActivityList = () => {
                         </Select>
                     </Form.Item>
                     <Row gutter={16}>
-                        <Col span={8}>
+                        <Col span={12}>
                             <Form.Item name="start_date" label="Ngày bắt đầu" rules={[{ required: true }]}>
                                 <DatePicker className="w-full" format="DD/MM/YYYY" />
                             </Form.Item>
                         </Col>
-                        <Col span={8}>
+                        <Col span={12}>
                             <Form.Item name="end_date" label="Ngày kết thúc">
                                 <DatePicker className="w-full" format="DD/MM/YYYY" />
                             </Form.Item>
                         </Col>
-                        <Col span={8}>
-                            <Form.Item name="collaboration_date" label="Ngày hợp tác">
-                                <DatePicker className="w-full" format="DD/MM/YYYY" />
+                    </Row>
+                    <Row gutter={16}>
+                        <Col span={12}>
+                            <Form.Item name="start_time" label="Giờ bắt đầu">
+                                <TimePicker className="w-full" format="HH:mm" />
+                            </Form.Item>
+                        </Col>
+                        <Col span={12}>
+                            <Form.Item name="end_time" label="Giờ kết thúc">
+                                <TimePicker className="w-full" format="HH:mm" />
                             </Form.Item>
                         </Col>
                     </Row>
+                    <Form.Item name="collaboration_date" label="Ngày hợp tác">
+                        <DatePicker className="w-full" format="DD/MM/YYYY" />
+                    </Form.Item>
                     <Form.Item name="detail" label="Mô tả nội dung hoạt động">
                         <Input.TextArea rows={3} placeholder="Nhập tóm tắt nội dung..." />
                     </Form.Item>
