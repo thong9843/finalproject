@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Card, Row, Col, Tag, Form, Select, Button, Modal, message, Input, DatePicker, TimePicker, Statistic, Spin, Empty, Tooltip, Drawer, Descriptions, Popover, Badge, Divider, Pagination, Checkbox, Space } from 'antd';
+import { Card, Row, Col, Tag, Form, Select, Button, Modal, message, Input, DatePicker, TimePicker, Statistic, Spin, Empty, Tooltip, Drawer, Descriptions, Popover, Badge, Divider, Pagination, Checkbox, Space , App as AntApp } from 'antd';
 import {
     ClockCircleOutlined, SyncOutlined, CheckOutlined, PauseCircleOutlined,
     UploadOutlined, DownloadOutlined, PlusOutlined, CheckCircleOutlined,
@@ -16,6 +16,7 @@ const { Option } = Select;
 
 const ActivityList = () => {
     const [data, setData] = useState([]);
+    const { modal } = AntApp.useApp();
     const [stats, setStats] = useState(null);
     const [enterprises, setEnterprises] = useState([]);
     const [loading, setLoading] = useState(false);
@@ -161,9 +162,10 @@ const ActivityList = () => {
         });
 
         if (isOverlap) {
-            Modal.confirm({
+            modal.confirm({
                 title: 'Cảnh báo trùng lặp thời gian',
                 content: 'Thời gian của hoạt động này đang bị trùng với một hoạt động khác. Bạn có chắc chắn muốn tiếp tục lưu?',
+                okButtonProps: { className: '!bg-blue-600 hover:!bg-blue-500 text-white' },
                 onOk: () => submitSave(values),
             });
             return;
@@ -185,9 +187,10 @@ const ActivityList = () => {
     };
 
     const handleBulkDelete = () => {
-        Modal.confirm({
+        modal.confirm({
             title: `Xác nhận xóa ${selectedActivities.length} hoạt động?`,
             content: 'Hành động này không thể hoàn tác.',
+            okButtonProps: { danger: true, className: '!bg-red-600 hover:!bg-red-500 text-white' },
             onOk: async () => {
                 setLoading(true);
                 try {
@@ -206,8 +209,9 @@ const ActivityList = () => {
     };
 
     const handleBulkUpdateStatus = (status) => {
-        Modal.confirm({
+        modal.confirm({
             title: `Xác nhận chuyển ${selectedActivities.length} hoạt động sang "${status}"?`,
+            okButtonProps: { className: '!bg-blue-600 hover:!bg-blue-500 text-white' },
             onOk: async () => {
                 setLoading(true);
                 try {
@@ -251,20 +255,20 @@ const ActivityList = () => {
     };
 
     const statusConfig = {
-        'Đề xuất': { color: '#faad14', bg: '#fffbe6', border: '#ffe58f', icon: <ClockCircleOutlined /> },
-        'Phê duyệt nội bộ': { color: '#fa541c', bg: '#fff2e8', border: '#ffbb96', icon: <SyncOutlined spin /> },
-        'Đã triển khai': { color: '#52c41a', bg: '#f6ffed', border: '#b7eb8f', icon: <CheckOutlined /> },
-        'Đã kết thúc': { color: '#1890ff', bg: '#e6f7ff', border: '#91d5ff', icon: <PauseCircleOutlined /> },
+        'Đề xuất': { colorClass: 'text-orange-500 bg-orange-50 dark:text-orange-400 dark:bg-orange-900/30', icon: <ClockCircleOutlined /> },
+        'Phê duyệt nội bộ': { colorClass: 'text-orange-600 bg-orange-50 dark:text-orange-500 dark:bg-orange-900/40', icon: <SyncOutlined spin /> },
+        'Đã triển khai': { colorClass: 'text-green-600 bg-green-50 dark:text-green-400 dark:bg-green-900/30', icon: <CheckOutlined /> },
+        'Đã kết thúc': { colorClass: 'text-blue-500 bg-blue-50 dark:text-blue-400 dark:bg-blue-900/30', icon: <PauseCircleOutlined /> },
     };
 
     const typeConfig = {
-        'Tuyển dụng & Thực tập': { color: '#DA251D', bg: '#fff1f0' },
-        'Hội thảo & Đào tạo': { color: '#1890ff', bg: '#e6f7ff' },
-        'Tài trợ & Học bổng': { color: '#52c41a', bg: '#f6ffed' },
-        'Tham quan doanh nghiệp': { color: '#13c2c2', bg: '#e6fffb' },
-        'Kiểm định & Đánh giá': { color: '#722ed1', bg: '#f9f0ff' },
-        'Ký kết MOU': { color: '#eb2f96', bg: '#fff0f6' },
-        'Khác': { color: '#8c8c8c', bg: '#fafafa' },
+        'Tuyển dụng & Thực tập': { colorClass: 'text-red-600 bg-red-50 dark:text-red-400 dark:bg-red-900/30', ringClass: 'ring-red-500 dark:ring-red-400' },
+        'Hội thảo & Đào tạo': { colorClass: 'text-blue-600 bg-blue-50 dark:text-blue-400 dark:bg-blue-900/30', ringClass: 'ring-blue-500 dark:ring-blue-400' },
+        'Tài trợ & Học bổng': { colorClass: 'text-green-600 bg-green-50 dark:text-green-400 dark:bg-green-900/30', ringClass: 'ring-green-500 dark:ring-green-400' },
+        'Tham quan doanh nghiệp': { colorClass: 'text-cyan-600 bg-cyan-50 dark:text-cyan-400 dark:bg-cyan-900/30', ringClass: 'ring-cyan-500 dark:ring-cyan-400' },
+        'Kiểm định & Đánh giá': { colorClass: 'text-purple-600 bg-purple-50 dark:text-purple-400 dark:bg-purple-900/30', ringClass: 'ring-purple-500 dark:ring-purple-400' },
+        'Ký kết MOU': { colorClass: 'text-pink-600 bg-pink-50 dark:text-pink-400 dark:bg-pink-900/30', ringClass: 'ring-pink-500 dark:ring-pink-400' },
+        'Khác': { colorClass: 'text-gray-600 bg-gray-50 dark:text-gray-400 dark:bg-gray-800', ringClass: 'ring-gray-500 dark:ring-gray-400' },
     };
 
     const typeIcons = {
@@ -366,7 +370,7 @@ const ActivityList = () => {
 
             {/* Stats Cards */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                <div className="bg-gradient-to-br from-green-50 to-green-100/50/30/10 rounded-2xl p-5 border border-green-100 transition-colors">
+                <div className="bg-gradient-to-br from-green-50 to-green-100/50 dark:from-green-900/20 dark:to-green-900/10 rounded-2xl p-5 border border-green-100 dark:border-green-900/50 transition-colors">
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-green-500 rounded-xl flex items-center justify-center">
                             <SyncOutlined className="text-white text-lg" />
@@ -377,7 +381,7 @@ const ActivityList = () => {
                         </div>
                     </div>
                 </div>
-                <div className="bg-gradient-to-br from-blue-50 to-blue-100/50/30/10 rounded-2xl p-5 border border-blue-100 transition-colors">
+                <div className="bg-gradient-to-br from-blue-50 to-blue-100/50 dark:from-blue-900/20 dark:to-blue-900/10 rounded-2xl p-5 border border-blue-100 dark:border-blue-900/50 transition-colors">
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-blue-500 rounded-xl flex items-center justify-center">
                             <CheckCircleOutlined className="text-white text-lg" />
@@ -388,7 +392,7 @@ const ActivityList = () => {
                         </div>
                     </div>
                 </div>
-                <div className="bg-gradient-to-br from-orange-50 to-orange-100/50/30/10 rounded-2xl p-5 border border-orange-100 transition-colors">
+                <div className="bg-gradient-to-br from-orange-50 to-orange-100/50 dark:from-orange-900/20 dark:to-orange-900/10 rounded-2xl p-5 border border-orange-100 dark:border-orange-900/50 transition-colors">
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-orange-500 rounded-xl flex items-center justify-center">
                             <ClockCircleOutlined className="text-white text-lg" />
@@ -399,7 +403,7 @@ const ActivityList = () => {
                         </div>
                     </div>
                 </div>
-                <div className="bg-gradient-to-br from-purple-50 to-purple-100/50/30/10 rounded-2xl p-5 border border-purple-100 transition-colors">
+                <div className="bg-gradient-to-br from-purple-50 to-purple-100/50 dark:from-purple-900/20 dark:to-purple-900/10 rounded-2xl p-5 border border-purple-100 dark:border-purple-900/50 transition-colors">
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-purple-500 rounded-xl flex items-center justify-center">
                             <TeamOutlined className="text-white text-lg" />
@@ -422,16 +426,10 @@ const ActivityList = () => {
                             <button
                                 key={type}
                                 onClick={() => setFilterType(filterType === type ? null : type)}
-                                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all border ${filterType === type
-                                    ? 'ring-2 ring-offset-1 shadow-sm'
-                                    : 'hover:shadow-sm'
+                                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all border ${tc.colorClass} ${filterType === type
+                                    ? `ring-2 ring-offset-1 dark:ring-offset-gray-900 shadow-sm dark:shadow-none ${tc.ringClass} border-current`
+                                    : 'hover:shadow-sm dark:hover:shadow-none border-transparent'
                                     }`}
-                                style={{
-                                    color: tc.color,
-                                    backgroundColor: tc.bg,
-                                    borderColor: filterType === type ? tc.color : 'transparent',
-                                    '--tw-ring-color': tc.color
-                                }}
                             >
                                 {typeIcons[type] || '📋'} {type} <span className="font-bold">{count}</span>
                             </button>
@@ -520,8 +518,8 @@ const ActivityList = () => {
 
             {/* Action Bar for Bulk Selection */}
             {selectedActivities.length > 0 && (
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4 flex justify-between items-center animate-fade-in">
-                    <span className="text-blue-700 font-medium ml-2">Đã chọn {selectedActivities.length} hoạt động</span>
+                <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800/50 rounded-lg p-3 mb-4 flex justify-between items-center animate-fade-in">
+                    <span className="text-blue-700 dark:text-blue-400 font-medium ml-2">Đã chọn {selectedActivities.length} hoạt động</span>
                     <Space>
                         <Select
                             placeholder="Đổi trạng thái..."
@@ -547,13 +545,12 @@ const ActivityList = () => {
             ) : filteredData.length > 0 ? (
                 <Row gutter={[20, 20]}>
                     {paginatedData.map(item => {
-                        const sc = statusConfig[item.status] || { color: '#8c8c8c', bg: '#fafafa', icon: <ClockCircleOutlined /> };
+                        const sc = statusConfig[item.status] || { colorClass: 'text-gray-500 bg-gray-50', icon: <ClockCircleOutlined /> };
                         const tc = typeConfig[item.type] || typeConfig['Khác'];
-                        const tags = item.type ? item.type.split(' ').slice(0, 2) : [];
 
                         return (
                             <Col xs={24} sm={viewMode === 'list' ? 24 : 12} lg={viewMode === 'list' ? 24 : 8} key={item.id}>
-                                <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md transition-all h-full flex flex-col overflow-hidden group cursor-pointer relative"
+                                <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md dark:shadow-none dark:hover:border-gray-500 transition-all h-full flex flex-col overflow-hidden group cursor-pointer relative"
                                     onClick={(e) => {
                                         if (e.target.closest('.action-buttons') || e.target.closest('.ant-checkbox-wrapper')) return;
                                         setSelectedActivity(item);
@@ -571,8 +568,7 @@ const ActivityList = () => {
                                     <div className="p-5 pb-3 flex-1">
                                         <div className="flex justify-between items-start mb-3 pr-6">
                                             <div className="flex items-start gap-3 flex-1">
-                                                <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 text-lg shadow-sm"
-                                                    style={{ backgroundColor: tc.bg }}>
+                                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 text-lg shadow-sm dark:shadow-none ${tc.colorClass}`}>
                                                     {typeIcons[item.type] || '📋'}
                                                 </div>
                                                 <div className="flex-1 min-w-0">
@@ -585,12 +581,11 @@ const ActivityList = () => {
                                                     </div>
                                                 </div>
                                             </div>
-                                            <Tag
-                                                className="rounded-full px-2.5 py-0.5 text-xs font-medium flex-shrink-0 border-0 ml-2"
-                                                style={{ color: sc.color, backgroundColor: sc.bg }}
+                                            <div
+                                                className={`rounded-full px-2.5 py-0.5 text-xs font-medium flex-shrink-0 border-0 ml-2 ${sc.colorClass}`}
                                             >
                                                 {item.status}
-                                            </Tag>
+                                            </div>
                                         </div>
 
                                         {/* Description */}
@@ -615,7 +610,7 @@ const ActivityList = () => {
                                         {/* Tags */}
                                         <div className="flex gap-1.5 ml-[52px] flex-wrap">
                                             {item.type && (
-                                                <span className="px-2 py-0.5 rounded-md text-[10px] font-medium" style={{ color: tc.color, backgroundColor: tc.bg }}>
+                                                <span className={`px-2 py-0.5 rounded-md text-[10px] font-medium ${tc.colorClass}`}>
                                                     {item.type}
                                                 </span>
                                             )}
@@ -658,7 +653,7 @@ const ActivityList = () => {
                                             </Tooltip>
                                             <Tooltip title="Xóa">
                                                 <button className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50:bg-red-900/30 transition-all"
-                                                    onClick={() => Modal.confirm({ title: 'Xác nhận xóa hoạt động này?', onOk: () => handleDelete(item.id) })}>
+                                                    onClick={() => modal.confirm({ title: 'Xác nhận xóa hoạt động này?', okButtonProps: { danger: true, className: '!bg-red-600 hover:!bg-red-500 text-white' }, onOk: () => handleDelete(item.id) })}>
                                                     <DeleteOutlined style={{ fontSize: 13 }} />
                                                 </button>
                                             </Tooltip>

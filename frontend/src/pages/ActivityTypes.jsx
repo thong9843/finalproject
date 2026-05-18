@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Table, Button, Modal, Form, Input, Select, message, Space } from 'antd';
+import { Table, Button, Modal, Form, Input, Select, message, Space , App as AntApp } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import api from '../utils/api';
 
@@ -7,6 +7,7 @@ const { Option } = Select;
 
 const ActivityTypes = () => {
     const [data, setData] = useState([]);
+    const { modal } = AntApp.useApp();
     const [faculties, setFaculties] = useState([]);
     const [loading, setLoading] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -63,9 +64,10 @@ const ActivityTypes = () => {
     };
 
     const handleDelete = (id) => {
-        Modal.confirm({
+        modal.confirm({
             title: 'Xác nhận xóa?',
             content: 'Loại hoạt động này sẽ bị xóa khỏi hệ thống.',
+            okButtonProps: { danger: true, className: '!bg-red-600 hover:!bg-red-500 text-white' },
             onOk: async () => {
                 try {
                     await api.delete(`/structure/activity-types/${id}`);

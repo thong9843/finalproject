@@ -194,7 +194,7 @@ const ReportStudents = () => {
             </div>
 
             {/* Period Selector */}
-            <div className="bg-gradient-to-r from-slate-50 to-gray-50 rounded-2xl p-4 mb-6 border border-gray-100 dark:border-gray-700 flex flex-wrap items-center gap-4">
+            <div className="bg-gradient-to-r from-slate-50 to-gray-50 dark:from-gray-800/50 dark:to-gray-900/50 rounded-2xl p-4 mb-6 border border-gray-100 dark:border-gray-700 flex flex-wrap items-center gap-4">
                 <div className="flex items-center gap-2 text-gray-500">
                     <CalendarOutlined className="text-lg" />
                     <span className="text-sm font-medium">Khoảng thời gian:</span>
@@ -228,23 +228,23 @@ const ReportStudents = () => {
             {/* Stats Cards */}
             <Row gutter={[16, 16]} className="mb-8">
                 <Col xs={12} sm={6}>
-                    <Card className="rounded-xl border-none shadow-sm bg-gradient-to-br from-blue-50 to-white">
-                        <Statistic title={<span className="">Tổng sinh viên</span>} value={overview.total || 0} prefix={<TeamOutlined className="text-blue-500" />} valueStyle={{ fontWeight: 'bold' }} />
+                    <Card className="rounded-xl border border-blue-100 dark:border-blue-900/50 shadow-sm dark:shadow-none bg-gradient-to-br from-blue-50 to-blue-100/50 dark:from-blue-900/20 dark:to-blue-900/10">
+                        <Statistic title={<span className="text-gray-500 dark:text-gray-400">Tổng sinh viên</span>} value={overview.total || 0} prefix={<TeamOutlined className="text-blue-500 dark:text-blue-400" />} valueStyle={{ fontWeight: 'bold' }} />
                     </Card>
                 </Col>
                 <Col xs={12} sm={6}>
-                    <Card className="rounded-xl border-none shadow-sm bg-gradient-to-br from-green-50 to-white">
-                        <Statistic title={<span className="">Đang thực tập</span>} value={overview.active || 0} prefix={<CheckCircleOutlined className="text-green-500" />} valueStyle={{ color: '#3f8600', fontWeight: 'bold' }} />
+                    <Card className="rounded-xl border border-green-100 dark:border-green-900/50 shadow-sm dark:shadow-none bg-gradient-to-br from-green-50 to-green-100/50 dark:from-green-900/20 dark:to-green-900/10">
+                        <Statistic title={<span className="text-gray-500 dark:text-gray-400">Đang thực tập</span>} value={overview.active || 0} prefix={<CheckCircleOutlined className="text-green-500 dark:text-green-400" />} valueStyle={{ color: '#3f8600', fontWeight: 'bold' }} />
                     </Card>
                 </Col>
                 <Col xs={12} sm={6}>
-                    <Card className="rounded-xl border-none shadow-sm bg-gradient-to-br from-orange-50 to-white">
-                        <Statistic title={<span className="">Chờ phân công</span>} value={overview.pending || 0} prefix={<ClockCircleOutlined className="text-orange-500" />} valueStyle={{ color: '#faad14', fontWeight: 'bold' }} />
+                    <Card className="rounded-xl border border-orange-100 dark:border-orange-900/50 shadow-sm dark:shadow-none bg-gradient-to-br from-orange-50 to-orange-100/50 dark:from-orange-900/20 dark:to-orange-900/10">
+                        <Statistic title={<span className="text-gray-500 dark:text-gray-400">Chờ phân công</span>} value={overview.pending || 0} prefix={<ClockCircleOutlined className="text-orange-500 dark:text-orange-400" />} valueStyle={{ color: '#faad14', fontWeight: 'bold' }} />
                     </Card>
                 </Col>
                 <Col xs={12} sm={6}>
-                    <Card className="rounded-xl border-none shadow-sm bg-gradient-to-br from-purple-50 to-white">
-                        <Statistic title={<span className="">GPA Trung bình</span>} value={overview.avgGpa || 0} prefix={<TrophyOutlined className="text-purple-500" />} valueStyle={{ color: '#722ed1', fontWeight: 'bold' }} />
+                    <Card className="rounded-xl border border-purple-100 dark:border-purple-900/50 shadow-sm dark:shadow-none bg-gradient-to-br from-purple-50 to-purple-100/50 dark:from-purple-900/20 dark:to-purple-900/10">
+                        <Statistic title={<span className="text-gray-500 dark:text-gray-400">GPA Trung bình</span>} value={overview.avgGpa || 0} prefix={<TrophyOutlined className="text-purple-500 dark:text-purple-400" />} valueStyle={{ color: '#722ed1', fontWeight: 'bold' }} />
                     </Card>
                 </Col>
             </Row>

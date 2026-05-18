@@ -119,28 +119,28 @@ const Dashboard = () => {
             value: totals.totalEnterprises,
             icon: <BankOutlined className="text-4xl text-white opacity-80 group-hover:scale-110 transition-transform duration-300" />,
             bg: 'bg-gradient-to-br from-red-500 to-red-600',
-            shadow: 'shadow-red-200'
+            shadow: 'shadow-red-200 dark:shadow-none'
         },
         {
             title: 'Đang hợp tác',
             value: totals.collaboratingEnterprises,
             icon: <CheckCircleOutlined className="text-4xl text-white opacity-80 group-hover:scale-110 transition-transform duration-300" />,
             bg: 'bg-gradient-to-br from-emerald-400 to-emerald-600',
-            shadow: 'shadow-emerald-200'
+            shadow: 'shadow-emerald-200 dark:shadow-none'
         },
         {
             title: `Hoạt động (${getPeriodTitle()})`,
             value: totals.activitiesCount,
             icon: <AppstoreOutlined className="text-4xl text-white opacity-80 group-hover:scale-110 transition-transform duration-300" />,
             bg: 'bg-gradient-to-br from-blue-500 to-blue-600',
-            shadow: 'shadow-blue-200'
+            shadow: 'shadow-blue-200 dark:shadow-none'
         },
         {
             title: 'Sinh viên tham gia',
             value: totals.totalStudents,
             icon: <TeamOutlined className="text-4xl text-white opacity-80 group-hover:scale-110 transition-transform duration-300" />,
             bg: 'bg-gradient-to-br from-purple-500 to-purple-600',
-            shadow: 'shadow-purple-200'
+            shadow: 'shadow-purple-200 dark:shadow-none'
         }
     ];
 

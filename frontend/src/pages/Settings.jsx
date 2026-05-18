@@ -75,7 +75,7 @@ const Settings = () => {
                                     <Input prefix={<UserOutlined />} placeholder="Nhập họ và tên" />
                                 </Form.Item>
                                 <Form.Item label="Email" name="email">
-                                    <Input prefix={<MailOutlined />} disabled className="bg-white dark:bg-gray-700" />
+                                    <Input prefix={<MailOutlined />} disabled />
                                 </Form.Item>
                             </div>
                             <Button type="primary" htmlType="submit" className="bg-vluRed">Lưu thay đổi</Button>

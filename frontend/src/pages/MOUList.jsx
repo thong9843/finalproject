@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Table, Button, Modal, Form, Input, Select, DatePicker, message, Space, Tooltip, Row, Col, Upload, Spin, Tag, Alert } from 'antd';
+import { Table, Button, Modal, Form, Input, Select, DatePicker, message, Space, Tooltip, Row, Col, Upload, Spin, Tag, Alert , App as AntApp } from 'antd';
 import {
     PlusOutlined, EditOutlined, DeleteOutlined, LinkOutlined, SearchOutlined,
     FilePdfOutlined, ScanOutlined, InboxOutlined, CheckCircleOutlined, RobotOutlined, DownloadOutlined
@@ -13,6 +13,7 @@ const { Dragger } = Upload;
 
 const MOUList = () => {
     const [data, setData] = useState([]);
+    const { modal } = AntApp.useApp();
     const [enterprises, setEnterprises] = useState([]);
     const [departments, setDepartments] = useState([]);
     const [activities, setActivities] = useState([]);
@@ -88,9 +89,10 @@ const MOUList = () => {
     };
 
     const handleDelete = (id) => {
-        Modal.confirm({
+        modal.confirm({
             title: 'Xác nhận xóa?',
             content: 'Gỡ bỏ Biên bản ghi nhớ này khỏi hệ thống.',
+            okButtonProps: { danger: true, className: '!bg-red-600 hover:!bg-red-500 text-white' },
             onOk: async () => {
                 try {
                     await api.delete(`/mous/${id}`);
@@ -105,9 +107,10 @@ const MOUList = () => {
     };
 
     const handleBulkDelete = () => {
-        Modal.confirm({
+        modal.confirm({
             title: `Xác nhận xóa ${selectedRowKeys.length} biên bản MOU?`,
             content: 'Hành động này không thể hoàn tác.',
+            okButtonProps: { danger: true, className: '!bg-red-600 hover:!bg-red-500 text-white' },
             onOk: async () => {
                 setLoading(true);
                 try {
@@ -198,11 +201,12 @@ const MOUList = () => {
         // 1. Tự động hỏi tạo Doanh nghiệp nếu chưa có
         if (scanResult.enterprise_name && !finalEnterpriseId) {
             const confirmed = await new Promise((resolve) => {
-                Modal.confirm({
+                modal.confirm({
                     title: 'Doanh nghiệp chưa tồn tại',
                     content: `Doanh nghiệp "${scanResult.enterprise_name}" chưa có trên hệ thống. Bạn có muốn tạo mới không?`,
                     okText: 'Tạo mới',
                     cancelText: 'Bỏ qua',
+                    okButtonProps: { className: '!bg-blue-600 hover:!bg-blue-500 text-white' },
                     onOk: () => resolve(true),
                     onCancel: () => resolve(false)
                 });
@@ -227,11 +231,12 @@ const MOUList = () => {
         // 2. Tự động hỏi tạo Hoạt động nếu chưa có
         if (scanResult.activity_name && !finalActivityId && finalEnterpriseId) {
             const confirmed = await new Promise((resolve) => {
-                Modal.confirm({
+                modal.confirm({
                     title: 'Hoạt động chưa tồn tại',
                     content: `Hoạt động "${scanResult.activity_name}" chưa có trên hệ thống. Bạn có muốn tạo mới cho doanh nghiệp này không?`,
                     okText: 'Tạo mới',
                     cancelText: 'Bỏ qua',
+                    okButtonProps: { className: '!bg-blue-600 hover:!bg-blue-500 text-white' },
                     onOk: () => resolve(true),
                     onCancel: () => resolve(false)
                 });
@@ -283,11 +288,12 @@ const MOUList = () => {
         if (record.file_url) {
             window.open(record.file_url, '_blank');
         } else {
-            Modal.confirm({
+            modal.confirm({
                 title: 'Chưa có file scan đính kèm',
                 content: 'Biên bản này chưa có tài liệu gốc trên hệ thống (Cloud). Bạn có muốn hệ thống tự động xuất file PDF mẫu không?',
                 okText: 'Xuất PDF',
                 cancelText: 'Huỷ',
+                okButtonProps: { className: '!bg-blue-600 hover:!bg-blue-500 text-white' },
                 onOk: () => handleExportPdf(record)
             });
         }
@@ -445,8 +451,7 @@ const MOUList = () => {
                         <Button
                             icon={<InboxOutlined />}
                             onClick={() => { setScanResult(null); setScanError(null); setUploadedFile(null); setIsScanModalOpen(true); }}
-                            className="rounded-lg border-purple-400 text-purple-600 hover:bg-purple-50"
-                            style={{ borderColor: '#9333ea', color: '#9333ea' }}
+                            className="rounded-lg border-purple-600 text-purple-600 dark:border-purple-400 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/30"
                         >
                             Import
                         </Button>
@@ -668,8 +673,8 @@ const MOUList = () => {
                             onClick={handleScanDocument}
                             disabled={!uploadedFile || scanning}
                             loading={scanning}
-                            style={{ background: '#9333ea', borderColor: '#9333ea', minWidth: 200 }}
-                            className="rounded-lg"
+                            style={{ minWidth: 200 }}
+                            className="rounded-lg !bg-purple-600 hover:!bg-purple-500 !border-0 !text-white"
                         >
                             {scanning ? 'Đang phân tích...' : 'Phân tích với Gemini AI'}
                         </Button>
@@ -704,8 +709,7 @@ const MOUList = () => {
                                 type="primary"
                                 icon={<CheckCircleOutlined />}
                                 onClick={handleApplyScanResult}
-                                style={{ background: '#9333ea', borderColor: '#9333ea' }}
-                                className="rounded-lg"
+                                className="rounded-lg !bg-purple-600 hover:!bg-purple-500 !border-0 !text-white"
                                 size="large"
                             >
                                 Điền vào Form & Lưu

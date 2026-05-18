@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Modal, Upload, Button, message, Alert, Typography, Table, Tag } from 'antd';
+import { Modal, Upload, Button, message, Alert, Typography, Table, Tag , App as AntApp } from 'antd';
 import { UploadOutlined, FileExcelOutlined, InboxOutlined, DownloadOutlined } from '@ant-design/icons';
 import api from '../utils/api';
 import * as XLSX from 'xlsx';
@@ -9,6 +9,7 @@ const { Text } = Typography;
 
 const ImportModal = ({ open, onClose, onSuccess, type, templateColumns }) => {
     const [uploading, setUploading] = useState(false);
+    const { modal } = AntApp.useApp();
     const [result, setResult] = useState(null);
 
     const typeLabels = {
@@ -18,7 +19,7 @@ const ImportModal = ({ open, onClose, onSuccess, type, templateColumns }) => {
     };
 
     const handleUpload = (file) => {
-        Modal.confirm({
+        modal.confirm({
             title: 'Xác nhận Import dữ liệu',
             content: `Bạn có chắc chắn muốn import dữ liệu từ file "${file.name}" vào hệ thống không?`,
             okText: 'Đồng ý Import',

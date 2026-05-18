@@ -8,7 +8,7 @@ const Layout = () => {
     const [sidebarOpen, setSidebarOpen] = useState(false);
 
     return (
-        <div className="flex bg-gray-100 dark:bg-gray-900 min-h-screen transition-colors duration-300">
+        <div className="flex bg-gray-100 dark:bg-gray-900 min-h-screen text-gray-900 dark:text-gray-100 transition-colors duration-300">
             {/* Overlay for mobile */}
             {sidebarOpen && (
                 <div

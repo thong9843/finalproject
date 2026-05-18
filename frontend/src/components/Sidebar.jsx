@@ -122,7 +122,7 @@ const Sidebar = ({ isOpen, onClose }) => {
             className={`
                 w-64 h-screen fixed left-0 top-0 z-30 flex flex-col pt-4
                 bg-white dark:bg-gray-800
-                shadow-lg dark:shadow-gray-900
+                shadow-lg dark:shadow-gray-900/50 border-r border-transparent dark:border-gray-700/50
                 transition-transform duration-300 ease-in-out
                 ${isOpen ? 'translate-x-0' : '-translate-x-full'}
                 lg:translate-x-0
@@ -153,7 +153,7 @@ const Sidebar = ({ isOpen, onClose }) => {
                     theme={isDark ? 'dark' : 'light'}
                 />
             </div>
-            <div className="border-t border-gray-100 dark:border-gray-700 pb-4 pt-2">
+            <div className="border-t border-gray-100 dark:border-gray-700/50 pb-4 pt-2">
                 <Menu
                     mode="inline"
                     selectedKeys={[location.pathname]}

@@ -10,11 +10,11 @@ body {
 }
 
 html.dark body {
-  background-color: #0f1117;
+  background-color: #111827;
+  color: #f3f4f6;
 }
 
 
-/* Custom Scrollbar for Kanban Board */
 .custom-scrollbar::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -28,6 +28,13 @@ html.dark body {
 }
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
+}
+
+html.dark .custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #475569;
+}
+html.dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
 }
 
 .custom-scroller::-webkit-scrollbar {
@@ -44,4 +51,14 @@ html.dark body {
 }
 .custom-scroller::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
+}
+
+html.dark .custom-scroller::-webkit-scrollbar-track {
+  background: #1f2937;
+}
+html.dark .custom-scroller::-webkit-scrollbar-thumb {
+  background: #475569;
+}
+html.dark .custom-scroller::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
 }

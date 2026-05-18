@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Table, Tag, Form, Input, Select, Button, Modal, message, Space, Drawer, Timeline, Row, Col, DatePicker, Descriptions, Switch, Popover, Badge, Divider } from 'antd';
+import { Table, Tag, Form, Input, Select, Button, Modal, message, Space, Drawer, Timeline, Row, Col, DatePicker, Descriptions, Switch, Popover, Badge, Divider , App as AntApp } from 'antd';
 import { EditOutlined, DeleteOutlined, PlusOutlined, UnorderedListOutlined, UploadOutlined, DownloadOutlined, UserOutlined, HomeOutlined, FilterOutlined, SortAscendingOutlined, ClearOutlined } from '@ant-design/icons';
 import ImportModal from '../components/ImportModal';
 import api from '../utils/api';
@@ -11,6 +11,7 @@ const { TextArea } = Input;
 
 const EnterpriseList = () => {
     const [data, setData] = useState([]);
+    const { modal } = AntApp.useApp();
     const [departments, setDepartments] = useState([]);
     const [scales, setScales] = useState([]);
     const [fields, setFields] = useState([]);
@@ -99,9 +100,10 @@ const EnterpriseList = () => {
     };
 
     const handleBulkDelete = () => {
-        Modal.confirm({
+        modal.confirm({
             title: `Xác nhận xóa ${selectedRowKeys.length} doanh nghiệp?`,
             content: 'Hành động này không thể hoàn tác.',
+            okButtonProps: { danger: true, className: '!bg-red-600 hover:!bg-red-500 text-white' },
             onOk: async () => {
                 setLoading(true);
                 try {
@@ -119,8 +121,9 @@ const EnterpriseList = () => {
     };
 
     const handleBulkUpdateStatus = (status) => {
-        Modal.confirm({
+        modal.confirm({
             title: `Xác nhận chuyển ${selectedRowKeys.length} doanh nghiệp sang "${status}"?`,
+            okButtonProps: { className: '!bg-blue-600 hover:!bg-blue-500 text-white' },
             onOk: async () => {
                 setLoading(true);
                 try {
@@ -325,7 +328,7 @@ const EnterpriseList = () => {
                         setIsModalVisible(true);
                     }} />
                     <Button type="text" danger icon={<DeleteOutlined />} onClick={() => {
-                        Modal.confirm({ title: 'Bạn có chắc chắn muốn xóa?', onOk: () => handleDelete(record.id) });
+                        modal.confirm({ title: 'Bạn có chắc chắn muốn xóa?', okButtonProps: { danger: true, className: '!bg-red-600 hover:!bg-red-500 text-white' }, onOk: () => handleDelete(record.id) });
                     }} />
                 </Space>
             ),
@@ -492,8 +495,8 @@ const EnterpriseList = () => {
                     </div>
 
                     {/* Địa chỉ */}
-                    <div className="bg-blue-50 p-4 rounded-xl mb-4 border border-blue-100">
-                        <h4 className="text-blue-700 font-bold mb-3 flex items-center gap-2"><HomeOutlined /> Địa chỉ chính</h4>
+                    <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-xl mb-4 border border-blue-100 dark:border-blue-800/50">
+                        <h4 className="text-blue-700 dark:text-blue-400 font-bold mb-3 flex items-center gap-2"><HomeOutlined /> Địa chỉ chính</h4>
                         <Row gutter={16}>
                             <Col span={24}>
                                 <Form.Item name="building_street" label="Tòa nhà / Đường">

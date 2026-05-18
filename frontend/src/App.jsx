@@ -1,6 +1,6 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { ConfigProvider, theme as antTheme } from 'antd';
+import { ConfigProvider, theme as antTheme, App as AntApp } from 'antd';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import EnterpriseList from './pages/EnterpriseList';
@@ -34,10 +34,30 @@ const AppConfig = ({ children }) => {
                 token: {
                     colorPrimary: '#DA251D',
                     borderRadius: 6,
+                    ...(isDark && {
+                        colorBgBase: '#111827', // Tailwind gray-900
+                        colorBgContainer: '#1f2937', // Tailwind gray-800
+                        colorBgElevated: '#1f2937', // Tailwind gray-800 (Modals, Dropdowns)
+                        colorBorder: '#374151', // Tailwind gray-700
+                        colorTextBase: '#f3f4f6', // Tailwind gray-100
+                        colorTextHeading: '#f3f4f6',
+                    })
                 },
+                components: {
+                    ...(isDark && {
+                        Modal: {
+                            contentBg: '#1f2937',
+                            headerBg: '#1f2937',
+                            footerBg: '#1f2937',
+                            titleColor: '#f3f4f6',
+                        }
+                    })
+                }
             }}
         >
-            {children}
+            <AntApp>
+                {children}
+            </AntApp>
         </ConfigProvider>
     );
 };

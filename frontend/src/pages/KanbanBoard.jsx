@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { message, Card, Select, Typography, Spin, Badge, Button, Modal, Form, Input, DatePicker, TimePicker, Tag, Tooltip, Dropdown, Menu, Row, Col } from 'antd';
-import { PlusOutlined, BankOutlined, ProjectOutlined, CalendarOutlined, PushpinOutlined, MoreOutlined, DragOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
+import { message, Card, Select, Typography, Spin, Badge, Button, Modal, Form, Input, DatePicker, TimePicker, Tag, Tooltip, Dropdown, Menu, Row, Col , Switch, App as AntApp } from 'antd';
+import { PlusOutlined, BankOutlined, ProjectOutlined, CalendarOutlined, PushpinOutlined, MoreOutlined, DragOutlined, EditOutlined, DeleteOutlined, UserOutlined, HomeOutlined } from '@ant-design/icons';
 import api from '../utils/api';
 import dayjs from 'dayjs';
 
@@ -28,9 +28,14 @@ const ACTIVITY_STATUSES = [
 
 const KanbanBoard = () => {
   const [view, setView] = useState('ENTERPRISE');
+    const { modal } = AntApp.useApp();
   const [items, setItems] = useState([]);
   const [enterprises, setEnterprises] = useState([]); // Needed for activity modal dropdown
   const [activityTypes, setActivityTypes] = useState([]);
+  const [departments, setDepartments] = useState([]);
+  const [scales, setScales] = useState([]);
+  const [fields, setFields] = useState([]);
+  const [targets, setTargets] = useState([]);
   const [loading, setLoading] = useState(false);
   
   // Drag state
@@ -57,23 +62,42 @@ const KanbanBoard = () => {
     }
   };
 
-  const fetchEnterprises = async () => {
+  const fetchEnterprisesAndDependencies = async () => {
     try {
-      const [entRes, actTypeRes] = await Promise.all([
+      const [entRes, actTypeRes, targetRes] = await Promise.all([
         api.get('/enterprises'),
-        api.get('/structure/activity-types')
+        api.get('/structure/act-types'),
+        api.get('/structure/targets')
       ]);
       setEnterprises(entRes.data);
       setActivityTypes(actTypeRes.data || []);
+      setTargets(targetRes.data || []);
     } catch (error) {
       console.error('Error fetching data:', error);
+    }
+  };
+
+  const fetchEnterpriseDependencies = async () => {
+    try {
+      const [depRes, scaleRes, fieldRes] = await Promise.all([
+        api.get('/structure/departments'),
+        api.get('/structure/scales'),
+        api.get('/structure/fields')
+      ]);
+      setDepartments(depRes.data);
+      setScales(scaleRes.data);
+      setFields(fieldRes.data);
+    } catch (error) {
+      console.error('Error fetching enterprise dependencies:', error);
     }
   };
 
   useEffect(() => {
     fetchItems();
     if (view === 'ACTIVITY') {
-      fetchEnterprises();
+      fetchEnterprisesAndDependencies();
+    } else {
+      fetchEnterpriseDependencies();
     }
   }, [view]);
 
@@ -150,6 +174,9 @@ const KanbanBoard = () => {
         end_date: values.end_date?.format('YYYY-MM-DD') || null,
         start_time: values.start_time?.format('HH:mm:ss') || null,
         end_time: values.end_time?.format('HH:mm:ss') || null,
+        collaboration_date: values.collaboration_date?.format('YYYY-MM-DD') || null,
+        type_ids: values.type_ids || [],
+        target_ids: values.target_ids || [],
       };
       if (editingId) {
         await api.put(`/activities/${editingId}`, payload);
@@ -228,7 +255,7 @@ const KanbanBoard = () => {
       });
 
       if (isOverlap) {
-        Modal.confirm({
+        modal.confirm({
           title: 'Cảnh báo trùng lặp thời gian',
           content: 'Thời gian của hoạt động này đang bị trùng với một hoạt động khác. Bạn có chắc chắn muốn tiếp tục lưu?',
           onOk: () => submitActivitySave(values),
@@ -287,12 +314,20 @@ const KanbanBoard = () => {
     setDraggedItemId(null);
   };
 
+  const removeAccents = (str) => {
+    if (!str) return '';
+    return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  };
+
+  const filterOptionIgnoreCase = (input, option) => 
+    removeAccents(option?.children || '').includes(removeAccents(input));
+
   // View Handlers
   const openAddModal = () => {
     setEditingId(null);
     form.resetFields();
     if (view === 'ENTERPRISE') {
-      form.setFieldsValue({ status: 'Tiềm năng' });
+      form.setFieldsValue({ status: 'Tiềm năng', is_hcmc: true, country: 'Việt Nam' });
     } else {
       form.setFieldsValue({ status: 'Đề xuất' });
     }
@@ -302,21 +337,27 @@ const KanbanBoard = () => {
   const openEditModal = (item) => {
     setEditingId(item.id);
     if (view === 'ENTERPRISE') {
-      form.setFieldsValue(item);
+      form.setFieldsValue({
+        ...item,
+        field_ids: item.field_ids ? item.field_ids.split(',').map(Number) : [],
+      });
     } else {
       form.setFieldsValue({
         ...item,
+        type_ids: item.type_ids ? item.type_ids.split(',').map(Number) : [],
+        target_ids: item.target_ids ? item.target_ids.split(',').map(Number) : [],
         start_date: item.start_date ? dayjs(item.start_date) : null,
         end_date: item.end_date ? dayjs(item.end_date) : null,
         start_time: item.start_time ? dayjs(`1970-01-01 ${item.start_time}`) : null,
         end_time: item.end_time ? dayjs(`1970-01-01 ${item.end_time}`) : null,
+        collaboration_date: item.collaboration_date ? dayjs(item.collaboration_date) : null,
       });
     }
     setIsModalOpen(true);
   };
 
   const showDeleteConfirm = (item) => {
-    Modal.confirm({
+    modal.confirm({
       title: 'Bạn có chắc chắn muốn xóa?',
       content: view === 'ENTERPRISE' ? `Xóa doanh nghiệp "${item.name}"?` : `Xóa hoạt động "${item.title}"?`,
       okText: 'Xóa',
@@ -375,7 +416,7 @@ const KanbanBoard = () => {
               return (
                 <div 
                   key={status} 
-                  className={`bg-slate-100/70 rounded-2xl w-[320px] flex flex-col h-full border border-slate-200 dark:border-gray-700/60 shadow-sm transition-all duration-200 ${isDragOver ? 'ring-2 ring-blue-400 bg-blue-50/50 scale-[1.02]' : ''}`}
+                  className={`bg-slate-100/70 dark:bg-gray-800/40 rounded-2xl w-[320px] flex flex-col h-full border border-slate-200 dark:border-gray-700/60 shadow-sm dark:shadow-none transition-all duration-200 ${isDragOver ? 'ring-2 ring-blue-400 bg-blue-50/50 dark:bg-blue-900/20 scale-[1.02]' : ''}`}
                   onDragOver={(e) => onDragOver(e, status)}
                   onDragLeave={onDragLeave}
                   onDrop={(e) => onDrop(e, status)}
@@ -438,7 +479,7 @@ const KanbanBoard = () => {
                           trigger={['contextMenu']} 
                         >
                           <div
-                            className={`group bg-white dark:bg-gray-800 rounded-xl p-4 border border-slate-200 dark:border-gray-700 shadow-sm hover:shadow hover:border-blue-300 transition-all cursor-grab active:cursor-grabbing ${isDragged ? 'opacity-40 rotate-2 scale-95 ring-2 ring-blue-400 border-none' : ''}`}
+                            className={`group bg-white dark:bg-gray-800 rounded-xl p-4 border border-slate-200 dark:border-gray-700 shadow-sm dark:shadow-none hover:shadow dark:hover:shadow-none hover:border-blue-300 dark:hover:border-blue-500 transition-all cursor-grab active:cursor-grabbing ${isDragged ? 'opacity-40 rotate-2 scale-95 ring-2 ring-blue-400 border-none' : ''}`}
                             draggable
                             onDragStart={(e) => onDragStart(e, item)}
                             onDragEnd={onDragEnd}
@@ -500,9 +541,9 @@ const KanbanBoard = () => {
                     })}
                     
                     {columnItems.length === 0 && (
-                      <div className={`h-28 flex flex-col items-center justify-center text-sm rounded-xl border-2 border-dashed transition-colors ${isDragOver ? 'border-blue-400 text-blue-600 bg-blue-50/50' : 'border-slate-200 dark:border-gray-700 text-slate-400'}`}>
-                        <div className={`p-2 rounded-full mb-2 ${isDragOver ? 'bg-blue-100' : 'bg-slate-100'}`}>
-                          <PlusOutlined className={isDragOver ? 'text-blue-500' : 'text-slate-400'} />
+                      <div className={`h-28 flex flex-col items-center justify-center text-sm rounded-xl border-2 border-dashed transition-colors ${isDragOver ? 'border-blue-400 text-blue-600 dark:text-blue-400 bg-blue-50/50 dark:bg-blue-900/20' : 'border-slate-200 dark:border-gray-700 text-slate-400'}`}>
+                        <div className={`p-2 rounded-full mb-2 ${isDragOver ? 'bg-blue-100 dark:bg-blue-900/40' : 'bg-slate-100 dark:bg-gray-800'}`}>
+                          <PlusOutlined className={isDragOver ? 'text-blue-500 dark:text-blue-400' : 'text-slate-400'} />
                         </div>
                         {isDragOver ? 'Thả vào đây' : 'Kéo thả vào đây'}
                       </div>
@@ -526,92 +567,195 @@ const KanbanBoard = () => {
         footer={null}
         destroyOnClose
         className="rounded-2xl"
-        width={700}
+        width={860}
       >
         <Form form={form} layout="vertical" onFinish={handleSave} className="mt-4">
           {view === 'ENTERPRISE' ? (
             <>
-              <Form.Item name="name" label={<span className="font-medium">Tên Doanh Nghiệp</span>} rules={[{ required: true, message: 'Vui lòng nhập tên' }]}>
-                <Input placeholder="Nhập Công ty Cổ phần ABC..." size="large" className="rounded-lg" />
-              </Form.Item>
+              {/* Thông tin cơ bản */}
               <Row gutter={16}>
-                <Col span={12}>
-                  <Form.Item name="tax_code" label={<span className="font-medium">Mã số thuế</span>} rules={[{ required: true, message: 'Vui lòng nhập mã số thuế' }]}>
-                    <Input placeholder="Nhập mã số thuế..." size="large" className="rounded-lg" />
-                  </Form.Item>
-                </Col>
-                <Col span={12}>
-                  <Form.Item name="industry" label={<span className="font-medium">Lĩnh vực / Ngành nghề</span>}>
-                    <Input placeholder="VD: Công nghệ thông tin, Tài chính..." size="large" className="rounded-lg" />
-                  </Form.Item>
-                </Col>
+                  <Col span={14}>
+                      <Form.Item name="name" label="Tên Doanh nghiệp" rules={[{ required: true }]}>
+                          <Input className="rounded-lg" />
+                      </Form.Item>
+                  </Col>
+                  <Col span={10}>
+                      <Form.Item name="tax_code" label="Mã số thuế">
+                          <Input className="rounded-lg" />
+                      </Form.Item>
+                  </Col>
               </Row>
-              <div className="flex gap-4">
-                <Form.Item name="email" label={<span className="font-medium">Email</span>} rules={[{ type: 'email', message: 'Email không hợp lệ' }]} className="flex-1">
-                  <Input placeholder="contact@abc.com" size="large" className="rounded-lg" />
-                </Form.Item>
-                <Form.Item name="phone" label={<span className="font-medium">Số điện thoại</span>} className="flex-1">
-                  <Input placeholder="0123456789" size="large" className="rounded-lg" />
-                </Form.Item>
+
+              <Row gutter={16}>
+                  <Col span={10}>
+                      <Form.Item name="scale_id" label="Quy mô">
+                          <Select allowClear placeholder="Chọn quy mô..." className="rounded-lg">
+                              {scales.map(s => <Option key={s.id} value={s.id}>{s.name}</Option>)}
+                          </Select>
+                      </Form.Item>
+                  </Col>
+                  <Col span={14}>
+                      <Form.Item name="field_ids" label="Lĩnh vực / Ngành nghề">
+                          <Select mode="multiple" allowClear placeholder="Chọn lĩnh vực..." className="rounded-lg">
+                              {fields.map(f => <Option key={f.id} value={f.id}>{f.name}</Option>)}
+                          </Select>
+                      </Form.Item>
+                  </Col>
+              </Row>
+
+              <Row gutter={16}>
+                  <Col span={8}>
+                      <Form.Item name="department_id" label="Bộ môn phân loại">
+                          <Select allowClear placeholder="Chọn bộ môn..." className="rounded-lg">
+                              {departments.map(d => <Option key={d.id} value={d.id}>{d.name}</Option>)}
+                          </Select>
+                      </Form.Item>
+                  </Col>
+                  <Col span={8}>
+                      <Form.Item name="status" label="Trạng thái" initialValue="Tiềm năng">
+                          <Select className="rounded-lg">
+                              {currentConfig.map(col => <Option key={col.name} value={col.name}>{col.name}</Option>)}
+                          </Select>
+                      </Form.Item>
+                  </Col>
+                  <Col span={8}>
+                      <Form.Item name="is_hcmc" label="Có tại TP.HCM?" valuePropName="checked" initialValue={true}>
+                          <Switch checkedChildren="Có" unCheckedChildren="Không" />
+                      </Form.Item>
+                  </Col>
+              </Row>
+
+              {/* Đại diện chính */}
+              <div className="bg-slate-50 dark:bg-gray-800/50 p-4 rounded-xl mb-4 border border-slate-100 dark:border-gray-700">
+                  <h4 className="text-slate-700 dark:text-gray-200 font-bold mb-3 flex items-center gap-2"><UserOutlined /> Đại diện liên hệ chính</h4>
+                  <Row gutter={16}>
+                      <Col span={5}>
+                          <Form.Item name="rep_title" label="Danh xưng">
+                              <Select placeholder="Ông/Bà">
+                                  {['Ông', 'Bà', 'Anh', 'Chị', 'Khác'].map(t => <Option key={t} value={t}>{t}</Option>)}
+                              </Select>
+                          </Form.Item>
+                      </Col>
+                      <Col span={11}>
+                          <Form.Item name="rep_full_name" label="Họ và tên">
+                              <Input placeholder="Nguyễn Văn A" className="rounded-lg" />
+                          </Form.Item>
+                      </Col>
+                      <Col span={8}>
+                          <Form.Item name="rep_role" label="Chức vụ">
+                              <Input placeholder="HR Director..." className="rounded-lg" />
+                          </Form.Item>
+                      </Col>
+                  </Row>
+                  <Row gutter={16}>
+                      <Col span={12}>
+                          <Form.Item name="rep_phone" label="Số điện thoại">
+                              <Input placeholder="0123456789" className="rounded-lg" />
+                          </Form.Item>
+                      </Col>
+                      <Col span={12}>
+                          <Form.Item name="rep_email" label="Email">
+                              <Input placeholder="contact@domain.com" className="rounded-lg" />
+                          </Form.Item>
+                      </Col>
+                  </Row>
               </div>
-              <Form.Item name="address" label={<span className="font-medium">Địa chỉ</span>}>
-                <TextArea rows={2} placeholder="Số nhà, đường, quận, thành phố..." className="rounded-lg" />
-              </Form.Item>
-              <Form.Item name="status" label={<span className="font-medium">Trạng thái</span>}>
-                <Select size="large" className="rounded-lg">
-                  {currentConfig.map(col => <Option key={col.name} value={col.name}>{col.name}</Option>)}
-                </Select>
-              </Form.Item>
+
+              {/* Địa chỉ */}
+              <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-xl mb-4 border border-blue-100 dark:border-blue-800/50">
+                  <h4 className="text-blue-700 dark:text-blue-400 font-bold mb-3 flex items-center gap-2"><HomeOutlined /> Địa chỉ chính</h4>
+                  <Row gutter={16}>
+                      <Col span={24}>
+                          <Form.Item name="building_street" label="Tòa nhà / Đường">
+                              <Input placeholder="Số 1, đường ABC, tòa nhà XYZ" className="rounded-lg" />
+                          </Form.Item>
+                      </Col>
+                  </Row>
+                  <Row gutter={16}>
+                      <Col span={8}>
+                          <Form.Item name="district" label="Quận / Huyện">
+                              <Input placeholder="Quận 1" className="rounded-lg" />
+                          </Form.Item>
+                      </Col>
+                      <Col span={8}>
+                          <Form.Item name="province" label="Tỉnh / Thành phố">
+                              <Input placeholder="TP. Hồ Chí Minh" className="rounded-lg" />
+                          </Form.Item>
+                      </Col>
+                      <Col span={8}>
+                          <Form.Item name="country" label="Quốc gia" initialValue="Việt Nam">
+                              <Input className="rounded-lg" />
+                          </Form.Item>
+                      </Col>
+                  </Row>
+              </div>
             </>
           ) : (
             <>
-              <Form.Item name="title" label={<span className="font-medium">Tiêu đề hoạt động</span>} rules={[{ required: true, message: 'Vui lòng nhập tiêu đề' }]}>
-                <Input placeholder="Nhập Hội thảo kết nối doanh nghiệp..." size="large" className="rounded-lg" />
+              <Form.Item name="title" label="Tên Hoạt động" rules={[{ required: true }]}>
+                  <Input placeholder="VD: Thực tập sinh Marketing 2024" />
               </Form.Item>
               <Row gutter={16}>
-                <Col span={12}>
-                  <Form.Item name="enterprise_id" label={<span className="font-medium">Doanh nghiệp liên kết</span>} rules={[{ required: true, message: 'Vui lòng chọn doanh nghiệp' }]}>
-                    <Select showSearch placeholder="Chọn doanh nghiệp" size="large" className="rounded-lg" filterOption={(input, option) => (option?.children ?? '').toLowerCase().includes(input.toLowerCase())}>
-                      {enterprises.map(e => (
-                        <Option key={e.id} value={e.id}>{e.name}</Option>
-                      ))}
-                    </Select>
-                  </Form.Item>
-                </Col>
-                <Col span={12}>
-                  <Form.Item name="type" label={<span className="font-medium">Loại hình</span>} rules={[{ required: true, message: 'Vui lòng chọn loại hình' }]}>
-                    <Select size="large" className="rounded-lg" placeholder="Chọn loại hình" showSearch>
-                      {activityTypes.map(act => (
-                         <Option key={act.id} value={act.name}>{act.name}</Option>
-                      ))}
-                      <Option value="Khác">Khác</Option>
-                    </Select>
-                  </Form.Item>
-                </Col>
+                  <Col span={12}>
+                      <Form.Item name="enterprise_id" label="Doanh nghiệp liên kết" rules={[{ required: true }]}>
+                          <Select showSearch placeholder="Chọn doanh nghiệp" filterOption={filterOptionIgnoreCase}>
+                              {enterprises.map(e => (
+                                  <Option key={e.id} value={e.id}>{e.name}</Option>
+                              ))}
+                          </Select>
+                      </Form.Item>
+                  </Col>
+                  <Col span={12}>
+                      <Form.Item name="type_ids" label="Loại hình hoạt động">
+                          <Select mode="multiple" placeholder="Chọn loại hình" showSearch filterOption={filterOptionIgnoreCase}>
+                              {activityTypes.map(act => (
+                                  <Option key={act.id} value={act.id}>{act.name}</Option>
+                              ))}
+                          </Select>
+                      </Form.Item>
+                  </Col>
               </Row>
-              <div className="flex gap-4">
-                <Form.Item name="start_date" label={<span className="font-medium">Từ ngày</span>} className="flex-1" rules={[{ required: true, message: 'Vui lòng chọn ngày bắt đầu' }]}>
-                  <DatePicker format="DD/MM/YYYY" className="w-full rounded-lg" size="large" />
-                </Form.Item>
-                <Form.Item name="end_date" label={<span className="font-medium">Đến ngày</span>} className="flex-1">
-                  <DatePicker format="DD/MM/YYYY" className="w-full rounded-lg" size="large" />
-                </Form.Item>
-              </div>
-              <div className="flex gap-4">
-                <Form.Item name="start_time" label={<span className="font-medium">Giờ bắt đầu</span>} className="flex-1">
-                  <TimePicker format="HH:mm" className="w-full rounded-lg" size="large" />
-                </Form.Item>
-                <Form.Item name="end_time" label={<span className="font-medium">Giờ kết thúc</span>} className="flex-1">
-                  <TimePicker format="HH:mm" className="w-full rounded-lg" size="large" />
-                </Form.Item>
-              </div>
-              <Form.Item name="description" label={<span className="font-medium">Mô tả chi tiết</span>}>
-                <TextArea rows={3} placeholder="Nội dung, mục tiêu của hoạt động..." className="rounded-lg" />
+              <Form.Item name="target_ids" label="Đối tượng hướng tới">
+                  <Select mode="multiple" placeholder="Chọn đối tượng" showSearch filterOption={filterOptionIgnoreCase}>
+                      {targets.map(t => (
+                          <Option key={t.id} value={t.id}>{t.name}</Option>
+                      ))}
+                  </Select>
               </Form.Item>
-              <Form.Item name="status" label={<span className="font-medium">Trạng thái</span>}>
-                <Select size="large" className="rounded-lg">
-                  {currentConfig.map(col => <Option key={col.name} value={col.name}>{col.name}</Option>)}
-                </Select>
+              <Row gutter={16}>
+                  <Col span={12}>
+                      <Form.Item name="start_date" label="Ngày bắt đầu" rules={[{ required: true }]}>
+                          <DatePicker className="w-full" format="DD/MM/YYYY" />
+                      </Form.Item>
+                  </Col>
+                  <Col span={12}>
+                      <Form.Item name="end_date" label="Ngày kết thúc">
+                          <DatePicker className="w-full" format="DD/MM/YYYY" />
+                      </Form.Item>
+                  </Col>
+              </Row>
+              <Row gutter={16}>
+                  <Col span={12}>
+                      <Form.Item name="start_time" label="Giờ bắt đầu">
+                          <TimePicker className="w-full" format="HH:mm" />
+                      </Form.Item>
+                  </Col>
+                  <Col span={12}>
+                      <Form.Item name="end_time" label="Giờ kết thúc">
+                          <TimePicker className="w-full" format="HH:mm" />
+                      </Form.Item>
+                  </Col>
+              </Row>
+              <Form.Item name="collaboration_date" label="Ngày hợp tác">
+                  <DatePicker className="w-full" format="DD/MM/YYYY" />
+              </Form.Item>
+              <Form.Item name="detail" label="Mô tả nội dung hoạt động">
+                  <Input.TextArea rows={3} placeholder="Nhập tóm tắt nội dung..." />
+              </Form.Item>
+              <Form.Item name="status" label="Trạng thái" initialValue="Đề xuất">
+                  <Select>
+                      {currentConfig.map(col => <Option key={col.name} value={col.name}>{col.name}</Option>)}
+                  </Select>
               </Form.Item>
             </>
           )}

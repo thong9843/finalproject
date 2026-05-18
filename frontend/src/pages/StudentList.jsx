@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Table, Tag, Card, Row, Col, Statistic, Form, Input, Select, Button, Modal, message, Space, DatePicker, InputNumber, Popover, Badge, Divider } from 'antd';
+import { Table, Tag, Card, Row, Col, Statistic, Form, Input, Select, Button, Modal, message, Space, DatePicker, InputNumber, Popover, Badge, Divider , App as AntApp } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, SearchOutlined, SyncOutlined, ClockCircleOutlined, CheckCircleOutlined, TeamOutlined, UploadOutlined, DownloadOutlined, FilterOutlined, SortAscendingOutlined, ClearOutlined, CalendarOutlined } from '@ant-design/icons';
 import ImportModal from '../components/ImportModal';
 import api from '../utils/api';
@@ -10,6 +10,7 @@ const { Option } = Select;
 
 const StudentList = () => {
     const [data, setData] = useState([]);
+    const { modal } = AntApp.useApp();
     const [stats, setStats] = useState(null);
     const [enterprises, setEnterprises] = useState([]);
     const [loading, setLoading] = useState(false);
@@ -98,9 +99,10 @@ const StudentList = () => {
     };
 
     const handleBulkDelete = () => {
-        Modal.confirm({
+        modal.confirm({
             title: `Xác nhận xóa ${selectedRowKeys.length} sinh viên?`,
             content: 'Hành động này không thể hoàn tác.',
+            okButtonProps: { danger: true, className: '!bg-red-600 hover:!bg-red-500 text-white' },
             onOk: async () => {
                 setLoading(true);
                 try {
@@ -119,8 +121,9 @@ const StudentList = () => {
     };
 
     const handleBulkUpdateStatus = (status) => {
-        Modal.confirm({
+        modal.confirm({
             title: `Xác nhận chuyển ${selectedRowKeys.length} sinh viên sang "${status}"?`,
+            okButtonProps: { className: '!bg-blue-600 hover:!bg-blue-500 text-white' },
             onOk: async () => {
                 setLoading(true);
                 try {
@@ -374,7 +377,7 @@ const StudentList = () => {
                 <Space>
                     <Button type="text" size="small" icon={<EditOutlined />} onClick={() => openEditModal(record)} />
                     <Button type="text" size="small" danger icon={<DeleteOutlined />} onClick={() => {
-                        Modal.confirm({ title: 'Xác nhận xóa sinh viên này?', onOk: () => handleDelete(record.id) });
+                        modal.confirm({ title: 'Xác nhận xóa sinh viên này?', okButtonProps: { danger: true, className: '!bg-red-600 hover:!bg-red-500 text-white' }, onOk: () => handleDelete(record.id) });
                     }} />
                 </Space>
             ),
@@ -410,31 +413,31 @@ const StudentList = () => {
             {/* Stats Cards */}
             <Row gutter={[16, 16]} className="mb-6">
                 <Col xs={24} sm={8}>
-                    <Card className="rounded-xl border-none shadow-sm hover:shadow-md transition-shadow bg-gradient-to-br from-green-50 to-white">
+                    <Card className="rounded-xl border border-green-100 dark:border-green-900/50 shadow-sm dark:shadow-none hover:shadow-md transition-shadow bg-gradient-to-br from-green-50 to-green-100/50 dark:from-green-900/20 dark:to-green-900/10">
                         <Statistic 
-                            title={<span className="text-gray-500">Đang thực tập</span>}
+                            title={<span className="text-gray-500 dark:text-gray-400">Đang thực tập</span>}
                             value={stats?.active || 0} 
-                            prefix={<SyncOutlined className="text-green-500" />}
+                            prefix={<SyncOutlined className="text-green-500 dark:text-green-400" />}
                             valueStyle={{ color: '#3f8600', fontWeight: 'bold', fontSize: '2rem' }}
                         />
                     </Card>
                 </Col>
                 <Col xs={24} sm={8}>
-                    <Card className="rounded-xl border-none shadow-sm hover:shadow-md transition-shadow bg-gradient-to-br from-orange-50 to-white">
+                    <Card className="rounded-xl border border-orange-100 dark:border-orange-900/50 shadow-sm dark:shadow-none hover:shadow-md transition-shadow bg-gradient-to-br from-orange-50 to-orange-100/50 dark:from-orange-900/20 dark:to-orange-900/10">
                         <Statistic 
-                            title={<span className="text-gray-500">Chờ phân công</span>}
+                            title={<span className="text-gray-500 dark:text-gray-400">Chờ phân công</span>}
                             value={stats?.pending || 0} 
-                            prefix={<ClockCircleOutlined className="text-orange-500" />}
+                            prefix={<ClockCircleOutlined className="text-orange-500 dark:text-orange-400" />}
                             valueStyle={{ color: '#faad14', fontWeight: 'bold', fontSize: '2rem' }}
                         />
                     </Card>
                 </Col>
                 <Col xs={24} sm={8}>
-                    <Card className="rounded-xl border-none shadow-sm hover:shadow-md transition-shadow bg-gradient-to-br from-blue-50 to-white">
+                    <Card className="rounded-xl border border-blue-100 dark:border-blue-900/50 shadow-sm dark:shadow-none hover:shadow-md transition-shadow bg-gradient-to-br from-blue-50 to-blue-100/50 dark:from-blue-900/20 dark:to-blue-900/10">
                         <Statistic 
-                            title={<span className="text-gray-500">Đã hoàn thành</span>}
+                            title={<span className="text-gray-500 dark:text-gray-400">Đã hoàn thành</span>}
                             value={stats?.completed || 0} 
-                            prefix={<CheckCircleOutlined className="text-blue-500" />}
+                            prefix={<CheckCircleOutlined className="text-blue-500 dark:text-blue-400" />}
                             valueStyle={{ color: '#1890ff', fontWeight: 'bold', fontSize: '2rem' }}
                         />
                     </Card>
@@ -443,15 +446,15 @@ const StudentList = () => {
 
             {/* Filter Tabs + Search + Filter Popover */}
             <div className="flex justify-between items-center mb-4">
-                <div className="flex gap-1 bg-white dark:bg-gray-800 rounded-lg p-1 border border-transparent">
+                <div className="flex gap-1 bg-slate-100 dark:bg-gray-800/50 rounded-lg p-1 border border-transparent">
                     {tabs.map(tab => (
                         <button
                             key={tab.key}
                             onClick={() => setActiveTab(tab.key)}
                             className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all
                                 ${activeTab === tab.key 
-                                    ? 'bg-white dark:bg-gray-800 shadow-sm text-vluRed' 
-                                    : 'text-gray-500 hover:text-gray-800 dark:text-gray-100:text-gray-200'}`}
+                                    ? 'bg-white dark:bg-gray-700 shadow-sm dark:shadow-none text-vluRed dark:text-red-400' 
+                                    : 'text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200'}`}
                         >
                             {tab.label}
                         </button>
@@ -476,8 +479,8 @@ const StudentList = () => {
 
             {/* Action Bar for Bulk Selection */}
             {selectedRowKeys.length > 0 && (
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4 flex justify-between items-center animate-fade-in">
-                    <span className="text-blue-700 font-medium ml-2">Đã chọn {selectedRowKeys.length} sinh viên</span>
+                <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800/50 rounded-lg p-3 mb-4 flex justify-between items-center animate-fade-in">
+                    <span className="text-blue-700 dark:text-blue-400 font-medium ml-2">Đã chọn {selectedRowKeys.length} sinh viên</span>
                     <Space>
                         <Select
                             placeholder="Đổi trạng thái..."

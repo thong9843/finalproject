@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Table, Button, Modal, Form, Input, Select, Space, message, Tag, Popconfirm } from 'antd';
+import { Table, Button, Modal, Form, Input, Select, Space, message, Tag, Popconfirm, App as AntApp } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import api from '../utils/api';
 import dayjs from 'dayjs';
@@ -13,6 +13,7 @@ const UserList = () => {
     const [isModalVisible, setIsModalVisible] = useState(false);
     const [form] = Form.useForm();
     const [editingUser, setEditingUser] = useState(null);
+    const { modal } = AntApp.useApp();
 
     useEffect(() => {
         fetchData();
@@ -132,23 +133,26 @@ const UserList = () => {
             title: 'Thao tác',
             key: 'action',
             render: (_, record) => (
-                <Space size="middle">
+                <Space>
                     <Button 
-                        type="primary" 
-                        icon={<EditOutlined />} 
+                        type="text" 
+                        icon={<EditOutlined className="text-blue-500" />} 
                         onClick={() => handleEdit(record)}
                         size="small"
-                        ghost
                     />
-                    <Popconfirm
-                        title="Bạn có chắc chắn muốn xóa người dùng này?"
-                        onConfirm={() => handleDelete(record.id)}
-                        okText="Có"
-                        cancelText="Không"
-                        okButtonProps={{ danger: true }}
-                    >
-                        <Button type="primary" danger icon={<DeleteOutlined />} size="small" />
-                    </Popconfirm>
+                    <Button 
+                        type="text" 
+                        danger 
+                        icon={<DeleteOutlined />} 
+                        size="small"
+                        onClick={() => {
+                            modal.confirm({ 
+                                title: 'Bạn có chắc chắn muốn xóa người dùng này?', 
+                                okButtonProps: { danger: true, className: '!bg-red-600 hover:!bg-red-500 text-white' }, 
+                                onOk: () => handleDelete(record.id) 
+                            });
+                        }} 
+                    />
                 </Space>
             ),
             width: 120,
@@ -167,7 +171,7 @@ const UserList = () => {
                     type="primary" 
                     icon={<PlusOutlined />} 
                     onClick={handleAdd}
-                    className="bg-vluRed hover:bg-vluRedHover"
+                    className="bg-vluRed h-10 px-6 rounded-lg hover:bg-vluRedHover"
                 >
                     Thêm người dùng
                 </Button>
