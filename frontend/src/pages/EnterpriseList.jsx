@@ -1,15 +1,25 @@
 import React, { useEffect, useState } from 'react';
 import { Table, Tag, Form, Input, Select, Button, Modal, message, Space, Drawer, Timeline, Row, Col, DatePicker, Descriptions, Switch, Popover, Badge, Divider , App as AntApp } from 'antd';
-import { EditOutlined, DeleteOutlined, PlusOutlined, UnorderedListOutlined, UploadOutlined, DownloadOutlined, UserOutlined, HomeOutlined, FilterOutlined, SortAscendingOutlined, ClearOutlined } from '@ant-design/icons';
+import { EditOutlined, DeleteOutlined, PlusOutlined, UnorderedListOutlined, UploadOutlined, DownloadOutlined, UserOutlined, HomeOutlined, FilterOutlined, SortAscendingOutlined, ClearOutlined, SearchOutlined } from '@ant-design/icons';
 import ImportModal from '../components/ImportModal';
 import api from '../utils/api';
 import dayjs from 'dayjs';
 import * as XLSX from 'xlsx';
+import Cookies from 'js-cookie';
 
 const { Option } = Select;
 const { TextArea } = Input;
 
 const EnterpriseList = () => {
+    const userCookie = Cookies.get('user');
+    let user = null;
+    try {
+        if (userCookie) user = JSON.parse(userCookie);
+    } catch (e) {
+        console.error("Failed to parse user cookie", e);
+    }
+    const isLecturer = user?.role === 'LECTURER';
+
     const [data, setData] = useState([]);
     const { modal } = AntApp.useApp();
     const [departments, setDepartments] = useState([]);
@@ -36,13 +46,12 @@ const EnterpriseList = () => {
         fetchDepartments();
         fetchScales();
         fetchFields();
-    }, [statusFilter]);
+    }, []);
 
     const fetchData = async () => {
         setLoading(true);
         try {
-            const url = statusFilter ? `/enterprises?status=${statusFilter}` : '/enterprises';
-            const res = await api.get(url);
+            const res = await api.get('/enterprises');
             setData(res.data);
         } catch (error) {
             message.error('Lỗi khi tải dữ liệu doanh nghiệp');
@@ -178,6 +187,24 @@ const EnterpriseList = () => {
         'Đang triển khai': 'green', 'Đã hoàn thành': 'blue', 'Đã tạm ngưng': 'red'
     };
 
+    const statusConfig = {
+        'Tiềm năng': { colorClass: 'text-pink-600 bg-pink-50 dark:text-pink-400 dark:bg-pink-900/30', ringClass: 'ring-pink-500 dark:ring-pink-400', icon: '💡' },
+        'Liên hệ': { colorClass: 'text-cyan-600 bg-cyan-50 dark:text-cyan-400 dark:bg-cyan-900/30', ringClass: 'ring-cyan-500 dark:ring-cyan-400', icon: '📞' },
+        'Đàm phán': { colorClass: 'text-orange-600 bg-orange-50 dark:text-orange-400 dark:bg-orange-900/30', ringClass: 'ring-orange-500 dark:ring-orange-400', icon: '🤝' },
+        'Đề xuất': { colorClass: 'text-blue-600 bg-blue-50 dark:text-blue-400 dark:bg-blue-900/30', ringClass: 'ring-blue-500 dark:ring-blue-400', icon: '📋' },
+        'Đã ký hợp tác': { colorClass: 'text-purple-600 bg-purple-50 dark:text-purple-400 dark:bg-purple-900/30', ringClass: 'ring-purple-500 dark:ring-purple-400', icon: '✍️' },
+        'Đang triển khai': { colorClass: 'text-green-600 bg-green-50 dark:text-green-400 dark:bg-green-900/30', ringClass: 'ring-green-500 dark:ring-green-400', icon: '🚀' },
+        'Đã hoàn thành': { colorClass: 'text-indigo-600 bg-indigo-50 dark:text-indigo-400 dark:bg-indigo-900/30', ringClass: 'ring-indigo-500 dark:ring-indigo-400', icon: '✅' },
+        'Đã tạm ngưng': { colorClass: 'text-red-600 bg-red-50 dark:text-red-400 dark:bg-red-900/30', ringClass: 'ring-red-500 dark:ring-red-400', icon: '⏸️' },
+        'Chưa xác định': { colorClass: 'text-gray-600 bg-gray-50 dark:text-gray-400 dark:bg-gray-800', ringClass: 'ring-gray-500 dark:ring-gray-400', icon: '📋' }
+    };
+
+    const statusCounts = {};
+    data.forEach(item => {
+        const s = item.status || 'Chưa xác định';
+        statusCounts[s] = (statusCounts[s] || 0) + 1;
+    });
+
     const handleExport = () => {
         if (!data || data.length === 0) { message.warning('Không có dữ liệu để xuất'); return; }
         const exportData = filteredData.map(item => ({
@@ -217,7 +244,8 @@ const EnterpriseList = () => {
         const matchField = !filterField || (item.field_ids && item.field_ids.split(',').map(Number).includes(filterField));
         const matchIsHcmc = filterIsHcmc === undefined || item.is_hcmc === filterIsHcmc;
         const matchDistrict = !filterDistrict || item.district === filterDistrict;
-        return matchSearch && matchScale && matchField && matchIsHcmc && matchDistrict;
+        const matchStatus = !statusFilter || item.status === statusFilter;
+        return matchSearch && matchScale && matchField && matchIsHcmc && matchDistrict && matchStatus;
     }).sort((a, b) => {
         if (!sortOption) return 0;
         switch (sortOption) {
@@ -305,31 +333,35 @@ const EnterpriseList = () => {
             render: (_, record) => (
                 <Space size="middle">
                     <Button type="text" icon={<UnorderedListOutlined />} onClick={() => handleViewTimeline(record)} />
-                    <Button type="text" className="text-blue-500" icon={<EditOutlined />} onClick={() => {
-                        setEditingId(record.id);
-                        form.setFieldsValue({
-                            name: record.name,
-                            tax_code: record.tax_code,
-                            scale_id: record.scale_id,
-                            is_hcmc: record.is_hcmc,
-                            status: record.status,
-                            department_id: record.department_id,
-                            field_ids: record.field_ids ? record.field_ids.split(',').map(Number) : [],
-                            rep_title: record.rep_title,
-                            rep_full_name: record.rep_full_name,
-                            rep_role: record.rep_role,
-                            rep_phone: record.rep_phone,
-                            rep_email: record.rep_email,
-                            building_street: record.building_street,
-                            district: record.district,
-                            province: record.province,
-                            country: record.country,
-                        });
-                        setIsModalVisible(true);
-                    }} />
-                    <Button type="text" danger icon={<DeleteOutlined />} onClick={() => {
-                        modal.confirm({ title: 'Bạn có chắc chắn muốn xóa?', okButtonProps: { danger: true, className: '!bg-red-600 hover:!bg-red-500 text-white' }, onOk: () => handleDelete(record.id) });
-                    }} />
+                    {!isLecturer && (
+                        <Button type="text" className="text-blue-500" icon={<EditOutlined />} onClick={() => {
+                            setEditingId(record.id);
+                            form.setFieldsValue({
+                                name: record.name,
+                                tax_code: record.tax_code,
+                                scale_id: record.scale_id,
+                                is_hcmc: record.is_hcmc,
+                                status: record.status,
+                                department_id: record.department_id,
+                                field_ids: record.field_ids ? record.field_ids.split(',').map(Number) : [],
+                                rep_title: record.rep_title,
+                                rep_full_name: record.rep_full_name,
+                                rep_role: record.rep_role,
+                                rep_phone: record.rep_phone,
+                                rep_email: record.rep_email,
+                                building_street: record.building_street,
+                                district: record.district,
+                                province: record.province,
+                                country: record.country,
+                            });
+                            setIsModalVisible(true);
+                        }} />
+                    )}
+                    {!isLecturer && (
+                        <Button type="text" danger icon={<DeleteOutlined />} onClick={() => {
+                            modal.confirm({ title: 'Bạn có chắc chắn muốn xóa?', okButtonProps: { danger: true, className: '!bg-red-600 hover:!bg-red-500 text-white' }, onOk: () => handleDelete(record.id) });
+                        }} />
+                    )}
                 </Space>
             ),
         },
@@ -343,24 +375,50 @@ const EnterpriseList = () => {
                     <p className="text-sm text-slate-500 m-0">Cập nhật thông tin Doanh nghiệp & Đầu mối liên hệ Đối tác</p>
                 </div>
                 <div className="flex gap-3">
-                    <Button size="large" icon={<UploadOutlined />} onClick={() => setShowImport(true)}>Import</Button>
+                    {!isLecturer && <Button size="large" icon={<UploadOutlined />} onClick={() => setShowImport(true)}>Import</Button>}
                     <Button size="large" icon={<DownloadOutlined />} onClick={handleExport}>Xuất Excel</Button>
-                    <Button size="large" type="primary" className="bg-blue-600 rounded-lg shadow-sm" icon={<PlusOutlined />} onClick={() => {
-                        setEditingId(null); form.resetFields(); setIsModalVisible(true);
-                    }}>Thêm Đối Tác</Button>
+                    {!isLecturer && (
+                        <Button size="large" type="primary" className="bg-blue-600 rounded-lg shadow-sm" icon={<PlusOutlined />} onClick={() => {
+                            setEditingId(null); form.resetFields(); setIsModalVisible(true);
+                        }}>Thêm Đối Tác</Button>
+                    )}
                 </div>
             </div>
 
-            {/* Search + Filter bar */}
-            <div className="flex flex-wrap gap-3 mb-4 items-center">
-                <input
+            {/* Status tags */}
+            <div className="mb-5">
+                <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Trạng thái doanh nghiệp</div>
+                <div className="flex gap-2 flex-wrap">
+                    {Object.entries(statusCounts).map(([status, count]) => {
+                        const sc = statusConfig[status] || statusConfig['Chưa xác định'];
+                        return (
+                            <button
+                                key={status}
+                                onClick={() => setStatusFilter(statusFilter === status ? null : status)}
+                                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all border ${sc.colorClass} ${statusFilter === status
+                                    ? `ring-2 ring-offset-1 dark:ring-offset-gray-900 shadow-sm dark:shadow-none ${sc.ringClass} border-current`
+                                    : 'hover:shadow-sm dark:hover:shadow-none border-transparent'
+                                    }`}
+                            >
+                                {sc.icon} {status} <span className="font-bold">{count}</span>
+                            </button>
+                        );
+                    })}
+                </div>
+            </div>
+
+            {/* Search + Filters */}
+            <div className="bg-white dark:bg-gray-800 rounded-xl p-4 mb-6 shadow-sm border border-gray-100 dark:border-gray-700 flex flex-wrap items-center gap-3 transition-colors">
+                <Input
                     placeholder="Tìm kiếm theo tên, mã thuế, đại diện..."
+                    prefix={<SearchOutlined className="text-gray-300" />}
+                    className="flex-1 min-w-[200px] rounded-lg h-10"
                     value={searchText}
                     onChange={e => setSearchText(e.target.value)}
-                    className="border border-slate-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm w-72 max-w-full focus:outline-none focus:ring-2 focus:ring-blue-300"
+                    allowClear
                 />
                 <Popover content={filterContent} title="Bộ lọc nâng cao" trigger="click" placement="bottomLeft">
-                    <Button icon={<FilterOutlined />} size="large" className="rounded-lg text-gray-600">
+                    <Button icon={<FilterOutlined />} className="h-10 rounded-lg text-gray-600">
                         Bộ lọc {activeFilterCount > 0 && <Badge count={activeFilterCount} size="small" offset={[2, -2]} style={{ backgroundColor: '#1677ff' }} />}
                     </Button>
                 </Popover>
@@ -387,7 +445,7 @@ const EnterpriseList = () => {
             )}
 
             <Table 
-                rowSelection={{
+                rowSelection={isLecturer ? null : {
                     selectedRowKeys,
                     onChange: setSelectedRowKeys,
                 }}

@@ -6,12 +6,22 @@ import {
 } from '@ant-design/icons';
 import api from '../utils/api';
 import dayjs from 'dayjs';
+import Cookies from 'js-cookie';
 
 const { Option } = Select;
 const { TextArea } = Input;
 const { Dragger } = Upload;
 
 const MOUList = () => {
+    const userCookie = Cookies.get('user');
+    let user = null;
+    try {
+        if (userCookie) user = JSON.parse(userCookie);
+    } catch (e) {
+        console.error("Failed to parse user cookie", e);
+    }
+    const isLecturer = user?.role === 'LECTURER';
+
     const [data, setData] = useState([]);
     const { modal } = AntApp.useApp();
     const [enterprises, setEnterprises] = useState([]);
@@ -375,8 +385,8 @@ const MOUList = () => {
                             onClick={() => handleSmartPdfAction(record)}
                         />
                     </Tooltip>
-                    <Button type="text" icon={<EditOutlined className="text-blue-500" />} onClick={() => openEditModal(record)} />
-                    <Button type="text" danger icon={<DeleteOutlined />} onClick={() => handleDelete(record.id)} />
+                    {!isLecturer && <Button type="text" icon={<EditOutlined className="text-blue-500" />} onClick={() => openEditModal(record)} />}
+                    {!isLecturer && <Button type="text" danger icon={<DeleteOutlined />} onClick={() => handleDelete(record.id)} />}
                 </Space>
             )
         }
@@ -448,21 +458,25 @@ const MOUList = () => {
                             onChange={(e) => setSearchText(e.target.value)}
                             className="w-full sm:w-56 rounded-lg"
                         />
-                        <Button
-                            icon={<InboxOutlined />}
-                            onClick={() => { setScanResult(null); setScanError(null); setUploadedFile(null); setIsScanModalOpen(true); }}
-                            className="rounded-lg border-purple-600 text-purple-600 dark:border-purple-400 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/30"
-                        >
-                            Import
-                        </Button>
-                        <Button
-                            type="primary"
-                            icon={<PlusOutlined />}
-                            onClick={() => { setEditingId(null); form.resetFields(); setIsModalOpen(true); }}
-                            className="bg-blue-600 shadow-sm rounded-lg"
-                        >
-                            Thêm Biên bản
-                        </Button>
+                        {!isLecturer && (
+                            <>
+                                <Button
+                                    icon={<InboxOutlined />}
+                                    onClick={() => { setScanResult(null); setScanError(null); setUploadedFile(null); setIsScanModalOpen(true); }}
+                                    className="rounded-lg border-purple-600 text-purple-600 dark:border-purple-400 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/30"
+                                >
+                                    Import
+                                </Button>
+                                <Button
+                                    type="primary"
+                                    icon={<PlusOutlined />}
+                                    onClick={() => { setEditingId(null); form.resetFields(); setIsModalOpen(true); }}
+                                    className="bg-blue-600 shadow-sm rounded-lg"
+                                >
+                                    Thêm Biên bản
+                                </Button>
+                            </>
+                        )}
                     </div>
                 </div>
 
@@ -477,7 +491,7 @@ const MOUList = () => {
                 )}
 
                 <Table
-                    rowSelection={{
+                    rowSelection={isLecturer ? null : {
                         selectedRowKeys,
                         onChange: setSelectedRowKeys,
                     }}

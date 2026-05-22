@@ -11,12 +11,22 @@ import ImportModal from '../components/ImportModal';
 import api from '../utils/api';
 import dayjs from 'dayjs';
 import * as XLSX from 'xlsx';
+import Cookies from 'js-cookie';
 
 const { Option } = Select;
 
 const ActivityList = () => {
-    const [data, setData] = useState([]);
     const { modal } = AntApp.useApp();
+    const userCookie = Cookies.get('user');
+    let user = null;
+    try {
+        if (userCookie) user = JSON.parse(userCookie);
+    } catch (e) {
+        console.error("Failed to parse user cookie", e);
+    }
+    const isLecturer = user?.role === 'LECTURER';
+
+    const [data, setData] = useState([]);
     const [stats, setStats] = useState(null);
     const [enterprises, setEnterprises] = useState([]);
     const [loading, setLoading] = useState(false);
@@ -356,13 +366,13 @@ const ActivityList = () => {
                     <p className="text-gray-400 text-sm">{data.length} hoạt động · {stats?.active || 0} đang diễn ra</p>
                 </div>
                 <div className="flex gap-3">
-                    <Button icon={<UploadOutlined />} onClick={() => setShowImport(true)} className="h-10 rounded-lg">Import</Button>
+                    {!isLecturer && <Button icon={<UploadOutlined />} onClick={() => setShowImport(true)} className="h-10 rounded-lg">Import</Button>}
                     <Button icon={<DownloadOutlined />} onClick={handleExport} className="h-10 rounded-lg">Xuất Excel</Button>
-                    <Button type="primary" className="bg-vluRed h-10 px-5 rounded-lg" icon={<PlusOutlined />} onClick={() => {
+                    {!isLecturer && <Button type="primary" className="bg-vluRed h-10 px-5 rounded-lg" icon={<PlusOutlined />} onClick={() => {
                         setEditingId(null);
                         form.resetFields();
                         setIsModalVisible(true);
-                    }}>Thêm hoạt động</Button>
+                    }}>Thêm hoạt động</Button>}
                 </div>
             </div>
 
@@ -517,7 +527,7 @@ const ActivityList = () => {
             </div>
 
             {/* Action Bar for Bulk Selection */}
-            {selectedActivities.length > 0 && (
+            {!isLecturer && selectedActivities.length > 0 && (
                 <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800/50 rounded-lg p-3 mb-4 flex justify-between items-center animate-fade-in">
                     <span className="text-blue-700 dark:text-blue-400 font-medium ml-2">Đã chọn {selectedActivities.length} hoạt động</span>
                     <Space>
@@ -557,13 +567,15 @@ const ActivityList = () => {
                                         setIsDrawerVisible(true);
                                     }}
                                 >
-                                    <div className="absolute top-3 right-3 z-10">
-                                        <Checkbox 
-                                            checked={selectedActivities.includes(item.id)} 
-                                            onChange={() => handleToggleActivity(item.id)}
-                                            className="scale-110"
-                                        />
-                                    </div>
+                                    {!isLecturer && (
+                                        <div className="absolute top-3 right-3 z-10">
+                                            <Checkbox 
+                                                checked={selectedActivities.includes(item.id)} 
+                                                onChange={() => handleToggleActivity(item.id)}
+                                                className="scale-110"
+                                            />
+                                        </div>
+                                    )}
                                     {/* Card Header */}
                                     <div className="p-5 pb-3 flex-1">
                                         <div className="flex justify-between items-start mb-3 pr-6">
@@ -625,39 +637,42 @@ const ActivityList = () => {
                                             onChange={(val) => handleUpdateStatus(item.id, val)}
                                             className="w-[140px]"
                                             bordered={false}
+                                            disabled={isLecturer}
                                         >
                                             <Option value="Đề xuất">Đề xuất</Option>
                                             <Option value="Phê duyệt nội bộ">Phê duyệt nội bộ</Option>
                                             <Option value="Đã triển khai">Đã triển khai</Option>
                                             <Option value="Đã kết thúc">Đã kết thúc</Option>
                                         </Select>
-                                        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <Tooltip title="Chỉnh sửa">
-                                                <button className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-400 hover:text-blue-500 hover:bg-blue-50:bg-blue-900/30 transition-all"
-                                                    onClick={() => {
-                                                        setEditingId(item.id);
-                                                        form.setFieldsValue({
-                                                            ...item,
-                                                            type_ids: item.type_ids ? item.type_ids.split(',').map(Number) : [],
-                                                            target_ids: item.target_ids ? item.target_ids.split(',').map(Number) : [],
-                                                            start_date: item.start_date ? dayjs(item.start_date) : null,
-                                                            end_date: item.end_date ? dayjs(item.end_date) : null,
-                                                            start_time: item.start_time ? dayjs(`1970-01-01 ${item.start_time}`) : null,
-                                                            end_time: item.end_time ? dayjs(`1970-01-01 ${item.end_time}`) : null,
-                                                            collaboration_date: item.collaboration_date ? dayjs(item.collaboration_date) : null,
-                                                        });
-                                                        setIsModalVisible(true);
-                                                    }}>
-                                                    <EditOutlined style={{ fontSize: 13 }} />
-                                                </button>
-                                            </Tooltip>
-                                            <Tooltip title="Xóa">
-                                                <button className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50:bg-red-900/30 transition-all"
-                                                    onClick={() => modal.confirm({ title: 'Xác nhận xóa hoạt động này?', okButtonProps: { danger: true, className: '!bg-red-600 hover:!bg-red-500 text-white' }, onOk: () => handleDelete(item.id) })}>
-                                                    <DeleteOutlined style={{ fontSize: 13 }} />
-                                                </button>
-                                            </Tooltip>
-                                        </div>
+                                        {!isLecturer && (
+                                            <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <Tooltip title="Chỉnh sửa">
+                                                    <button className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-400 hover:text-blue-500 hover:bg-blue-50:bg-blue-900/30 transition-all"
+                                                        onClick={() => {
+                                                            setEditingId(item.id);
+                                                            form.setFieldsValue({
+                                                                ...item,
+                                                                type_ids: item.type_ids ? item.type_ids.split(',').map(Number) : [],
+                                                                target_ids: item.target_ids ? item.target_ids.split(',').map(Number) : [],
+                                                                start_date: item.start_date ? dayjs(item.start_date) : null,
+                                                                end_date: item.end_date ? dayjs(item.end_date) : null,
+                                                                start_time: item.start_time ? dayjs(`1970-01-01 ${item.start_time}`) : null,
+                                                                end_time: item.end_time ? dayjs(`1970-01-01 ${item.end_time}`) : null,
+                                                                collaboration_date: item.collaboration_date ? dayjs(item.collaboration_date) : null,
+                                                            });
+                                                            setIsModalVisible(true);
+                                                        }}>
+                                                        <EditOutlined style={{ fontSize: 13 }} />
+                                                    </button>
+                                                </Tooltip>
+                                                <Tooltip title="Xóa">
+                                                    <button className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50:bg-red-900/30 transition-all"
+                                                        onClick={() => modal.confirm({ title: 'Xác nhận xóa hoạt động này?', okButtonProps: { danger: true, className: '!bg-red-600 hover:!bg-red-500 text-white' }, onOk: () => handleDelete(item.id) })}>
+                                                        <DeleteOutlined style={{ fontSize: 13 }} />
+                                                    </button>
+                                                </Tooltip>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             </Col>

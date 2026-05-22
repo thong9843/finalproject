@@ -11,7 +11,14 @@ exports.getClusters = async (req, res) => {
 
 exports.getDepartments = async (req, res) => {
     try {
-        const [rows] = await pool.query('SELECT * FROM departments ORDER BY name ASC');
+        let query = 'SELECT * FROM departments';
+        let params = [];
+        if (req.user && req.user.role !== 'ADMIN') {
+            query += ' WHERE faculty_id = ?';
+            params.push(req.user.faculty_id);
+        }
+        query += ' ORDER BY name ASC';
+        const [rows] = await pool.query(query, params);
         res.status(200).json(rows);
     } catch (error) {
         res.status(500).json({ message: error.message });

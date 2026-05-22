@@ -2,10 +2,20 @@ import React, { useEffect, useState } from 'react';
 import { Table, Button, Modal, Form, Input, Select, message, Space , App as AntApp } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import api from '../utils/api';
+import Cookies from 'js-cookie';
 
 const { Option } = Select;
 
 const ActivityTypes = () => {
+    const userCookie = Cookies.get('user');
+    let user = null;
+    try {
+        if (userCookie) user = JSON.parse(userCookie);
+    } catch (e) {
+        console.error("Failed to parse user cookie", e);
+    }
+    const isLecturer = user?.role === 'LECTURER';
+
     const [data, setData] = useState([]);
     const { modal } = AntApp.useApp();
     const [faculties, setFaculties] = useState([]);
@@ -33,13 +43,8 @@ const ActivityTypes = () => {
 
     const fetchFaculties = async () => {
         try {
-            const res = await api.get('/enterprises/faculties'); // Already existing route from old structure, wait... or I can use /auth/faculties?
-            // Actually let's assume we can hit /auth/faculties or /structure/faculties. 
-            // Wait, I only made /structure/clusters and /structure/departments. Let's see if /auth/faculties exists or we use raw endpoint.
-            // Let's check where old pages get faculties. We can just use the current known endpoint if needed.
-            // Let's use /auth/faculties if it exists or /stats/faculties...
-            // Let's write a quick API call that might fail, I'll fix after checking.
-            setFaculties([]);
+            const res = await api.get('/structure/departments');
+            setFaculties(res.data || []);
         } catch (e) {
             console.log(e);
         }
@@ -104,7 +109,7 @@ const ActivityTypes = () => {
             key: 'faculty_name',
             render: (text) => text || <span className="text-gray-400 italic">Dùng chung toàn trường</span>
         },
-        {
+        ...(!isLecturer ? [{
             title: 'Thao tác',
             key: 'action',
             width: 150,
@@ -114,7 +119,7 @@ const ActivityTypes = () => {
                     <Button type="text" danger icon={<DeleteOutlined />} onClick={() => handleDelete(record.id)} />
                 </Space>
             )
-        }
+        }] : [])
     ];
 
     return (
@@ -125,14 +130,16 @@ const ActivityTypes = () => {
                         <h2 className="text-xl font-bold m-0 text-slate-800 dark:text-gray-100">Quản lý Loại Hình Hoạt Động</h2>
                         <p className="text-sm text-slate-500 m-0">Định nghĩa danh mục Loại hình hợp tác đặc thù theo từng Khoa</p>
                     </div>
-                    <Button 
-                        type="primary" 
-                        icon={<PlusOutlined />} 
-                        onClick={() => { setEditingId(null); form.resetFields(); setIsModalOpen(true); }}
-                        className="bg-blue-600 shadow-sm rounded-lg"
-                    >
-                        Thêm mới
-                    </Button>
+                    {!isLecturer && (
+                        <Button 
+                            type="primary" 
+                            icon={<PlusOutlined />} 
+                            onClick={() => { setEditingId(null); form.resetFields(); setIsModalOpen(true); }}
+                            className="bg-blue-600 shadow-sm rounded-lg"
+                        >
+                            Thêm mới
+                        </Button>
+                    )}
                 </div>
                 <div className="p-0">
                     <Table 

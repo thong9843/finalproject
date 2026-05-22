@@ -15,14 +15,20 @@ const FONTS = {
 
 exports.getAll = async (req, res) => {
     try {
-        const [rows] = await pool.query(`
+        let query = `
             SELECT m.*, e.name as enterprise_name, d.name as executing_unit_name, a.title as activity_title
             FROM mous m
             JOIN enterprises e ON m.enterprise_id = e.id
             LEFT JOIN departments d ON m.executing_unit_id = d.id
             LEFT JOIN activities a ON m.activity_id = a.id
-            ORDER BY m.created_at DESC
-        `);
+        `;
+        let params = [];
+        if (req.user.role !== 'ADMIN') {
+            query += ' WHERE e.faculty_id = ?';
+            params.push(req.user.faculty_id);
+        }
+        query += ' ORDER BY m.created_at DESC';
+        const [rows] = await pool.query(query, params);
         res.status(200).json(rows);
     } catch (error) {
         res.status(500).json({ message: error.message });
@@ -31,9 +37,17 @@ exports.getAll = async (req, res) => {
 
 exports.getById = async (req, res) => {
     try {
-        const [rows] = await pool.query('SELECT * FROM mous WHERE id = ?', [req.params.id]);
+        const [rows] = await pool.query(`
+            SELECT m.*, e.faculty_id
+            FROM mous m
+            JOIN enterprises e ON m.enterprise_id = e.id
+            WHERE m.id = ?`, [req.params.id]);
         if (rows.length === 0) return res.status(404).json({ message: 'Not found' });
-        res.status(200).json(rows[0]);
+        const mou = rows[0];
+        if (req.user.role !== 'ADMIN' && mou.faculty_id !== req.user.faculty_id) {
+            return res.status(403).json({ message: 'Access denied to this MOU' });
+        }
+        res.status(200).json(mou);
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
@@ -44,6 +58,16 @@ exports.create = async (req, res) => {
         const { mou_code, enterprise_id, signing_date, partner_contact, org_type, country,
             collaboration_scope, executing_unit_id, vlu_contact, tasks_ay24_25,
             next_steps, past_activities, related_data, working_dir, activity_id, file_url } = req.body;
+        
+        if (req.user.role !== 'ADMIN') {
+            const [ents] = await pool.query('SELECT faculty_id FROM enterprises WHERE id = ?', [enterprise_id]);
+            if (ents.length === 0) {
+                return res.status(400).json({ message: 'Enterprise not found' });
+            }
+            if (ents[0].faculty_id !== req.user.faculty_id) {
+                return res.status(403).json({ message: 'Enterprise does not belong to your faculty' });
+            }
+        }
         const [result] = await pool.query(
             `INSERT INTO mous (mou_code, enterprise_id, signing_date, partner_contact, org_type, country,
                 collaboration_scope, executing_unit_id, vlu_contact, tasks_ay24_25,
@@ -65,6 +89,27 @@ exports.update = async (req, res) => {
         const { mou_code, enterprise_id, signing_date, partner_contact, org_type, country,
             collaboration_scope, executing_unit_id, vlu_contact, tasks_ay24_25,
             next_steps, past_activities, related_data, working_dir, activity_id, file_url } = req.body;
+        
+        if (req.user.role !== 'ADMIN') {
+            const [existing] = await pool.query(`
+                SELECT e.faculty_id 
+                FROM mous m 
+                JOIN enterprises e ON m.enterprise_id = e.id 
+                WHERE m.id = ?`, [id]);
+            if (existing.length === 0) {
+                return res.status(404).json({ message: 'MOU not found' });
+            }
+            if (existing[0].faculty_id !== req.user.faculty_id) {
+                return res.status(403).json({ message: 'Access denied to this MOU' });
+            }
+            const [ents] = await pool.query('SELECT faculty_id FROM enterprises WHERE id = ?', [enterprise_id]);
+            if (ents.length === 0) {
+                return res.status(400).json({ message: 'Enterprise not found' });
+            }
+            if (ents[0].faculty_id !== req.user.faculty_id) {
+                return res.status(403).json({ message: 'New enterprise does not belong to your faculty' });
+            }
+        }
         await pool.query(
             `UPDATE mous SET mou_code=?, enterprise_id=?, signing_date=?, partner_contact=?,
                 org_type=?, country=?, collaboration_scope=?, executing_unit_id=?, vlu_contact=?,
@@ -82,7 +127,21 @@ exports.update = async (req, res) => {
 
 exports.remove = async (req, res) => {
     try {
-        await pool.query('DELETE FROM mous WHERE id = ?', [req.params.id]);
+        const { id } = req.params;
+        if (req.user.role !== 'ADMIN') {
+            const [existing] = await pool.query(`
+                SELECT e.faculty_id 
+                FROM mous m 
+                JOIN enterprises e ON m.enterprise_id = e.id 
+                WHERE m.id = ?`, [id]);
+            if (existing.length === 0) {
+                return res.status(404).json({ message: 'MOU not found' });
+            }
+            if (existing[0].faculty_id !== req.user.faculty_id) {
+                return res.status(403).json({ message: 'Access denied to this MOU' });
+            }
+        }
+        await pool.query('DELETE FROM mous WHERE id = ?', [id]);
         res.status(200).json({ message: 'Deleted successfully' });
     } catch (error) {
         res.status(500).json({ message: error.message });
@@ -96,7 +155,7 @@ exports.generatePdf = async (req, res) => {
         const { id } = req.params;
 
         const [rows] = await pool.query(`
-            SELECT m.*, e.name as enterprise_name, e.tax_code,
+            SELECT m.*, e.name as enterprise_name, e.tax_code, e.faculty_id,
                    d.name as executing_unit_name,
                    ea.building_street, ea.district, ea.province,
                    er.title, er.full_name, er.phone
@@ -111,6 +170,9 @@ exports.generatePdf = async (req, res) => {
         if (rows.length === 0) return res.status(404).json({ message: 'MOU not found' });
 
         const mou = rows[0];
+        if (req.user.role !== 'ADMIN' && mou.faculty_id !== req.user.faculty_id) {
+            return res.status(403).json({ message: 'Access denied to this MOU' });
+        }
         const s = (v) => v || '';
 
         const signingDate = mou.signing_date
@@ -319,7 +381,14 @@ Neu khong tim thay thong tin, de null. Tra ve JSON thuan tuy khong co markdown.`
         let matched_activity = null;
         if (extractedData.enterprise_name) {
             const words = extractedData.enterprise_name.toLowerCase().split(' ').slice(0, 3).join('%');
-            const [ents] = await pool.query(`SELECT id, name FROM enterprises WHERE LOWER(name) LIKE ? LIMIT 1`, [`%${words}%`]);
+            let query = `SELECT id, name FROM enterprises WHERE LOWER(name) LIKE ?`;
+            let params = [`%${words}%`];
+            if (req.user.role !== 'ADMIN') {
+                query += ' AND faculty_id = ?';
+                params.push(req.user.faculty_id);
+            }
+            query += ' LIMIT 1';
+            const [ents] = await pool.query(query, params);
             if (ents.length > 0) {
                 enterprise_id = ents[0].id;
                 extractedData.matched_enterprise = ents[0].name;

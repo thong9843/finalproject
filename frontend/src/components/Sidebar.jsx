@@ -86,6 +86,10 @@ const Sidebar = ({ isOpen, onClose }) => {
                     {
                         key: '/duplicates',
                         label: 'Xử lý dữ liệu trùng',
+                    },
+                    {
+                        key: '/ai-import',
+                        label: 'Import dữ liệu AI',
                     }
                 ] : [])
             ]

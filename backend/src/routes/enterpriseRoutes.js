@@ -7,8 +7,8 @@ router.use(verifyToken);
 
 router.get('/', enterpriseController.getAll);
 router.get('/:id', enterpriseController.getById);
-router.post('/', enterpriseController.create);
-router.put('/:id', enterpriseController.update);
+router.post('/', verifyRole(['ADMIN', 'FACULTY_MANAGER']), enterpriseController.create);
+router.put('/:id', verifyRole(['ADMIN', 'FACULTY_MANAGER']), enterpriseController.update);
 router.delete('/:id', verifyRole(['ADMIN', 'FACULTY_MANAGER']), enterpriseController.remove);
 
 router.get('/duplicates/list', verifyRole(['ADMIN']), enterpriseController.getDuplicates);

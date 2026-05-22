@@ -4,7 +4,7 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const mouController = require('../controllers/mouController');
-const { verifyToken } = require('../middlewares/auth');
+const { verifyToken, verifyRole } = require('../middlewares/auth');
 
 router.use(verifyToken);
 
@@ -78,8 +78,8 @@ const upload = multer({
  *       201:
  *         description: Trả về ID của MOU vừa tạo
  */
-router.get('/', mouController.getAll);
-router.post('/', mouController.create);
+router.get('/', verifyRole(['ADMIN', 'FACULTY_MANAGER', 'LECTURER']), mouController.getAll);
+router.post('/', verifyRole(['ADMIN', 'FACULTY_MANAGER']), mouController.create);
 
 /**
  * @swagger
@@ -103,7 +103,7 @@ router.post('/', mouController.create);
  *       200:
  *         description: Thông tin được trích xuất từ tài liệu
  */
-router.post('/scan-document', upload.single('file'), mouController.scanDocument);
+router.post('/scan-document', upload.single('file'), verifyRole(['ADMIN', 'FACULTY_MANAGER']), mouController.scanDocument);
 
 /**
  * @swagger
@@ -147,9 +147,9 @@ router.post('/scan-document', upload.single('file'), mouController.scanDocument)
  *       200:
  *         description: Xóa thành công
  */
-router.get('/:id', mouController.getById);
-router.put('/:id', mouController.update);
-router.delete('/:id', mouController.remove);
+router.get('/:id', verifyRole(['ADMIN', 'FACULTY_MANAGER', 'LECTURER']), mouController.getById);
+router.put('/:id', verifyRole(['ADMIN', 'FACULTY_MANAGER']), mouController.update);
+router.delete('/:id', verifyRole(['ADMIN', 'FACULTY_MANAGER']), mouController.remove);
 
 /**
  * @swagger
@@ -174,6 +174,6 @@ router.delete('/:id', mouController.remove);
  *               type: string
  *               format: binary
  */
-router.get('/:id/export-pdf', mouController.generatePdf);
+router.get('/:id/export-pdf', verifyRole(['ADMIN', 'FACULTY_MANAGER', 'LECTURER']), mouController.generatePdf);
 
 module.exports = router;

@@ -78,6 +78,10 @@ exports.getById = async (req, res) => {
 
         const enterprise = enterprises[0];
 
+        if (req.user.role !== 'ADMIN' && enterprise.faculty_id !== req.user.faculty_id) {
+            return res.status(403).json({ message: 'Access denied to this enterprise' });
+        }
+
         const [reps] = await pool.query(
             'SELECT * FROM enterprise_representatives WHERE enterprise_id = ? ORDER BY is_primary DESC', [id]);
 
