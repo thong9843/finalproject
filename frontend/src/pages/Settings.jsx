@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Card, Form, Input, Button, Switch, Divider, message } from 'antd';
 import { UserOutlined, MailOutlined, LockOutlined, BellOutlined, BulbOutlined } from '@ant-design/icons';
 import Cookies from 'js-cookie';
@@ -8,6 +8,10 @@ const Settings = () => {
     const userCookie = Cookies.get('user');
     const user = userCookie ? JSON.parse(userCookie) : {};
     const { isDark, toggleDark } = useTheme();
+
+    useEffect(() => {
+        document.title = "Cài đặt Hệ thống | VLU Enterprise Link Manager";
+    }, []);
 
     const handleSaveProfile = () => {
         message.success('Cập nhật thông tin thành công!');

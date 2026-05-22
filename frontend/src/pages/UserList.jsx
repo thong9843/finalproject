@@ -16,6 +16,7 @@ const UserList = () => {
     const { modal } = AntApp.useApp();
 
     useEffect(() => {
+        document.title = "Quản lý Người dùng | VLU Enterprise Link Manager";
         fetchData();
         fetchDepartments();
     }, []);

@@ -28,6 +28,7 @@ const StudentList = () => {
     const [selectedRowKeys, setSelectedRowKeys] = useState([]);
 
     useEffect(() => {
+        document.title = "Quản lý Sinh viên | VLU Enterprise Link Manager";
         fetchData();
         fetchStats();
         fetchEnterprises();

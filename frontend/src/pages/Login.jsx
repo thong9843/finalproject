@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Form, Input, Button, message, Card } from 'antd';
 import { UserOutlined, LockOutlined } from '@ant-design/icons';
 import api from '../utils/api';
@@ -8,6 +8,10 @@ import { useNavigate } from 'react-router-dom';
 const Login = () => {
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
+
+    useEffect(() => {
+        document.title = "Đăng nhập | VLU Enterprise Link Manager";
+    }, []);
 
     const onFinish = async (values) => {
         setLoading(true);

@@ -61,6 +61,10 @@ const Dashboard = () => {
     const [period, setPeriod] = useState('year');
     const [customRange, setCustomRange] = useState(null);
 
+    useEffect(() => {
+        document.title = "Tổng quan | VLU Enterprise Link Manager";
+    }, []);
+
     const dateRange = useMemo(() => {
         if (period === 'custom' && customRange) {
             return customRange;

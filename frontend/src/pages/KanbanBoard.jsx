@@ -96,8 +96,10 @@ const KanbanBoard = () => {
     fetchItems();
     if (view === 'ACTIVITY') {
       fetchEnterprisesAndDependencies();
+      document.title = "Bảng Kanban Hoạt động | VLU Enterprise Link Manager";
     } else {
       fetchEnterpriseDependencies();
+      document.title = "Bảng Kanban Doanh nghiệp | VLU Enterprise Link Manager";
     }
   }, [view]);
 

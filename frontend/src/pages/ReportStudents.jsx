@@ -57,6 +57,10 @@ const ReportStudents = () => {
     }, [period, customRange]);
 
     useEffect(() => {
+        document.title = "Báo cáo Sinh viên thực tập | VLU Enterprise Link Manager";
+    }, []);
+
+    useEffect(() => {
         fetchData();
     }, [dateRange]);
 

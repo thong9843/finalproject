@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { Card, Steps, Upload, Button, message, Table, Select, Progress, Typography, Space } from 'antd';
 import { InboxOutlined, CheckCircleOutlined, SyncOutlined, FileExcelOutlined } from '@ant-design/icons';
 import * as XLSX from 'xlsx';
@@ -22,6 +22,10 @@ const SYSTEM_FIELDS = [
 const AiImportTool = () => {
     const [currentStep, setCurrentStep] = useState(0);
     const [fileList, setFileList] = useState([]);
+
+    useEffect(() => {
+        document.title = "Nhập dữ liệu bằng AI | VLU Enterprise Link Manager";
+    }, []);
     const [headers, setHeaders] = useState([]);
     const [rawData, setRawData] = useState([]);
     

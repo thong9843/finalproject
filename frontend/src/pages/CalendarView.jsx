@@ -44,6 +44,7 @@ const CalendarView = () => {
     };
 
     useEffect(() => {
+        document.title = "Lịch Hoạt động | VLU Enterprise Link Manager";
         fetchActivities();
         fetchEnterprises();
     }, []);

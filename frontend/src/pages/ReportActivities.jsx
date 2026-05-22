@@ -57,6 +57,10 @@ const ReportActivities = () => {
     }, [period, customRange]);
 
     useEffect(() => {
+        document.title = "Báo cáo Hoạt động | VLU Enterprise Link Manager";
+    }, []);
+
+    useEffect(() => {
         fetchData();
     }, [dateRange]);
 

@@ -25,6 +25,7 @@ const ActivityTypes = () => {
     const [form] = Form.useForm();
 
     useEffect(() => {
+        document.title = "Quản lý Loại hình Hoạt động | VLU Enterprise Link Manager";
         fetchActivityTypes();
         fetchFaculties();
     }, []);

@@ -54,6 +54,7 @@ const ActivityList = () => {
     }, [searchText, filterType, filterStatus, filterEnterprise, dateRange, sortOption]);
 
     useEffect(() => {
+        document.title = "Hoạt động Hợp tác | VLU Enterprise Link Manager";
         fetchData();
         fetchStats();
         fetchEnterprises();

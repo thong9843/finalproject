@@ -45,6 +45,7 @@ const MOUList = () => {
     const [exportingId, setExportingId] = useState(null);
 
     useEffect(() => {
+        document.title = "Quản lý Biên bản ghi nhớ (MOU) | VLU Enterprise Link Manager";
         fetchMOUs();
         fetchOptions();
     }, []);

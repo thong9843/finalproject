@@ -27,6 +27,7 @@ const DuplicateDataTool = () => {
     };
 
     useEffect(() => {
+        document.title = "Xử lý Trùng lặp Dữ liệu | VLU Enterprise Link Manager";
         fetchDuplicates();
     }, []);
 

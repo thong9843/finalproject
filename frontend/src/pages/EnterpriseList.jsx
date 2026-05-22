@@ -42,6 +42,7 @@ const EnterpriseList = () => {
     const [selectedRowKeys, setSelectedRowKeys] = useState([]);
 
     useEffect(() => {
+        document.title = "Quản lý Doanh nghiệp | VLU Enterprise Link Manager";
         fetchData();
         fetchDepartments();
         fetchScales();
