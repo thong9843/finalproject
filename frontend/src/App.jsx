@@ -17,6 +17,7 @@ import MOUList from './pages/MOUList';
 import UserList from './pages/UserList';
 import DuplicateDataTool from './pages/DuplicateDataTool';
 import AiImportTool from './pages/AiImportTool';
+import HistoryLog from './pages/HistoryLog';
 import Cookies from 'js-cookie';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
 
@@ -35,6 +36,20 @@ const AdminRoute = ({ children }) => {
         console.error("Failed to parse user cookie", e);
     }
     if (!user || user.role !== 'ADMIN') {
+        return <Navigate to="/dashboard" replace />;
+    }
+    return children;
+};
+
+const AdminOrManagerRoute = ({ children }) => {
+    const userCookie = Cookies.get('user');
+    let user = null;
+    try {
+        if (userCookie) user = JSON.parse(userCookie);
+    } catch (e) {
+        console.error("Failed to parse user cookie", e);
+    }
+    if (!user || (user.role !== 'ADMIN' && user.role !== 'FACULTY_MANAGER')) {
         return <Navigate to="/dashboard" replace />;
     }
     return children;
@@ -101,6 +116,7 @@ const App = () => {
                             <Route path="users" element={<AdminRoute><UserList /></AdminRoute>} />
                             <Route path="duplicates" element={<AdminRoute><DuplicateDataTool /></AdminRoute>} />
                             <Route path="ai-import" element={<AdminRoute><AiImportTool /></AdminRoute>} />
+                            <Route path="history" element={<AdminOrManagerRoute><HistoryLog /></AdminOrManagerRoute>} />
                         </Route>
                     </Routes>
                 </BrowserRouter>

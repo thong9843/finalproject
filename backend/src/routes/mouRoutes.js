@@ -150,6 +150,7 @@ router.post('/scan-document', upload.single('file'), verifyRole(['ADMIN', 'FACUL
 router.get('/:id', verifyRole(['ADMIN', 'FACULTY_MANAGER', 'LECTURER']), mouController.getById);
 router.put('/:id', verifyRole(['ADMIN', 'FACULTY_MANAGER']), mouController.update);
 router.delete('/:id', verifyRole(['ADMIN', 'FACULTY_MANAGER']), mouController.remove);
+router.post('/:id/restore', verifyRole(['ADMIN', 'FACULTY_MANAGER']), mouController.restore);
 
 /**
  * @swagger

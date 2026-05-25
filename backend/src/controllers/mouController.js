@@ -21,10 +21,12 @@ exports.getAll = async (req, res) => {
             JOIN enterprises e ON m.enterprise_id = e.id
             LEFT JOIN departments d ON m.executing_unit_id = d.id
             LEFT JOIN activities a ON m.activity_id = a.id
+            WHERE m.is_deleted = ?
         `;
-        let params = [];
+        const showDeleted = req.query.is_deleted === '1' || req.query.is_deleted === 'true';
+        let params = [showDeleted ? 1 : 0];
         if (req.user.role !== 'ADMIN') {
-            query += ' WHERE e.faculty_id = ?';
+            query += ' AND e.faculty_id = ?';
             params.push(req.user.faculty_id);
         }
         query += ' ORDER BY m.created_at DESC';
@@ -41,7 +43,7 @@ exports.getById = async (req, res) => {
             SELECT m.*, e.faculty_id
             FROM mous m
             JOIN enterprises e ON m.enterprise_id = e.id
-            WHERE m.id = ?`, [req.params.id]);
+            WHERE m.id = ? AND m.is_deleted = 0`, [req.params.id]);
         if (rows.length === 0) return res.status(404).json({ message: 'Not found' });
         const mou = rows[0];
         if (req.user.role !== 'ADMIN' && mou.faculty_id !== req.user.faculty_id) {
@@ -77,7 +79,22 @@ exports.create = async (req, res) => {
                 collaboration_scope, executing_unit_id || null, vlu_contact, tasks_ay24_25,
                 next_steps, past_activities, related_data, working_dir, activity_id || null, file_url || null]
         );
-        res.status(201).json({ id: result.insertId, message: 'Created successfully' });
+        const mouId = result.insertId;
+
+        // Log creation
+        const [newMou] = await pool.query('SELECT * FROM mous WHERE id = ?', [mouId]);
+        const [ent] = await pool.query('SELECT faculty_id FROM enterprises WHERE id = ?', [enterprise_id]);
+        const historyHelper = require('../utils/historyHelper');
+        await historyHelper.logCreate(pool, {
+            entityType: 'MOU',
+            entityId: mouId,
+            entityName: mou_code,
+            facultyId: ent[0]?.faculty_id,
+            changedBy: req.user.id,
+            newValue: { mou: newMou[0] }
+        });
+
+        res.status(201).json({ id: mouId, message: 'Created successfully' });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
@@ -91,15 +108,15 @@ exports.update = async (req, res) => {
             next_steps, past_activities, related_data, working_dir, activity_id, file_url } = req.body;
         
         if (req.user.role !== 'ADMIN') {
-            const [existing] = await pool.query(`
+            const existing = await pool.query(`
                 SELECT e.faculty_id 
                 FROM mous m 
                 JOIN enterprises e ON m.enterprise_id = e.id 
                 WHERE m.id = ?`, [id]);
-            if (existing.length === 0) {
+            if (existing[0].length === 0) {
                 return res.status(404).json({ message: 'MOU not found' });
             }
-            if (existing[0].faculty_id !== req.user.faculty_id) {
+            if (existing[0][0].faculty_id !== req.user.faculty_id) {
                 return res.status(403).json({ message: 'Access denied to this MOU' });
             }
             const [ents] = await pool.query('SELECT faculty_id FROM enterprises WHERE id = ?', [enterprise_id]);
@@ -110,6 +127,11 @@ exports.update = async (req, res) => {
                 return res.status(403).json({ message: 'New enterprise does not belong to your faculty' });
             }
         }
+
+        // Fetch old values for logging
+        const [oldMou] = await pool.query('SELECT * FROM mous WHERE id = ?', [id]);
+        const oldValue = { mou: oldMou[0] };
+
         await pool.query(
             `UPDATE mous SET mou_code=?, enterprise_id=?, signing_date=?, partner_contact=?,
                 org_type=?, country=?, collaboration_scope=?, executing_unit_id=?, vlu_contact=?,
@@ -119,6 +141,24 @@ exports.update = async (req, res) => {
                 collaboration_scope, executing_unit_id || null, vlu_contact, tasks_ay24_25,
                 next_steps, past_activities, related_data, working_dir, activity_id || null, file_url || null, id]
         );
+
+        // Fetch new values for logging
+        const [newMou] = await pool.query('SELECT * FROM mous WHERE id = ?', [id]);
+        const newValue = { mou: newMou[0] };
+
+        const [ent] = await pool.query('SELECT faculty_id FROM enterprises WHERE id = ?', [enterprise_id]);
+
+        const historyHelper = require('../utils/historyHelper');
+        await historyHelper.logUpdate(pool, {
+            entityType: 'MOU',
+            entityId: id,
+            entityName: mou_code,
+            facultyId: ent[0]?.faculty_id,
+            changedBy: req.user.id,
+            oldValue,
+            newValue
+        });
+
         res.status(200).json({ message: 'Updated successfully' });
     } catch (error) {
         res.status(500).json({ message: error.message });
@@ -128,21 +168,41 @@ exports.update = async (req, res) => {
 exports.remove = async (req, res) => {
     try {
         const { id } = req.params;
-        if (req.user.role !== 'ADMIN') {
-            const [existing] = await pool.query(`
-                SELECT e.faculty_id 
-                FROM mous m 
-                JOIN enterprises e ON m.enterprise_id = e.id 
-                WHERE m.id = ?`, [id]);
-            if (existing.length === 0) {
-                return res.status(404).json({ message: 'MOU not found' });
-            }
-            if (existing[0].faculty_id !== req.user.faculty_id) {
-                return res.status(403).json({ message: 'Access denied to this MOU' });
-            }
+        const [existing] = await pool.query(`
+            SELECT e.faculty_id, m.mou_code, m.is_deleted
+            FROM mous m 
+            JOIN enterprises e ON m.enterprise_id = e.id 
+            WHERE m.id = ?`, [id]);
+            
+        if (existing.length === 0) {
+            return res.status(404).json({ message: 'MOU not found' });
         }
-        await pool.query('DELETE FROM mous WHERE id = ?', [id]);
-        res.status(200).json({ message: 'Deleted successfully' });
+        
+        if (req.user.role !== 'ADMIN' && existing[0].faculty_id !== req.user.faculty_id) {
+            return res.status(403).json({ message: 'Access denied to this MOU' });
+        }
+        
+        if (existing[0].is_deleted === 1) {
+            return res.status(400).json({ message: 'MOU này đã được xóa trước đó.' });
+        }
+
+        const [mouRows] = await pool.query('SELECT * FROM mous WHERE id = ?', [id]);
+        const oldValue = { mou: mouRows[0] };
+
+        // Soft delete
+        await pool.query('UPDATE mous SET is_deleted = 1 WHERE id = ?', [id]);
+
+        const historyHelper = require('../utils/historyHelper');
+        await historyHelper.logDelete(pool, {
+            entityType: 'MOU',
+            entityId: id,
+            entityName: existing[0].mou_code,
+            facultyId: existing[0].faculty_id,
+            changedBy: req.user.id,
+            oldValue
+        });
+
+        res.status(200).json({ message: 'Deleted successfully (soft delete)' });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
@@ -437,5 +497,23 @@ Neu khong tim thay thong tin, de null. Tra ve JSON thuan tuy khong co markdown.`
         if (req.file?.path) { try { fs.unlinkSync(req.file.path); } catch (e) { } }
         console.error('AI Scan error:', error);
         res.status(500).json({ success: false, message: 'Loi phan tich tai lieu: ' + error.message });
+    }
+};
+
+exports.restore = async (req, res) => {
+    try {
+        const id = req.params.id;
+        const [logRows] = await pool.query(
+            'SELECT id FROM action_history WHERE entity_type = "MOU" AND entity_id = ? AND action_type = "DELETE" ORDER BY created_at DESC LIMIT 1',
+            [id]
+        );
+        if (logRows.length === 0) {
+            return res.status(404).json({ message: 'Không tìm thấy lịch sử xóa để khôi phục MOU này.' });
+        }
+        req.params.id = logRows[0].id;
+        const historyController = require('./historyController');
+        return historyController.restore(req, res);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
     }
 };

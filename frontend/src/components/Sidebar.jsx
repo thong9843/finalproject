@@ -14,6 +14,8 @@ const Sidebar = ({ isOpen, onClose }) => {
     const user = userCookie ? JSON.parse(userCookie) : null;
     const isAdmin = user && user.role === 'ADMIN';
 
+    const isManagerOrAdmin = user && (user.role === 'ADMIN' || user.role === 'FACULTY_MANAGER');
+
     const items = [
         {
             key: '/dashboard',
@@ -78,6 +80,12 @@ const Sidebar = ({ isOpen, onClose }) => {
                     key: '/activity-types',
                     label: 'Loại hình hoạt động',
                 },
+                ...(isManagerOrAdmin ? [
+                    {
+                        key: '/history',
+                        label: 'Lịch sử hệ thống',
+                    }
+                ] : []),
                 ...(isAdmin ? [
                     {
                         key: '/users',

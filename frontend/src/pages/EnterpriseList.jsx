@@ -41,18 +41,23 @@ const EnterpriseList = () => {
     const [sortOption, setSortOption] = useState(null);
     const [selectedRowKeys, setSelectedRowKeys] = useState([]);
 
+    const [showDeleted, setShowDeleted] = useState(false);
+
     useEffect(() => {
         document.title = "Quản lý Doanh nghiệp | VLU Enterprise Link Manager";
-        fetchData();
         fetchDepartments();
         fetchScales();
         fetchFields();
     }, []);
 
+    useEffect(() => {
+        fetchData();
+    }, [showDeleted]);
+
     const fetchData = async () => {
         setLoading(true);
         try {
-            const res = await api.get('/enterprises');
+            const res = await api.get(`/enterprises?is_deleted=${showDeleted ? 1 : 0}`);
             setData(res.data);
         } catch (error) {
             message.error('Lỗi khi tải dữ liệu doanh nghiệp');
@@ -106,6 +111,16 @@ const EnterpriseList = () => {
             setSelectedRowKeys(prev => prev.filter(key => key !== id));
         } catch (error) {
             message.error(error.response?.data?.message || 'Lỗi khi xóa dữ liệu');
+        }
+    };
+
+    const handleRestore = async (id) => {
+        try {
+            await api.post(`/enterprises/${id}/restore`);
+            message.success('Khôi phục doanh nghiệp thành công');
+            fetchData();
+        } catch (error) {
+            message.error(error.response?.data?.message || 'Lỗi khi khôi phục doanh nghiệp');
         }
     };
 
@@ -260,7 +275,7 @@ const EnterpriseList = () => {
         }
     });
 
-    const activeFilterCount = [statusFilter, filterScale, filterField, filterIsHcmc !== undefined ? filterIsHcmc : undefined, filterDistrict, sortOption].filter(v => v !== undefined && v !== null).length;
+    const activeFilterCount = [statusFilter, filterScale, filterField, filterIsHcmc !== undefined ? filterIsHcmc : undefined, filterDistrict, sortOption, showDeleted ? true : null].filter(v => v !== undefined && v !== null).length;
 
     const sortOptions = [
         { value: 'name_asc', label: '🔤 Tên (A → Z)' },
@@ -299,14 +314,30 @@ const EnterpriseList = () => {
                     </Select>
                 </div>
             </div>
+            <Divider className="my-0" />
+            <div className="flex justify-between items-center py-1">
+                <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider flex items-center gap-1"><DeleteOutlined /> Hiển thị đã xóa</span>
+                <Switch size="small" checked={showDeleted} onChange={setShowDeleted} />
+            </div>
             <Button icon={<ClearOutlined />} type="default" block onClick={() => {
-                setStatusFilter(undefined); setFilterScale(undefined); setFilterField(undefined); setFilterIsHcmc(undefined); setFilterDistrict(undefined); setSortOption(null);
+                setStatusFilter(undefined); setFilterScale(undefined); setFilterField(undefined); setFilterIsHcmc(undefined); setFilterDistrict(undefined); setSortOption(null); setShowDeleted(false);
             }}>Xóa tất cả bộ lọc</Button>
         </div>
     );
 
     const columns = [
-        { title: 'Tên Doanh nghiệp', dataIndex: 'name', key: 'name', width: 220, render: (text) => <span className="font-semibold text-slate-800 dark:text-gray-100">{text}</span> },
+        { 
+            title: 'Tên Doanh nghiệp', 
+            dataIndex: 'name', 
+            key: 'name', 
+            width: 220, 
+            render: (text, record) => (
+                <span className="font-semibold text-slate-800 dark:text-gray-100 flex items-center gap-2">
+                    {text}
+                    {record.is_deleted === 1 && <Tag color="red">Đã xóa</Tag>}
+                </span>
+            )
+        },
         {
             title: 'Đại diện liên hệ', key: 'contact', width: 230,
             render: (_, r) => (
@@ -331,40 +362,57 @@ const EnterpriseList = () => {
         },
         {
             title: 'Thao tác', key: 'action', width: 120,
-            render: (_, record) => (
-                <Space size="middle">
-                    <Button type="text" icon={<UnorderedListOutlined />} onClick={() => handleViewTimeline(record)} />
-                    {!isLecturer && (
-                        <Button type="text" className="text-blue-500" icon={<EditOutlined />} onClick={() => {
-                            setEditingId(record.id);
-                            form.setFieldsValue({
-                                name: record.name,
-                                tax_code: record.tax_code,
-                                scale_id: record.scale_id,
-                                is_hcmc: record.is_hcmc,
-                                status: record.status,
-                                department_id: record.department_id,
-                                field_ids: record.field_ids ? record.field_ids.split(',').map(Number) : [],
-                                rep_title: record.rep_title,
-                                rep_full_name: record.rep_full_name,
-                                rep_role: record.rep_role,
-                                rep_phone: record.rep_phone,
-                                rep_email: record.rep_email,
-                                building_street: record.building_street,
-                                district: record.district,
-                                province: record.province,
-                                country: record.country,
-                            });
-                            setIsModalVisible(true);
-                        }} />
-                    )}
-                    {!isLecturer && (
-                        <Button type="text" danger icon={<DeleteOutlined />} onClick={() => {
-                            modal.confirm({ title: 'Bạn có chắc chắn muốn xóa?', okButtonProps: { danger: true, className: '!bg-red-600 hover:!bg-red-500 text-white' }, onOk: () => handleDelete(record.id) });
-                        }} />
-                    )}
-                </Space>
-            ),
+            render: (_, record) => {
+                const isDeleted = record.is_deleted === 1;
+                if (isDeleted) {
+                    return (
+                        <Space size="middle">
+                            <Button 
+                                type="primary" 
+                                size="small" 
+                                className="bg-green-600 hover:bg-green-500 text-white border-0 rounded-md" 
+                                onClick={() => handleRestore(record.id)}
+                            >
+                                Khôi phục
+                            </Button>
+                        </Space>
+                    );
+                }
+                return (
+                    <Space size="middle">
+                        <Button type="text" icon={<UnorderedListOutlined />} onClick={() => handleViewTimeline(record)} />
+                        {!isLecturer && (
+                            <Button type="text" className="text-blue-500" icon={<EditOutlined />} onClick={() => {
+                                setEditingId(record.id);
+                                form.setFieldsValue({
+                                    name: record.name,
+                                    tax_code: record.tax_code,
+                                    scale_id: record.scale_id,
+                                    is_hcmc: record.is_hcmc,
+                                    status: record.status,
+                                    department_id: record.department_id,
+                                    field_ids: record.field_ids ? record.field_ids.split(',').map(Number) : [],
+                                    rep_title: record.rep_title,
+                                    rep_full_name: record.rep_full_name,
+                                    rep_role: record.rep_role,
+                                    rep_phone: record.rep_phone,
+                                    rep_email: record.rep_email,
+                                    building_street: record.building_street,
+                                    district: record.district,
+                                    province: record.province,
+                                    country: record.country,
+                                });
+                                setIsModalVisible(true);
+                            }} />
+                        )}
+                        {!isLecturer && (
+                            <Button type="text" danger icon={<DeleteOutlined />} onClick={() => {
+                                modal.confirm({ title: 'Bạn có chắc chắn muốn xóa?', okButtonProps: { danger: true, className: '!bg-red-600 hover:!bg-red-500 text-white' }, onOk: () => handleDelete(record.id) });
+                            }} />
+                        )}
+                    </Space>
+                );
+            },
         },
     ];
 
@@ -454,6 +502,7 @@ const EnterpriseList = () => {
                 dataSource={filteredData} 
                 rowKey="id" 
                 loading={loading}
+                rowClassName={(record) => record.is_deleted === 1 ? 'opacity-65 bg-red-50/20 dark:bg-red-950/10' : ''}
                 className="shadow-sm border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-xl overflow-hidden"
                 scroll={{ x: 'max-content' }}
                 pagination={{ pageSize: 12 }} />

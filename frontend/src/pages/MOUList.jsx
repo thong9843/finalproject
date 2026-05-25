@@ -1,8 +1,9 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Table, Button, Modal, Form, Input, Select, DatePicker, message, Space, Tooltip, Row, Col, Upload, Spin, Tag, Alert , App as AntApp } from 'antd';
+import { Table, Button, Modal, Form, Input, Select, DatePicker, message, Space, Tooltip, Row, Col, Upload, Spin, Tag, Alert, Switch, Popover, Badge, Divider, App as AntApp } from 'antd';
 import {
     PlusOutlined, EditOutlined, DeleteOutlined, LinkOutlined, SearchOutlined,
-    FilePdfOutlined, ScanOutlined, InboxOutlined, CheckCircleOutlined, RobotOutlined, DownloadOutlined
+    FilePdfOutlined, ScanOutlined, InboxOutlined, CheckCircleOutlined, RobotOutlined, DownloadOutlined,
+    FilterOutlined, ClearOutlined, SortAscendingOutlined
 } from '@ant-design/icons';
 import api from '../utils/api';
 import dayjs from 'dayjs';
@@ -44,16 +45,25 @@ const MOUList = () => {
     // PDF Export state
     const [exportingId, setExportingId] = useState(null);
 
+    const [showDeleted, setShowDeleted] = useState(false);
+    const [sortOption, setSortOption] = useState(null);
+    const [filterUnit, setFilterUnit] = useState(null);
+    const [filterOrgType, setFilterOrgType] = useState(null);
+    const [filterCountry, setFilterCountry] = useState(null);
+
     useEffect(() => {
         document.title = "Quản lý Biên bản ghi nhớ (MOU) | VLU Enterprise Link Manager";
-        fetchMOUs();
         fetchOptions();
     }, []);
+
+    useEffect(() => {
+        fetchMOUs();
+    }, [showDeleted]);
 
     const fetchMOUs = async () => {
         setLoading(true);
         try {
-            const res = await api.get('/mous');
+            const res = await api.get(`/mous?is_deleted=${showDeleted ? 1 : 0}`);
             setData(res.data);
         } catch (error) {
             message.error('Lỗi khi tải danh sách Biên bản ghi nhớ (MOU)');
@@ -115,6 +125,16 @@ const MOUList = () => {
                 }
             }
         });
+    };
+
+    const handleRestore = async (id) => {
+        try {
+            await api.post(`/mous/${id}/restore`);
+            message.success('Khôi phục MOU thành công!');
+            fetchMOUs();
+        } catch (error) {
+            message.error(error.response?.data?.message || 'Lỗi khi khôi phục MOU');
+        }
     };
 
     const handleBulkDelete = () => {
@@ -310,10 +330,79 @@ const MOUList = () => {
         }
     };
 
-    const filteredData = data.filter(item =>
-        (item.mou_code?.toLowerCase().includes(searchText.toLowerCase())) ||
-        (item.enterprise_name?.toLowerCase().includes(searchText.toLowerCase()))
+    const uniqueOrgTypes = [...new Set(data.map(item => item.org_type).filter(Boolean))];
+    const uniqueCountries = [...new Set(data.map(item => item.country).filter(Boolean))];
+
+    const sortOptions = [
+        { value: 'signing_date_desc', label: '📅 Ngày ký (Mới → Cũ)' },
+        { value: 'signing_date_asc', label: '📅 Ngày ký (Cũ → Mới)' },
+        { value: 'code_asc', label: '🆔 Mã MOU (A → Z)' },
+        { value: 'code_desc', label: '🆔 Mã MOU (Z → A)' },
+        { value: 'partner_asc', label: '🔤 Tên đối tác (A → Z)' },
+        { value: 'partner_desc', label: '🔤 Tên đối tác (Z → A)' },
+    ];
+
+    const filterContent = (
+        <div className="flex flex-col gap-3 w-72 p-1">
+            <div>
+                <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5 flex items-center gap-1"><SortAscendingOutlined /> Sắp xếp</div>
+                <Select allowClear placeholder="Chọn cách sắp xếp..." onChange={setSortOption} value={sortOption} className="w-full" options={sortOptions} />
+            </div>
+            <Divider className="my-0" />
+            <div>
+                <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5 flex items-center gap-1"><FilterOutlined /> Bộ lọc</div>
+                <div className="flex flex-col gap-2">
+                    <Select allowClear placeholder="Đơn vị triển khai" onChange={setFilterUnit} value={filterUnit} className="w-full" showSearch filterOption={filterOptionIgnoreCase}>
+                        {departments.map(d => <Option key={d.id} value={d.id}>{d.name}</Option>)}
+                    </Select>
+                    <Select allowClear placeholder="Loại tổ chức" onChange={setFilterOrgType} value={filterOrgType} className="w-full" showSearch filterOption={filterOptionIgnoreCase}>
+                        {uniqueOrgTypes.map(ot => <Option key={ot} value={ot}>{ot}</Option>)}
+                    </Select>
+                    <Select allowClear placeholder="Quốc gia" onChange={setFilterCountry} value={filterCountry} className="w-full" showSearch filterOption={filterOptionIgnoreCase}>
+                        {uniqueCountries.map(c => <Option key={c} value={c}>{c}</Option>)}
+                    </Select>
+                </div>
+            </div>
+            <Divider className="my-0" />
+            <div className="flex justify-between items-center py-1">
+                <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider flex items-center gap-1"><DeleteOutlined /> Hiển thị đã xóa</span>
+                <Switch size="small" checked={showDeleted} onChange={setShowDeleted} />
+            </div>
+            <Button icon={<ClearOutlined />} type="default" block onClick={() => {
+                setSortOption(null); setFilterUnit(null); setFilterOrgType(null); setFilterCountry(null); setShowDeleted(false);
+            }}>Xóa tất cả bộ lọc</Button>
+        </div>
     );
+
+    const activeFilterCount = [sortOption, filterUnit, filterOrgType, filterCountry, showDeleted ? true : null].filter(v => v !== null && v !== undefined).length;
+
+    const filteredData = data.filter(item => {
+        const q = searchText.toLowerCase();
+        const matchSearch = !searchText ||
+            (item.mou_code?.toLowerCase().includes(q)) ||
+            (item.enterprise_name?.toLowerCase().includes(q));
+        const matchUnit = !filterUnit || item.executing_unit_id === filterUnit;
+        const matchOrgType = !filterOrgType || item.org_type === filterOrgType;
+        const matchCountry = !filterCountry || item.country === filterCountry;
+        return matchSearch && matchUnit && matchOrgType && matchCountry;
+    }).sort((a, b) => {
+        if (!sortOption) return 0;
+        switch (sortOption) {
+            case 'signing_date_desc':
+                if (!a.signing_date) return 1;
+                if (!b.signing_date) return -1;
+                return new Date(b.signing_date) - new Date(a.signing_date);
+            case 'signing_date_asc':
+                if (!a.signing_date) return 1;
+                if (!b.signing_date) return -1;
+                return new Date(a.signing_date) - new Date(b.signing_date);
+            case 'code_asc': return (a.mou_code || '').localeCompare(b.mou_code || '');
+            case 'code_desc': return (b.mou_code || '').localeCompare(a.mou_code || '');
+            case 'partner_asc': return (a.enterprise_name || '').localeCompare(b.enterprise_name || '', 'vi');
+            case 'partner_desc': return (b.enterprise_name || '').localeCompare(a.enterprise_name || '', 'vi');
+            default: return 0;
+        }
+    });
 
     const columns = [
         {
@@ -321,7 +410,12 @@ const MOUList = () => {
             dataIndex: 'mou_code',
             key: 'mou_code',
             width: 130,
-            render: (text) => <span className="font-semibold text-blue-600">{text}</span>
+            render: (text, record) => (
+                <span className="font-semibold text-blue-600 flex items-center gap-2">
+                    {text}
+                    {record.is_deleted === 1 && <Tag color="red" className="m-0">Đã xóa</Tag>}
+                </span>
+            )
         },
         {
             title: 'Tên đối tác',
@@ -371,25 +465,42 @@ const MOUList = () => {
             key: 'action',
             width: 180,
             align: 'center',
-            render: (_, record) => (
-                <Space>
-                    {record.working_dir && (
-                        <Tooltip title="Mở thư mục làm việc">
-                            <Button type="text" icon={<LinkOutlined />} onClick={() => window.open(record.working_dir, '_blank')} />
+            render: (_, record) => {
+                const isDeleted = record.is_deleted === 1;
+                if (isDeleted) {
+                    return (
+                        <Space>
+                            <Button 
+                                type="primary" 
+                                size="small" 
+                                className="bg-green-600 hover:bg-green-500 text-white border-0 rounded-md" 
+                                onClick={() => handleRestore(record.id)}
+                            >
+                                Khôi phục
+                            </Button>
+                        </Space>
+                    );
+                }
+                return (
+                    <Space>
+                        {record.working_dir && (
+                            <Tooltip title="Mở thư mục làm việc">
+                                <Button type="text" icon={<LinkOutlined />} onClick={() => window.open(record.working_dir, '_blank')} />
+                            </Tooltip>
+                        )}
+                        <Tooltip title={record.file_url ? "Xem tài liệu (Cloud)" : "Xuất PDF Hợp đồng mẫu"}>
+                            <Button
+                                type="text"
+                                icon={record.file_url ? <InboxOutlined className="text-purple-500" /> : <FilePdfOutlined className="text-red-500" />}
+                                loading={exportingId === record.id}
+                                onClick={() => handleSmartPdfAction(record)}
+                            />
                         </Tooltip>
-                    )}
-                    <Tooltip title={record.file_url ? "Xem tài liệu (Cloud)" : "Xuất PDF Hợp đồng mẫu"}>
-                        <Button
-                            type="text"
-                            icon={record.file_url ? <InboxOutlined className="text-purple-500" /> : <FilePdfOutlined className="text-red-500" />}
-                            loading={exportingId === record.id}
-                            onClick={() => handleSmartPdfAction(record)}
-                        />
-                    </Tooltip>
-                    {!isLecturer && <Button type="text" icon={<EditOutlined className="text-blue-500" />} onClick={() => openEditModal(record)} />}
-                    {!isLecturer && <Button type="text" danger icon={<DeleteOutlined />} onClick={() => handleDelete(record.id)} />}
-                </Space>
-            )
+                        {!isLecturer && <Button type="text" icon={<EditOutlined className="text-blue-500" />} onClick={() => openEditModal(record)} />}
+                        {!isLecturer && <Button type="text" danger icon={<DeleteOutlined />} onClick={() => handleDelete(record.id)} />}
+                    </Space>
+                );
+            }
         }
     ];
 
@@ -458,7 +569,13 @@ const MOUList = () => {
                             value={searchText}
                             onChange={(e) => setSearchText(e.target.value)}
                             className="w-full sm:w-56 rounded-lg"
+                            allowClear
                         />
+                        <Popover content={filterContent} title="Bộ lọc & Sắp xếp" trigger="click" placement="bottomRight">
+                            <Button icon={<FilterOutlined />} className="rounded-lg text-gray-600">
+                                Bộ lọc {activeFilterCount > 0 && <Badge count={activeFilterCount} size="small" offset={[2, -2]} style={{ backgroundColor: '#1677ff' }} />}
+                            </Button>
+                        </Popover>
                         {!isLecturer && (
                             <>
                                 <Button
@@ -500,6 +617,7 @@ const MOUList = () => {
                     dataSource={filteredData}
                     loading={loading}
                     rowKey="id"
+                    rowClassName={(record) => record.is_deleted === 1 ? 'opacity-65 bg-red-50/20 dark:bg-red-955/10' : ''}
                     pagination={{ pageSize: 12 }}
                     className="border-none"
                     scroll={{ x: 'max-content' }}

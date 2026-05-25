@@ -9,8 +9,9 @@ exports.getAll = async (req, res) => {
             FROM students s 
             LEFT JOIN enterprises e ON s.enterprise_id = e.id
             LEFT JOIN faculties f ON s.faculty_id = f.id
-            WHERE 1=1`;
-        let params = [];
+            WHERE s.is_deleted = ?`;
+        const showDeleted = req.query.is_deleted === '1' || req.query.is_deleted === 'true';
+        let params = [showDeleted ? 1 : 0];
 
         if (req.user.role !== 'ADMIN') {
             query += ' AND s.faculty_id = ?';
@@ -77,11 +78,11 @@ exports.getStats = async (req, res) => {
         }
 
         const [active] = await pool.query(
-            `SELECT COUNT(*) as count FROM students WHERE status = 'Đang thực tập' ${facultyFilter}`, params);
+            `SELECT COUNT(*) as count FROM students WHERE status = 'Đang thực tập' AND is_deleted = 0 ${facultyFilter}`, params);
         const [pending] = await pool.query(
-            `SELECT COUNT(*) as count FROM students WHERE status = 'Chờ phân công' ${facultyFilter}`, params);
+            `SELECT COUNT(*) as count FROM students WHERE status = 'Chờ phân công' AND is_deleted = 0 ${facultyFilter}`, params);
         const [completed] = await pool.query(
-            `SELECT COUNT(*) as count FROM students WHERE status = 'Hoàn thành' ${facultyFilter}`, params);
+            `SELECT COUNT(*) as count FROM students WHERE status = 'Hoàn thành' AND is_deleted = 0 ${facultyFilter}`, params);
 
         res.status(200).json({
             active: active[0].count,
@@ -103,7 +104,21 @@ exports.create = async (req, res) => {
              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [student_code, name, email, className, major, advisor, activity_id || null, enterprise_id || null, position, status || 'Chờ phân công', gpa, start_date, end_date, finalFacultyId]
         );
-        res.status(201).json({ id: result.insertId, message: 'Created successfully' });
+        const studentId = result.insertId;
+
+        // Log creation
+        const [newStudent] = await pool.query('SELECT * FROM students WHERE id = ?', [studentId]);
+        const historyHelper = require('../utils/historyHelper');
+        await historyHelper.logCreate(pool, {
+            entityType: 'STUDENT',
+            entityId: studentId,
+            entityName: name,
+            facultyId: finalFacultyId,
+            changedBy: req.user.id,
+            newValue: { student: newStudent[0] }
+        });
+
+        res.status(201).json({ id: studentId, message: 'Created successfully' });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
@@ -126,10 +141,30 @@ exports.update = async (req, res) => {
             return res.status(404).json({ message: 'Student not found or unauthorized' });
         }
 
+        // Fetch old values
+        const [oldStudent] = await pool.query('SELECT * FROM students WHERE id = ?', [id]);
+        const oldValue = { student: oldStudent[0] };
+
         await pool.query(
             `UPDATE students SET student_code=?, name=?, email=?, class=?, major=?, advisor=?, activity_id=?, enterprise_id=?, position=?, status=?, gpa=?, start_date=?, end_date=? WHERE id=?`,
             [student_code, name, email, className, major, advisor, activity_id || null, enterprise_id || null, position, status, gpa, start_date, end_date, id]
         );
+
+        // Fetch new values
+        const [newStudent] = await pool.query('SELECT * FROM students WHERE id = ?', [id]);
+        const newValue = { student: newStudent[0] };
+
+        const historyHelper = require('../utils/historyHelper');
+        await historyHelper.logUpdate(pool, {
+            entityType: 'STUDENT',
+            entityId: id,
+            entityName: name,
+            facultyId: oldStudent[0].faculty_id,
+            changedBy: req.user.id,
+            oldValue,
+            newValue
+        });
+
         res.status(200).json({ message: 'Updated successfully' });
     } catch (error) {
         res.status(500).json({ message: error.message });
@@ -139,19 +174,58 @@ exports.update = async (req, res) => {
 exports.remove = async (req, res) => {
     try {
         const id = req.params.id;
-        let query = 'DELETE FROM students WHERE id = ?';
-        let params = [id];
+        let checkQuery = 'SELECT * FROM students WHERE id = ?';
+        let checkParams = [id];
 
         if (req.user.role !== 'ADMIN') {
-            query += ' AND faculty_id = ?';
-            params.push(req.user.faculty_id);
+            checkQuery += ' AND faculty_id = ?';
+            checkParams.push(req.user.faculty_id);
         }
 
-        const [result] = await pool.query(query, params);
-        if (result.affectedRows === 0) {
+        const [existing] = await pool.query(checkQuery, checkParams);
+        if (existing.length === 0) {
             return res.status(404).json({ message: 'Student not found or unauthorized' });
         }
-        res.status(200).json({ message: 'Deleted successfully' });
+        const student = existing[0];
+        
+        if (student.is_deleted === 1) {
+            return res.status(400).json({ message: 'Sinh viên này đã được xóa trước đó.' });
+        }
+
+        const oldValue = { student };
+
+        // Soft delete
+        await pool.query('UPDATE students SET is_deleted = 1 WHERE id = ?', [id]);
+
+        const historyHelper = require('../utils/historyHelper');
+        await historyHelper.logDelete(pool, {
+            entityType: 'STUDENT',
+            entityId: id,
+            entityName: student.name,
+            facultyId: student.faculty_id,
+            changedBy: req.user.id,
+            oldValue
+        });
+
+        res.status(200).json({ message: 'Deleted successfully (soft delete)' });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+exports.restore = async (req, res) => {
+    try {
+        const id = req.params.id;
+        const [logRows] = await pool.query(
+            'SELECT id FROM action_history WHERE entity_type = "STUDENT" AND entity_id = ? AND action_type = "DELETE" ORDER BY created_at DESC LIMIT 1',
+            [id]
+        );
+        if (logRows.length === 0) {
+            return res.status(404).json({ message: 'Không tìm thấy lịch sử xóa để khôi phục sinh viên này.' });
+        }
+        req.params.id = logRows[0].id;
+        const historyController = require('./historyController');
+        return historyController.restore(req, res);
     } catch (error) {
         res.status(500).json({ message: error.message });
     }

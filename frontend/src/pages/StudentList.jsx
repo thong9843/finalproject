@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Table, Tag, Card, Row, Col, Statistic, Form, Input, Select, Button, Modal, message, Space, DatePicker, InputNumber, Popover, Badge, Divider , App as AntApp } from 'antd';
+import { Table, Tag, Card, Row, Col, Statistic, Form, Input, Select, Button, Modal, message, Space, DatePicker, InputNumber, Popover, Badge, Divider, Switch, App as AntApp } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, SearchOutlined, SyncOutlined, ClockCircleOutlined, CheckCircleOutlined, TeamOutlined, UploadOutlined, DownloadOutlined, FilterOutlined, SortAscendingOutlined, ClearOutlined, CalendarOutlined } from '@ant-design/icons';
 import ImportModal from '../components/ImportModal';
 import api from '../utils/api';
@@ -27,17 +27,22 @@ const StudentList = () => {
     const [filterGpa, setFilterGpa] = useState(null);
     const [selectedRowKeys, setSelectedRowKeys] = useState([]);
 
+    const [showDeleted, setShowDeleted] = useState(false);
+
     useEffect(() => {
         document.title = "Quản lý Sinh viên | VLU Enterprise Link Manager";
-        fetchData();
         fetchStats();
         fetchEnterprises();
     }, []);
 
+    useEffect(() => {
+        fetchData();
+    }, [showDeleted]);
+
     const fetchData = async () => {
         setLoading(true);
         try {
-            const res = await api.get('/students');
+            const res = await api.get(`/students?is_deleted=${showDeleted ? 1 : 0}`);
             setData(res.data);
         } catch (error) {
             message.error('Lỗi khi tải dữ liệu sinh viên');
@@ -96,6 +101,17 @@ const StudentList = () => {
             setSelectedRowKeys(prev => prev.filter(key => key !== id));
         } catch (error) {
             message.error('Lỗi khi xóa dữ liệu');
+        }
+    };
+
+    const handleRestore = async (id) => {
+        try {
+            await api.post(`/students/${id}/restore`);
+            message.success('Khôi phục sinh viên thành công');
+            fetchData();
+            fetchStats();
+        } catch (error) {
+            message.error(error.response?.data?.message || 'Lỗi khi khôi phục sinh viên');
         }
     };
 
@@ -259,7 +275,7 @@ const StudentList = () => {
         }
     });
 
-    const activeFilterCount = [sortOption, dateRange, filterEnterprise, filterMajor, filterGpa].filter(v => v !== null && v !== undefined).length;
+    const activeFilterCount = [sortOption, dateRange, filterEnterprise, filterMajor, filterGpa, showDeleted ? true : null].filter(v => v !== null && v !== undefined).length;
 
     const sortOptions = [
         { value: 'name_asc', label: '🔤 Tên (A → Z)' },
@@ -308,8 +324,13 @@ const StudentList = () => {
                     </Select>
                 </div>
             </div>
+            <Divider className="my-0" />
+            <div className="flex justify-between items-center py-1">
+                <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider flex items-center gap-1"><DeleteOutlined /> Hiển thị đã xóa</span>
+                <Switch size="small" checked={showDeleted} onChange={setShowDeleted} />
+            </div>
             <Button icon={<ClearOutlined />} type="default" block onClick={() => {
-                setSortOption(null); setDateRange(null); setFilterEnterprise(null); setFilterMajor(null); setFilterGpa(null);
+                setSortOption(null); setDateRange(null); setFilterEnterprise(null); setFilterMajor(null); setFilterGpa(null); setShowDeleted(false);
             }}>Xóa tất cả bộ lọc</Button>
         </div>
     );
@@ -354,7 +375,10 @@ const StudentList = () => {
             dataIndex: 'status', 
             key: 'status',
             width: 140,
-            render: (status) => {
+            render: (status, record) => {
+                if (record.is_deleted === 1) {
+                    return <Tag color="red" className="rounded-full px-3 py-0.5">Đã xóa</Tag>;
+                }
                 const config = statusConfig[status] || { color: 'default' };
                 return <Tag icon={config.icon} color={config.color} className="rounded-full px-3 py-0.5">{status}</Tag>;
             }
@@ -374,14 +398,31 @@ const StudentList = () => {
             key: 'action',
             width: 80,
             align: 'center',
-            render: (_, record) => (
-                <Space>
-                    <Button type="text" size="small" icon={<EditOutlined />} onClick={() => openEditModal(record)} />
-                    <Button type="text" size="small" danger icon={<DeleteOutlined />} onClick={() => {
-                        modal.confirm({ title: 'Xác nhận xóa sinh viên này?', okButtonProps: { danger: true, className: '!bg-red-600 hover:!bg-red-500 text-white' }, onOk: () => handleDelete(record.id) });
-                    }} />
-                </Space>
-            ),
+            render: (_, record) => {
+                const isDeleted = record.is_deleted === 1;
+                if (isDeleted) {
+                    return (
+                        <Space>
+                            <Button 
+                                type="primary" 
+                                size="small" 
+                                className="bg-green-600 hover:bg-green-500 text-white border-0 rounded-md" 
+                                onClick={() => handleRestore(record.id)}
+                            >
+                                Khôi phục
+                            </Button>
+                        </Space>
+                    );
+                }
+                return (
+                    <Space>
+                        <Button type="text" size="small" icon={<EditOutlined />} onClick={() => openEditModal(record)} />
+                        <Button type="text" size="small" danger icon={<DeleteOutlined />} onClick={() => {
+                            modal.confirm({ title: 'Xác nhận xóa sinh viên này?', okButtonProps: { danger: true, className: '!bg-red-600 hover:!bg-red-500 text-white' }, onOk: () => handleDelete(record.id) });
+                        }} />
+                    </Space>
+                );
+            },
         },
     ];
 
@@ -511,6 +552,7 @@ const StudentList = () => {
                     dataSource={filteredData} 
                     rowKey="id" 
                     loading={loading}
+                    rowClassName={(record) => record.is_deleted === 1 ? 'opacity-65 bg-red-50/20 dark:bg-red-955/10' : ''}
                     scroll={{ x: 'max-content' }}
                     pagination={{ pageSize: 10, showSizeChanger: false }}
                     className="student-table"

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Card, Row, Col, Tag, Form, Select, Button, Modal, message, Input, DatePicker, TimePicker, Statistic, Spin, Empty, Tooltip, Drawer, Descriptions, Popover, Badge, Divider, Pagination, Checkbox, Space , App as AntApp } from 'antd';
+import { Card, Row, Col, Tag, Form, Select, Button, Modal, message, Input, DatePicker, TimePicker, Statistic, Spin, Empty, Tooltip, Drawer, Descriptions, Popover, Badge, Divider, Pagination, Checkbox, Switch, Space , App as AntApp } from 'antd';
 import {
     ClockCircleOutlined, SyncOutlined, CheckOutlined, PauseCircleOutlined,
     UploadOutlined, DownloadOutlined, PlusOutlined, CheckCircleOutlined,
@@ -53,14 +53,19 @@ const ActivityList = () => {
         setCurrentPage(1);
     }, [searchText, filterType, filterStatus, filterEnterprise, dateRange, sortOption]);
 
+    const [showDeleted, setShowDeleted] = useState(false);
+
     useEffect(() => {
         document.title = "Hoạt động Hợp tác | VLU Enterprise Link Manager";
-        fetchData();
         fetchStats();
         fetchEnterprises();
         fetchActivityTypes();
         fetchTargets();
     }, []);
+
+    useEffect(() => {
+        fetchData();
+    }, [showDeleted]);
 
     const fetchActivityTypes = async () => {
         try {
@@ -79,7 +84,7 @@ const ActivityList = () => {
     const fetchData = async () => {
         setLoading(true);
         try {
-            const res = await api.get('/activities');
+            const res = await api.get(`/activities?is_deleted=${showDeleted ? 1 : 0}`);
             setData(res.data);
         } catch (error) {
             message.error('Lỗi khi tải dữ liệu hoạt động');
@@ -194,6 +199,17 @@ const ActivityList = () => {
             setSelectedActivities(prev => prev.filter(aid => aid !== id));
         } catch (error) {
             message.error('Lỗi khi xóa');
+        }
+    };
+
+    const handleRestore = async (id) => {
+        try {
+            await api.post(`/activities/${id}/restore`);
+            message.success('Khôi phục hoạt động thành công');
+            fetchData();
+            fetchStats();
+        } catch (error) {
+            message.error(error.response?.data?.message || 'Lỗi khi khôi phục hoạt động');
         }
     };
 
@@ -506,14 +522,19 @@ const ActivityList = () => {
                                     </Select>
                                 </div>
                             </div>
+                            <Divider className="my-0" />
+                            <div className="flex justify-between items-center py-1">
+                                <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider flex items-center gap-1"><DeleteOutlined /> Hiển thị đã xóa</span>
+                                <Switch size="small" checked={showDeleted} onChange={setShowDeleted} />
+                            </div>
                             <Button icon={<ClearOutlined />} type="default" block onClick={() => {
-                                setFilterEnterprise(null); setFilterType(null); setFilterStatus(null); setSortOption(null); setDateRange(null);
+                                setFilterEnterprise(null); setFilterType(null); setFilterStatus(null); setSortOption(null); setDateRange(null); setShowDeleted(false);
                             }}>Xóa tất cả bộ lọc</Button>
                         </div>
                     }
                 >
                     <Button icon={<FilterOutlined />} className="h-10 rounded-lg text-gray-600">
-                        Bộ lọc {(() => { const c = [filterEnterprise, filterType, filterStatus, sortOption, dateRange].filter(v => v !== null && v !== undefined).length; return c > 0 ? <Badge count={c} size="small" offset={[2, -2]} style={{ backgroundColor: '#1677ff' }} /> : null; })()}
+                        Bộ lọc {(() => { const c = [filterEnterprise, filterType, filterStatus, sortOption, dateRange, showDeleted ? true : null].filter(v => v !== null && v !== undefined).length; return c > 0 ? <Badge count={c} size="small" offset={[2, -2]} style={{ backgroundColor: '#1677ff' }} /> : null; })()}
                     </Button>
                 </Popover>
 
@@ -561,14 +582,14 @@ const ActivityList = () => {
 
                         return (
                             <Col xs={24} sm={viewMode === 'list' ? 24 : 12} lg={viewMode === 'list' ? 24 : 8} key={item.id}>
-                                <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md dark:shadow-none dark:hover:border-gray-500 transition-all h-full flex flex-col overflow-hidden group cursor-pointer relative"
+                                <div className={`bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md dark:shadow-none dark:hover:border-gray-500 transition-all h-full flex flex-col overflow-hidden group cursor-pointer relative ${item.is_deleted === 1 ? 'opacity-65 border-red-200 dark:border-red-950/30' : ''}`}
                                     onClick={(e) => {
                                         if (e.target.closest('.action-buttons') || e.target.closest('.ant-checkbox-wrapper')) return;
                                         setSelectedActivity(item);
                                         setIsDrawerVisible(true);
                                     }}
                                 >
-                                    {!isLecturer && (
+                                    {!isLecturer && item.is_deleted !== 1 && (
                                         <div className="absolute top-3 right-3 z-10">
                                             <Checkbox 
                                                 checked={selectedActivities.includes(item.id)} 
@@ -594,10 +615,13 @@ const ActivityList = () => {
                                                     </div>
                                                 </div>
                                             </div>
-                                            <div
-                                                className={`rounded-full px-2.5 py-0.5 text-xs font-medium flex-shrink-0 border-0 ml-2 ${sc.colorClass}`}
-                                            >
-                                                {item.status}
+                                            <div className="flex items-center gap-1">
+                                                {item.is_deleted === 1 && <Tag color="red" className="m-0 mr-1">Đã xóa</Tag>}
+                                                <div
+                                                    className={`rounded-full px-2.5 py-0.5 text-xs font-medium flex-shrink-0 border-0 ${sc.colorClass}`}
+                                                >
+                                                    {item.status}
+                                                </div>
                                             </div>
                                         </div>
 
@@ -632,47 +656,60 @@ const ActivityList = () => {
 
                                     {/* Card Footer */}
                                     <div className="px-5 py-3 border-t border-gray-50 flex items-center justify-between bg-white dark:bg-gray-800/50 transition-colors action-buttons">
-                                        <Select
-                                            size="small"
-                                            value={item.status}
-                                            onChange={(val) => handleUpdateStatus(item.id, val)}
-                                            className="w-[140px]"
-                                            bordered={false}
-                                            disabled={isLecturer}
-                                        >
-                                            <Option value="Đề xuất">Đề xuất</Option>
-                                            <Option value="Phê duyệt nội bộ">Phê duyệt nội bộ</Option>
-                                            <Option value="Đã triển khai">Đã triển khai</Option>
-                                            <Option value="Đã kết thúc">Đã kết thúc</Option>
-                                        </Select>
-                                        {!isLecturer && (
-                                            <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <Tooltip title="Chỉnh sửa">
-                                                    <button className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-400 hover:text-blue-500 hover:bg-blue-50:bg-blue-900/30 transition-all"
-                                                        onClick={() => {
-                                                            setEditingId(item.id);
-                                                            form.setFieldsValue({
-                                                                ...item,
-                                                                type_ids: item.type_ids ? item.type_ids.split(',').map(Number) : [],
-                                                                target_ids: item.target_ids ? item.target_ids.split(',').map(Number) : [],
-                                                                start_date: item.start_date ? dayjs(item.start_date) : null,
-                                                                end_date: item.end_date ? dayjs(item.end_date) : null,
-                                                                start_time: item.start_time ? dayjs(`1970-01-01 ${item.start_time}`) : null,
-                                                                end_time: item.end_time ? dayjs(`1970-01-01 ${item.end_time}`) : null,
-                                                                collaboration_date: item.collaboration_date ? dayjs(item.collaboration_date) : null,
-                                                            });
-                                                            setIsModalVisible(true);
-                                                        }}>
-                                                        <EditOutlined style={{ fontSize: 13 }} />
-                                                    </button>
-                                                </Tooltip>
-                                                <Tooltip title="Xóa">
-                                                    <button className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50:bg-red-900/30 transition-all"
-                                                        onClick={() => modal.confirm({ title: 'Xác nhận xóa hoạt động này?', okButtonProps: { danger: true, className: '!bg-red-600 hover:!bg-red-500 text-white' }, onOk: () => handleDelete(item.id) })}>
-                                                        <DeleteOutlined style={{ fontSize: 13 }} />
-                                                    </button>
-                                                </Tooltip>
-                                            </div>
+                                        {item.is_deleted === 1 ? (
+                                            <Button 
+                                                type="primary" 
+                                                size="small" 
+                                                className="bg-green-600 hover:bg-green-500 text-white border-0 rounded-md animate-fade-in" 
+                                                onClick={() => handleRestore(item.id)}
+                                            >
+                                                Khôi phục
+                                            </Button>
+                                        ) : (
+                                            <>
+                                                <Select
+                                                    size="small"
+                                                    value={item.status}
+                                                    onChange={(val) => handleUpdateStatus(item.id, val)}
+                                                    className="w-[140px]"
+                                                    bordered={false}
+                                                    disabled={isLecturer}
+                                                >
+                                                    <Option value="Đề xuất">Đề xuất</Option>
+                                                    <Option value="Phê duyệt nội bộ">Phê duyệt nội bộ</Option>
+                                                    <Option value="Đã triển khai">Đã triển khai</Option>
+                                                    <Option value="Đã kết thúc">Đã kết thúc</Option>
+                                                </Select>
+                                                {!isLecturer && (
+                                                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                        <Tooltip title="Chỉnh sửa">
+                                                            <button className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-400 hover:text-blue-500 hover:bg-blue-50:bg-blue-900/30 transition-all"
+                                                                onClick={() => {
+                                                                    setEditingId(item.id);
+                                                                    form.setFieldsValue({
+                                                                        ...item,
+                                                                        type_ids: item.type_ids ? item.type_ids.split(',').map(Number) : [],
+                                                                        target_ids: item.target_ids ? item.target_ids.split(',').map(Number) : [],
+                                                                        start_date: item.start_date ? dayjs(item.start_date) : null,
+                                                                        end_date: item.end_date ? dayjs(item.end_date) : null,
+                                                                        start_time: item.start_time ? dayjs(`1970-01-01 ${item.start_time}`) : null,
+                                                                        end_time: item.end_time ? dayjs(`1970-01-01 ${item.end_time}`) : null,
+                                                                        collaboration_date: item.collaboration_date ? dayjs(item.collaboration_date) : null,
+                                                                    });
+                                                                    setIsModalVisible(true);
+                                                                }}>
+                                                                <EditOutlined style={{ fontSize: 13 }} />
+                                                            </button>
+                                                        </Tooltip>
+                                                        <Tooltip title="Xóa">
+                                                            <button className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50:bg-red-900/30 transition-all"
+                                                                onClick={() => modal.confirm({ title: 'Xác nhận xóa hoạt động này?', okButtonProps: { danger: true, className: '!bg-red-600 hover:!bg-red-500 text-white' }, onOk: () => handleDelete(item.id) })}>
+                                                                <DeleteOutlined style={{ fontSize: 13 }} />
+                                                            </button>
+                                                        </Tooltip>
+                                                    </div>
+                                                )}
+                                            </>
                                         )}
                                     </div>
                                 </div>

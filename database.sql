@@ -76,6 +76,7 @@ CREATE TABLE IF NOT EXISTS enterprises (
     department_id INT,
     faculty_id INT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    is_deleted TINYINT(1) DEFAULT 0,
     INDEX idx_ent_created (created_at),
     FOREIGN KEY (scale_id) REFERENCES scales(id) ON DELETE SET NULL,
     FOREIGN KEY (faculty_id) REFERENCES faculties(id) ON DELETE CASCADE,
@@ -133,6 +134,7 @@ CREATE TABLE IF NOT EXISTS activities (
     status ENUM('Đề xuất', 'Phê duyệt nội bộ', 'Đã triển khai', 'Đã kết thúc') DEFAULT 'Đề xuất',
     faculty_id INT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    is_deleted TINYINT(1) DEFAULT 0,
     INDEX idx_act_created (created_at),
     INDEX idx_act_ent (enterprise_id),
     FOREIGN KEY (enterprise_id) REFERENCES enterprises(id) ON DELETE CASCADE,
@@ -159,6 +161,7 @@ CREATE TABLE IF NOT EXISTS mous (
     activity_id INT NULL,
     file_url VARCHAR(500),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    is_deleted TINYINT(1) DEFAULT 0,
     FOREIGN KEY (enterprise_id) REFERENCES enterprises(id) ON DELETE CASCADE,
     FOREIGN KEY (executing_unit_id) REFERENCES departments(id) ON DELETE SET NULL,
     FOREIGN KEY (activity_id) REFERENCES activities(id) ON DELETE SET NULL
@@ -200,6 +203,7 @@ CREATE TABLE IF NOT EXISTS students (
     end_date DATE,
     faculty_id INT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    is_deleted TINYINT(1) DEFAULT 0,
     FOREIGN KEY (activity_id) REFERENCES activities(id) ON DELETE SET NULL,
     FOREIGN KEY (enterprise_id) REFERENCES enterprises(id) ON DELETE SET NULL,
     FOREIGN KEY (faculty_id) REFERENCES faculties(id) ON DELETE CASCADE
@@ -232,6 +236,22 @@ CREATE TABLE IF NOT EXISTS enterprise_ratings (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (enterprise_id) REFERENCES enterprises(id) ON DELETE CASCADE,
     FOREIGN KEY (activity_id) REFERENCES activities(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 20. action_history
+CREATE TABLE IF NOT EXISTS action_history (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    action_type ENUM('CREATE', 'UPDATE', 'DELETE', 'RESTORE') NOT NULL,
+    entity_type ENUM('ENTERPRISE', 'MOU', 'ACTIVITY', 'STUDENT') NOT NULL,
+    entity_id INT NOT NULL,
+    entity_name VARCHAR(255) NOT NULL,
+    faculty_id INT NULL,
+    changed_by INT NULL,
+    old_value JSON DEFAULT NULL,
+    new_value JSON DEFAULT NULL,
+    changed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (changed_by) REFERENCES users(id) ON DELETE SET NULL,
+    FOREIGN KEY (faculty_id) REFERENCES faculties(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ==================== SEED DATA ====================
