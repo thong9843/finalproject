@@ -80,6 +80,9 @@ echo "Starting Backend API on port 5000..."
 cd /app/backend
 node src/index.js &
 
-# Start Nginx in foreground to keep container running
-echo "Starting Nginx Web Server on port 80..."
-nginx -g "daemon off;"
+# Start Frontend (Vite Dev Server) in foreground
+echo "Starting Frontend Vite Dev Server on port 5173..."
+cd /app/frontend
+npm run dev -- --host 0.0.0.0
+
+

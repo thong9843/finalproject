@@ -6,9 +6,8 @@ export default defineConfig({
   plugins: [react()],
     server: {
     host: true,
-    allowedHosts: [
-      "pete-mariah-retreat-compliant.trycloudflare.com"
-    ],
+    allowedHosts: true,
+
         proxy: {
       "/api": {
         target: "http://localhost:5000", // backend

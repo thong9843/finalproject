@@ -1,32 +1,22 @@
-# Stage 1: Build Frontend
-FROM node:20-alpine AS frontend-builder
-WORKDIR /app/frontend
-COPY frontend/package*.json ./
-RUN npm ci
-COPY frontend/ .
-RUN npm run build
-
-# Stage 2: Final Unified Image (DB + Backend + Frontend)
 FROM node:20-bookworm
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Install system dependencies (Nginx and MariaDB/MySQL)
+# Install MariaDB/MySQL Server
 RUN apt-get update && apt-get install -y \
     default-mysql-server \
-    nginx \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy built frontend assets to Nginx default html directory
-COPY --from=frontend-builder /app/frontend/dist /var/www/html
-
-# Copy Nginx configuration file
-COPY nginx.conf /etc/nginx/sites-available/default
+# Set up Frontend directory (install devDependencies for Vite)
+WORKDIR /app/frontend
+COPY frontend/package*.json ./
+RUN npm ci
+COPY frontend/ .
 
 # Set up Backend directory
 WORKDIR /app/backend
 COPY backend/package*.json ./
-RUN npm ci --only=production
+RUN npm ci
 COPY backend/ .
 
 # Copy database assets and CSV output data for migration/import
@@ -37,9 +27,9 @@ COPY Output_DB /app/Output_DB
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
-
-# Expose port 80 for Nginx
-EXPOSE 80
+# Expose ports: 5173 (Vite Dev Server), 5000 (Backend API)
+EXPOSE 5173 5000
 
 # Run entrypoint script
 ENTRYPOINT ["/entrypoint.sh"]
+
