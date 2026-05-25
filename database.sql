@@ -2,6 +2,8 @@ DROP DATABASE IF EXISTS vlu_enterprise_link;
 CREATE DATABASE IF NOT EXISTS vlu_enterprise_link CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE vlu_enterprise_link;
 
+SET FOREIGN_KEY_CHECKS = 0;
+
 -- 1. clusters
 CREATE TABLE IF NOT EXISTS clusters (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -115,7 +117,29 @@ CREATE TABLE IF NOT EXISTS enterprise_fields (
     FOREIGN KEY (field_id) REFERENCES fields(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 13. mous
+-- 13. activities (UPDATED - removed type/description, added detail/collaboration_date)
+CREATE TABLE IF NOT EXISTS activities (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    enterprise_id INT NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    detail TEXT,
+    start_date DATE,
+    end_date DATE,
+    start_time TIME,
+    end_time TIME,
+    person_in_charge VARCHAR(255),
+    tasks JSON,
+    collaboration_date DATE,
+    status ENUM('Đề xuất', 'Phê duyệt nội bộ', 'Đã triển khai', 'Đã kết thúc') DEFAULT 'Đề xuất',
+    faculty_id INT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_act_created (created_at),
+    INDEX idx_act_ent (enterprise_id),
+    FOREIGN KEY (enterprise_id) REFERENCES enterprises(id) ON DELETE CASCADE,
+    FOREIGN KEY (faculty_id) REFERENCES faculties(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 14. mous
 CREATE TABLE IF NOT EXISTS mous (
     id INT AUTO_INCREMENT PRIMARY KEY,
     mou_code VARCHAR(100) NOT NULL,
@@ -138,28 +162,6 @@ CREATE TABLE IF NOT EXISTS mous (
     FOREIGN KEY (enterprise_id) REFERENCES enterprises(id) ON DELETE CASCADE,
     FOREIGN KEY (executing_unit_id) REFERENCES departments(id) ON DELETE SET NULL,
     FOREIGN KEY (activity_id) REFERENCES activities(id) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- 14. activities (UPDATED - removed type/description, added detail/collaboration_date)
-CREATE TABLE IF NOT EXISTS activities (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    enterprise_id INT NOT NULL,
-    title VARCHAR(255) NOT NULL,
-    detail TEXT,
-    start_date DATE,
-    end_date DATE,
-    start_time TIME,
-    end_time TIME,
-    person_in_charge VARCHAR(255),
-    tasks JSON,
-    collaboration_date DATE,
-    status ENUM('Đề xuất', 'Phê duyệt nội bộ', 'Đã triển khai', 'Đã kết thúc') DEFAULT 'Đề xuất',
-    faculty_id INT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    INDEX idx_act_created (created_at),
-    INDEX idx_act_ent (enterprise_id),
-    FOREIGN KEY (enterprise_id) REFERENCES enterprises(id) ON DELETE CASCADE,
-    FOREIGN KEY (faculty_id) REFERENCES faculties(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 15. activity_type_map junction (NEW)
@@ -310,7 +312,12 @@ INSERT IGNORE INTO activities (id, enterprise_id, title, detail, start_date, col
 
 INSERT IGNORE INTO activity_type_map (activity_id, type_id) VALUES (1, 1), (2, 3), (3, 2);
 
+INSERT IGNORE INTO mous (id, mou_code, enterprise_id, signing_date, partner_contact, org_type, country, collaboration_scope, executing_unit_id, vlu_contact, tasks_ay24_25, next_steps, past_activities, related_data, working_dir, activity_id, file_url) VALUES
+(1, 'MOU-FPT-2024-001', 1, '2024-03-15', 'Ông Nguyễn Văn Hùng - HR Director', 'Tập đoàn Công nghệ', 'Việt Nam', 'Hợp tác đào tạo, thực tập sinh viên ngành CNTT; tổ chức hội thảo nghề nghiệp; tuyển dụng sinh viên tốt nghiệp; cung cấp học bổng cho sinh viên xuất sắc; chia sẻ chuyên gia giảng dạy và hướng dẫn luận văn tốt nghiệp.', NULL, 'ThS. Nguyễn Thị Hoa - Trưởng Ban Quan hệ Doanh nghiệp', 'Tuyển 50 thực tập sinh ReactJS/NodeJS học kỳ II/2024; tổ chức 2 buổi workshop định hướng nghề nghiệp (tháng 10 và tháng 12/2024); ký kết chương trình học bổng "FPT Talent" năm 2024.', 'Ký kết biên bản triển khai chi tiết Q2/2025; tổ chức Ngày hội Tuyển dụng FPT × VLU tháng 5/2025; mở rộng hợp tác sang ngành Trí tuệ Nhân tạo và Khoa học Dữ liệu.', 'Ký kết MOU lần đầu năm 2022; tổ chức 3 buổi hội thảo chuyên ngành CNTT (2022-2023); tiếp nhận 30 thực tập sinh mỗi năm học.', 'Đã tiếp nhận 120 sinh viên thực tập từ 2022-2024; 15 sinh viên nhận học bổng FPT Talent; 85% sinh viên được tuyển dụng chính thức sau thực tập.', NULL, 1, NULL);
+
 INSERT IGNORE INTO students (student_code, name, class, major, activity_id, faculty_id) VALUES
 ('207CT50111', 'Nguyễn Văn A', 'K26-IT1', 'Kỹ thuật Phần mềm', 1, 1),
 ('207CT50112', 'Trần Thị B', 'K26-IT2', 'Khoa học Máy tính', 1, 1),
 ('207BA50113', 'Lê Văn C', 'K27-BA1', 'Quản trị Marketing', 3, 2);
+
+SET FOREIGN_KEY_CHECKS = 1;

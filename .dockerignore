@@ -1,0 +1,9 @@
+**/node_modules
+**/dist
+backend/.env
+frontend/.env
+.git
+.gitignore
+*.log
+*.zip
+*.tar.gz

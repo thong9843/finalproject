@@ -321,7 +321,7 @@ function getGenerativeModel() {
     const genAI = new GoogleGenerativeAI(apiKeys[currentKeyIdx]);
     // The user's Python script used gemini-3.1-flash-lite-preview, falling back to gemini-1.5-flash if that's invalid, 
     // but the SDK requires the exact string. We will use the string provided by the user.
-    return genAI.getGenerativeModel({ model: "gemini-1.5-flash" }); // Using 1.5-flash as the stable version, since 3.1 is not commonly available in standard library yet, but wait, the plan said to use 3.1-flash-lite-preview.
+    return genAI.getGenerativeModel({ model: "gemini-3-flash-preview" }); // Using 1.5-flash as the stable version, since 3.1 is not commonly available in standard library yet, but wait, the plan said to use 3.1-flash-lite-preview.
 }
 
 function rotateKey() {
