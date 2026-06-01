@@ -22,12 +22,14 @@ const EnterpriseList = () => {
         console.error("Failed to parse user cookie", e);
     }
     const isLecturer = user?.role === 'LECTURER';
+    const isAdmin = user?.role === 'ADMIN';
 
     const [data, setData] = useState([]);
     const { modal } = AntApp.useApp();
     const [departments, setDepartments] = useState([]);
     const [scales, setScales] = useState([]);
     const [fields, setFields] = useState([]);
+    const [faculties, setFaculties] = useState([]);
     const [loading, setLoading] = useState(false);
     const [isModalVisible, setIsModalVisible] = useState(false);
     const [form] = Form.useForm();
@@ -51,7 +53,17 @@ const EnterpriseList = () => {
         fetchDepartments();
         fetchScales();
         fetchFields();
+        if (user?.role === 'ADMIN') {
+            fetchFaculties();
+        }
     }, []);
+
+    const fetchFaculties = async () => {
+        try {
+            const res = await api.get('/structure/faculties');
+            setFaculties(res.data);
+        } catch (e) { console.error(e); }
+    };
 
     useEffect(() => {
         if (location.state?.openModalWithData) {
@@ -377,6 +389,13 @@ const EnterpriseList = () => {
             title: 'Quy mô', dataIndex: 'scale_name', key: 'scale', width: 120,
             render: (text) => text ? <Tag color="geekblue">{text}</Tag> : '---'
         },
+        ...(isAdmin ? [{
+            title: 'Khoa quản lý',
+            dataIndex: 'faculty_name',
+            key: 'faculty_name',
+            width: 160,
+            render: (text) => text ? <Tag color="cyan" className="rounded-md font-medium">{text}</Tag> : <span className="text-gray-400">Hệ thống / Chung</span>
+        }] : []),
         {
             title: 'Trạng thái', dataIndex: 'status', key: 'status', width: 140,
             render: (text) => <Tag color={statusColors[text]}>{text}</Tag>
@@ -413,6 +432,7 @@ const EnterpriseList = () => {
                                     status: record.status,
                                     department_id: record.department_id,
                                     field_ids: record.field_ids ? record.field_ids.split(',').map(Number) : [],
+                                    faculty_id: record.faculty_id,
                                     rep_title: record.rep_title,
                                     rep_full_name: record.rep_full_name,
                                     rep_role: record.rep_role,
@@ -612,6 +632,18 @@ const EnterpriseList = () => {
                             </Form.Item>
                         </Col>
                     </Row>
+
+                    {isAdmin && (
+                        <Row gutter={16}>
+                            <Col span={24}>
+                                <Form.Item name="faculty_id" label="Khoa quản lý" rules={[{ required: true, message: 'Vui lòng chọn khoa!' }]}>
+                                    <Select placeholder="Chọn khoa quản lý..." className="rounded-lg" showSearch optionFilterProp="children">
+                                        {faculties.map(f => <Option key={f.id} value={f.id}>{f.name}</Option>)}
+                                    </Select>
+                                </Form.Item>
+                            </Col>
+                        </Row>
+                    )}
 
                     {/* Đại diện chính */}
                     <div className="bg-slate-50 dark:bg-gray-800/50 p-4 rounded-xl mb-4 border border-slate-100 dark:border-gray-700">

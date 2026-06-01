@@ -7,6 +7,7 @@ router.use(verifyToken);
 
 router.get('/clusters', structureController.getClusters);
 router.get('/departments', structureController.getDepartments);
+router.get('/faculties', structureController.getFaculties);
 router.get('/activity-types', structureController.getActivityTypes);
 router.get('/scales', structureController.getScales);
 router.get('/fields', structureController.getFields);

@@ -42,6 +42,13 @@ const pool = mysql.createPool({
                 console.log(`✔ Added is_deleted column to table ${table}.`);
             }
         }
+
+        // 3. Add tags column to users if it does not exist
+        const [userColumns] = await pool.query("SHOW COLUMNS FROM `users` LIKE 'tags'");
+        if (userColumns.length === 0) {
+            await pool.query("ALTER TABLE `users` ADD COLUMN tags VARCHAR(500) DEFAULT NULL");
+            console.log("✔ Added tags column to users table.");
+        }
     } catch (err) {
         console.error('✖ Error performing automatic database migrations:', err.message);
     }

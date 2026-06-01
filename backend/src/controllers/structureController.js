@@ -69,3 +69,12 @@ exports.getTargets = async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 };
+
+exports.getFaculties = async (req, res) => {
+    try {
+        const [rows] = await pool.query('SELECT * FROM faculties ORDER BY name ASC');
+        res.status(200).json(rows);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};

@@ -262,7 +262,8 @@ const MOUList = () => {
                     const res = await api.post('/enterprises', {
                         name: scanResult.enterprise_name,
                         tax_code: scanResult.tax_code || null,
-                        status: 'Tiềm năng'
+                        status: 'Tiềm năng',
+                        faculty_id: filterFaculty || null
                     });
                     finalEnterpriseId = res.data.id;
                     await fetchOptions(); // Cập nhật lại danh sách doanh nghiệp

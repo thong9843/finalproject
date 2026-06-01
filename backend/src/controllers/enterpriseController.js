@@ -127,10 +127,12 @@ exports.create = async (req, res) => {
             field_ids
         } = req.body;
 
+        const finalFacultyId = req.user.role === 'ADMIN' ? faculty_id : req.user.faculty_id;
+
         // Check duplicate name
         const [existingName] = await conn.query(
-            'SELECT id FROM enterprises WHERE name = ? AND is_deleted = 0',
-            [name]
+            'SELECT id FROM enterprises WHERE name = ? AND (faculty_id = ? OR (faculty_id IS NULL AND ? IS NULL)) AND is_deleted = 0',
+            [name, finalFacultyId, finalFacultyId]
         );
         if (existingName.length > 0) {
             await conn.rollback();
@@ -140,16 +142,14 @@ exports.create = async (req, res) => {
         // Check duplicate tax code
         if (tax_code) {
             const [existingTax] = await conn.query(
-                'SELECT id FROM enterprises WHERE tax_code = ? AND is_deleted = 0',
-                [tax_code]
+                'SELECT id FROM enterprises WHERE tax_code = ? AND (faculty_id = ? OR (faculty_id IS NULL AND ? IS NULL)) AND is_deleted = 0',
+                [tax_code, finalFacultyId, finalFacultyId]
             );
             if (existingTax.length > 0) {
                 await conn.rollback();
                 return res.status(400).json({ message: 'Mã số thuế đã tồn tại trong hệ thống.' });
             }
         }
-
-        const finalFacultyId = req.user.role === 'ADMIN' ? faculty_id : req.user.faculty_id;
 
         const [result] = await conn.query(
             'INSERT INTO enterprises (name, tax_code, scale_id, is_hcmc, status, department_id, faculty_id) VALUES (?, ?, ?, ?, ?, ?, ?)',
@@ -233,10 +233,12 @@ exports.update = async (req, res) => {
         }
         const oldStatus = existing[0].status;
 
+        const entFacultyId = existing[0].faculty_id;
+
         // Check duplicate name
         const [existingName] = await conn.query(
-            'SELECT id FROM enterprises WHERE name = ? AND id != ? AND is_deleted = 0',
-            [name, id]
+            'SELECT id FROM enterprises WHERE name = ? AND id != ? AND (faculty_id = ? OR (faculty_id IS NULL AND ? IS NULL)) AND is_deleted = 0',
+            [name, id, entFacultyId, entFacultyId]
         );
         if (existingName.length > 0) {
             await conn.rollback();
@@ -246,8 +248,8 @@ exports.update = async (req, res) => {
         // Check duplicate tax code
         if (tax_code) {
             const [existingTax] = await conn.query(
-                'SELECT id FROM enterprises WHERE tax_code = ? AND id != ? AND is_deleted = 0',
-                [tax_code, id]
+                'SELECT id FROM enterprises WHERE tax_code = ? AND id != ? AND (faculty_id = ? OR (faculty_id IS NULL AND ? IS NULL)) AND is_deleted = 0',
+                [tax_code, id, entFacultyId, entFacultyId]
             );
             if (existingTax.length > 0) {
                 await conn.rollback();

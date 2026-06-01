@@ -755,16 +755,16 @@ exports.confirmInsert = async (req, res) => {
             if (!name) return res.status(400).json({ error: 'Tên doanh nghiệp là bắt buộc' });
 
             const [existingName] = await pool.query(
-                'SELECT id FROM enterprises WHERE name = ? AND is_deleted = 0',
-                [name]
+                'SELECT id FROM enterprises WHERE name = ? AND (faculty_id = ? OR (faculty_id IS NULL AND ? IS NULL)) AND is_deleted = 0',
+                [name, facultyId, facultyId]
             );
             if (existingName.length > 0) {
                 return res.status(400).json({ error: 'Tên doanh nghiệp đã tồn tại trong hệ thống' });
             }
             if (tax_code) {
                 const [existingTax] = await pool.query(
-                    'SELECT id FROM enterprises WHERE tax_code = ? AND is_deleted = 0',
-                    [tax_code]
+                    'SELECT id FROM enterprises WHERE tax_code = ? AND (faculty_id = ? OR (faculty_id IS NULL AND ? IS NULL)) AND is_deleted = 0',
+                    [tax_code, facultyId, facultyId]
                 );
                 if (existingTax.length > 0) {
                     return res.status(400).json({ error: 'Mã số thuế đã tồn tại trong hệ thống' });

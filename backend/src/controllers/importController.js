@@ -74,17 +74,19 @@ const importEnterprises = async (req, res) => {
 
                 if (!name) { errors.push(`Dòng ${i + 2}: Thiếu tên doanh nghiệp`); continue; }
 
-                // 1. Check if enterprise already exists (by tax_code or name)
-                let checkQuery = 'SELECT id FROM enterprises WHERE name = ?';
+                // 1. Check if enterprise already exists (by tax_code or name) in this faculty
+                let checkQuery = 'SELECT id FROM enterprises WHERE (name = ?';
                 let checkParams = [name];
                 if (tax_code) {
                     checkQuery += ' OR tax_code = ?';
                     checkParams.push(tax_code);
                 }
+                checkQuery += ') AND (faculty_id = ? OR (faculty_id IS NULL AND ? IS NULL)) AND is_deleted = 0';
+                checkParams.push(facultyId, facultyId);
                 const [existingEnt] = await conn.query(checkQuery, checkParams);
                 if (existingEnt.length > 0) {
                     skipped++;
-                    errors.push(`Dòng ${i + 2}: Đã tồn tại doanh nghiệp với Tên hoặc Mã số thuế này`);
+                    errors.push(`Dòng ${i + 2}: Đã tồn tại doanh nghiệp với Tên hoặc Mã số thuế này trong khoa`);
                     await conn.rollback();
                     conn.release();
                     continue;
@@ -442,8 +444,8 @@ const aiParseRow = async (req, res) => {
 
         // 2. Insert Enterprise
         const entName = comp.name || "Unknown Company";
-        let checkQuery = 'SELECT id FROM enterprises WHERE name = ?';
-        const [existingEnt] = await conn.query(checkQuery, [entName]);
+        let checkQuery = 'SELECT id FROM enterprises WHERE name = ? AND (faculty_id = ? OR (faculty_id IS NULL AND ? IS NULL)) AND is_deleted = 0';
+        const [existingEnt] = await conn.query(checkQuery, [entName, facultyId, facultyId]);
 
         let enterpriseId = null;
         if (existingEnt.length > 0) {

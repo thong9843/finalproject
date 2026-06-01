@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Table, Button, Modal, Form, Input, Select, Space, message, Tag, Popconfirm, App as AntApp } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
+import { Table, Button, Modal, Form, Input, Select, Space, message, Tag, Popconfirm, App as AntApp, Badge } from 'antd';
+import { PlusOutlined, EditOutlined, DeleteOutlined, SearchOutlined, ClearOutlined, FilterOutlined } from '@ant-design/icons';
 import api from '../utils/api';
 import dayjs from 'dayjs';
 
@@ -8,17 +8,23 @@ const { Option } = Select;
 
 const UserList = () => {
     const [users, setUsers] = useState([]);
-    const [departments, setDepartments] = useState([]);
+    const [faculties, setFaculties] = useState([]);
     const [loading, setLoading] = useState(false);
     const [isModalVisible, setIsModalVisible] = useState(false);
     const [form] = Form.useForm();
     const [editingUser, setEditingUser] = useState(null);
     const { modal } = AntApp.useApp();
 
+    // Search and filter states
+    const [searchText, setSearchText] = useState('');
+    const [filterRole, setFilterRole] = useState(undefined);
+    const [filterFaculty, setFilterFaculty] = useState(undefined);
+    const [filterTags, setFilterTags] = useState([]);
+
     useEffect(() => {
         document.title = "Quản lý Người dùng | VLU Enterprise Link Manager";
         fetchData();
-        fetchDepartments();
+        fetchFaculties();
     }, []);
 
     const fetchData = async () => {
@@ -33,18 +39,22 @@ const UserList = () => {
         }
     };
 
-    const fetchDepartments = async () => {
+    const fetchFaculties = async () => {
         try {
-            const { data } = await api.get('/structure/departments');
-            setDepartments(data);
+            const { data } = await api.get('/structure/faculties');
+            setFaculties(data);
         } catch (error) {
-            console.error('Error fetching departments:', error);
+            console.error('Error fetching faculties:', error);
         }
     };
 
     const handleAdd = () => {
         setEditingUser(null);
         form.resetFields();
+        form.setFieldsValue({
+            role: 'LECTURER',
+            tags: []
+        });
         setIsModalVisible(true);
     };
 
@@ -53,6 +63,7 @@ const UserList = () => {
         form.setFieldsValue({
             ...record,
             password: '', // Do not show password when editing
+            tags: record.tags ? record.tags.split(',') : []
         });
         setIsModalVisible(true);
     };
@@ -86,6 +97,48 @@ const UserList = () => {
         }
     };
 
+    // Harvest unique tags
+    const allUniqueTags = Array.from(
+        new Set(
+            users
+                .map(u => u.tags)
+                .filter(Boolean)
+                .flatMap(tagsStr => tagsStr.split(','))
+                .map(t => t.trim())
+                .filter(Boolean)
+        )
+    );
+
+    const handleClearFilters = () => {
+        setSearchText('');
+        setFilterRole(undefined);
+        setFilterFaculty(undefined);
+        setFilterTags([]);
+    };
+
+    // Client-side filtering logic
+    const filteredUsers = users.filter(user => {
+        const searchLower = searchText.toLowerCase();
+        const matchesSearch = !searchText || 
+            (user.full_name && user.full_name.toLowerCase().includes(searchLower)) ||
+            (user.email && user.email.toLowerCase().includes(searchLower));
+
+        const matchesRole = !filterRole || user.role === filterRole;
+        const matchesFaculty = !filterFaculty || user.faculty_id === filterFaculty;
+
+        let matchesTags = true;
+        if (filterTags && filterTags.length > 0) {
+            if (!user.tags) {
+                matchesTags = false;
+            } else {
+                const userTagsList = user.tags.split(',').map(t => t.trim());
+                matchesTags = filterTags.every(t => userTagsList.includes(t));
+            }
+        }
+
+        return matchesSearch && matchesRole && matchesFaculty && matchesTags;
+    });
+
     const columns = [
         {
             title: 'ID',
@@ -97,6 +150,7 @@ const UserList = () => {
             title: 'Họ và tên',
             dataIndex: 'full_name',
             key: 'full_name',
+            render: (text) => <span className="font-semibold text-gray-800 dark:text-gray-100">{text}</span>
         },
         {
             title: 'Email',
@@ -111,17 +165,41 @@ const UserList = () => {
                 let color = 'blue';
                 if (role === 'ADMIN') color = 'red';
                 if (role === 'FACULTY_MANAGER') color = 'purple';
-                return <Tag color={color}>{role}</Tag>;
+                return <Tag color={color} className="font-medium rounded-md">{role}</Tag>;
             }
         },
         {
             title: 'Khoa / Đơn vị',
-            dataIndex: 'faculty_id',
-            key: 'faculty_id',
-            render: (facultyId) => {
-                if (!facultyId) return <span className="text-gray-400">Không có</span>;
-                const dept = departments.find(d => d.id === facultyId);
-                return dept ? dept.name : facultyId;
+            dataIndex: 'faculty_name',
+            key: 'faculty_name',
+            render: (facultyName, record) => {
+                if (record.role === 'ADMIN') return <span className="text-gray-400">Tất cả khoa</span>;
+                if (facultyName) return <Tag color="cyan" className="rounded-md px-2 py-0.5 border-none font-medium">{facultyName}</Tag>;
+                if (!record.faculty_id) return <span className="text-gray-400">Không có</span>;
+                const fac = faculties.find(f => f.id === record.faculty_id);
+                return fac ? <Tag color="cyan" className="rounded-md px-2 py-0.5 border-none font-medium">{fac.name}</Tag> : record.faculty_id;
+            }
+        },
+        {
+            title: 'Tags / Nhãn',
+            dataIndex: 'tags',
+            key: 'tags',
+            render: (tagsStr) => {
+                if (!tagsStr) return null;
+                const tagsList = tagsStr.split(',').filter(Boolean);
+                return (
+                    <Space size={[0, 4]} wrap>
+                        {tagsList.map(tag => (
+                            <Tag 
+                                key={tag} 
+                                color="gold" 
+                                className="text-xs px-2 py-0.5 rounded-full font-medium"
+                            >
+                                {tag}
+                            </Tag>
+                        ))}
+                    </Space>
+                );
             }
         },
         {
@@ -179,9 +257,82 @@ const UserList = () => {
                 </Button>
             </div>
 
+            {/* Search and Filters Section */}
+            <div className="bg-slate-50 dark:bg-gray-800/40 p-4 rounded-xl mb-6 border border-gray-100 dark:border-gray-700 flex flex-col md:flex-row gap-3 items-center justify-between transition-all duration-300">
+                <div className="flex flex-1 flex-wrap gap-2.5 items-center w-full">
+                    <Input
+                        placeholder="Tìm theo họ tên, email..."
+                        prefix={<SearchOutlined className="text-gray-400" />}
+                        value={searchText}
+                        onChange={e => setSearchText(e.target.value)}
+                        allowClear
+                        className="w-full sm:w-64 rounded-lg shadow-sm hover:border-blue-400 focus:border-blue-500"
+                        size="middle"
+                    />
+                    <Select
+                        placeholder="Lọc theo vai trò"
+                        allowClear
+                        value={filterRole}
+                        onChange={setFilterRole}
+                        className="w-full sm:w-44 shadow-sm"
+                        size="middle"
+                    >
+                        <Option value="ADMIN">ADMIN</Option>
+                        <Option value="FACULTY_MANAGER">FACULTY_MANAGER</Option>
+                        <Option value="LECTURER">LECTURER</Option>
+                    </Select>
+                    <Select
+                        placeholder="Lọc theo khoa/đơn vị"
+                        allowClear
+                        showSearch
+                        optionFilterProp="children"
+                        value={filterFaculty}
+                        onChange={setFilterFaculty}
+                        className="w-full sm:w-60 shadow-sm"
+                        size="middle"
+                    >
+                        {faculties.map(fac => (
+                            <Option key={fac.id} value={fac.id}>{fac.name}</Option>
+                        ))}
+                    </Select>
+                    <Select
+                        placeholder="Lọc theo nhãn (Tags)"
+                        allowClear
+                        mode="multiple"
+                        maxTagCount="responsive"
+                        value={filterTags}
+                        onChange={setFilterTags}
+                        className="w-full sm:w-60 shadow-sm"
+                        size="middle"
+                    >
+                        {allUniqueTags.map(tag => (
+                            <Option key={tag} value={tag}>{tag}</Option>
+                        ))}
+                    </Select>
+                    {(searchText || filterRole || filterFaculty || filterTags.length > 0) && (
+                        <Button 
+                            icon={<ClearOutlined />} 
+                            onClick={handleClearFilters}
+                            type="text"
+                            danger
+                            className="flex items-center gap-1 hover:bg-red-50 dark:hover:bg-red-955/20"
+                        >
+                            Xóa bộ lọc
+                        </Button>
+                    )}
+                </div>
+                {/* Active Filter Count Badge */}
+                {(searchText || filterRole || filterFaculty || filterTags.length > 0) && (
+                    <div className="text-xs text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-700 px-3 py-1.5 rounded-full border dark:border-gray-600 shadow-sm flex items-center gap-1.5 font-medium animate-pulse">
+                        <FilterOutlined className="text-blue-500" />
+                        Tìm thấy {filteredUsers.length} kết quả
+                    </div>
+                )}
+            </div>
+
             <Table 
                 columns={columns} 
-                dataSource={users} 
+                dataSource={filteredUsers} 
                 rowKey="id" 
                 loading={loading}
                 pagination={{ pageSize: 10 }}
@@ -255,13 +406,30 @@ const UserList = () => {
                                         showSearch
                                         optionFilterProp="children"
                                     >
-                                        {departments.map(dept => (
-                                            <Option key={dept.id} value={dept.id}>{dept.name}</Option>
+                                        {faculties.map(fac => (
+                                            <Option key={fac.id} value={fac.id}>{fac.name}</Option>
                                         ))}
                                     </Select>
                                 </Form.Item>
                             ) : null
                         }
+                    </Form.Item>
+
+                    <Form.Item
+                        name="tags"
+                        label="Nhãn dán (Tags)"
+                    >
+                        <Select
+                            mode="tags"
+                            placeholder="Nhập nhãn phân loại (nhấn Enter để thêm)"
+                            tokenSeparators={[',']}
+                            style={{ width: '100%' }}
+                            allowClear
+                        >
+                            {allUniqueTags.map(tag => (
+                                <Option key={tag} value={tag}>{tag}</Option>
+                            ))}
+                        </Select>
                     </Form.Item>
                 </Form>
             </Modal>

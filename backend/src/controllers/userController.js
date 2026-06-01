@@ -3,7 +3,12 @@ const bcrypt = require('bcrypt');
 
 exports.getAllUsers = async (req, res) => {
     try {
-        const [users] = await pool.query('SELECT id, email, full_name, role, faculty_id, created_at FROM users ORDER BY id DESC');
+        const [users] = await pool.query(`
+            SELECT u.id, u.email, u.full_name, u.role, u.faculty_id, f.name AS faculty_name, u.tags, u.created_at 
+            FROM users u
+            LEFT JOIN faculties f ON u.faculty_id = f.id
+            ORDER BY u.id DESC
+        `);
         res.json(users);
     } catch (error) {
         res.status(500).json({ message: error.message });
@@ -12,7 +17,7 @@ exports.getAllUsers = async (req, res) => {
 
 exports.createUser = async (req, res) => {
     try {
-        const { email, password, full_name, role, faculty_id } = req.body;
+        const { email, password, full_name, role, faculty_id, tags } = req.body;
         
         // Check if user exists
         const [existing] = await pool.query('SELECT id FROM users WHERE email = ?', [email]);
@@ -21,10 +26,11 @@ exports.createUser = async (req, res) => {
         }
 
         const hashedPassword = await bcrypt.hash(password, 10);
+        const tagsStr = tags && Array.isArray(tags) ? tags.join(',') : (tags || null);
 
         const [result] = await pool.query(
-            'INSERT INTO users (email, password, full_name, role, faculty_id) VALUES (?, ?, ?, ?, ?)',
-            [email, hashedPassword, full_name, role || 'LECTURER', faculty_id || null]
+            'INSERT INTO users (email, password, full_name, role, faculty_id, tags) VALUES (?, ?, ?, ?, ?, ?)',
+            [email, hashedPassword, full_name, role || 'LECTURER', faculty_id || null, tagsStr]
         );
 
         res.status(201).json({ message: 'Tạo người dùng thành công', id: result.insertId });
@@ -36,7 +42,7 @@ exports.createUser = async (req, res) => {
 exports.updateUser = async (req, res) => {
     try {
         const { id } = req.params;
-        const { email, password, full_name, role, faculty_id } = req.body;
+        const { email, password, full_name, role, faculty_id, tags } = req.body;
 
         const [users] = await pool.query('SELECT * FROM users WHERE id = ?', [id]);
         if (users.length === 0) {
@@ -49,8 +55,10 @@ exports.updateUser = async (req, res) => {
             return res.status(400).json({ message: 'Email đã được sử dụng bởi người dùng khác' });
         }
 
-        let query = 'UPDATE users SET email = ?, full_name = ?, role = ?, faculty_id = ?';
-        let params = [email, full_name, role, faculty_id];
+        const tagsStr = tags && Array.isArray(tags) ? tags.join(',') : (tags || null);
+
+        let query = 'UPDATE users SET email = ?, full_name = ?, role = ?, faculty_id = ?, tags = ?';
+        let params = [email, full_name, role, faculty_id, tagsStr];
 
         if (password && password.trim() !== '') {
             const hashedPassword = await bcrypt.hash(password, 10);

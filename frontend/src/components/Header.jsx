@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Dropdown, Avatar, Badge, List, Typography, Button, Popover } from 'antd';
-import { UserOutlined, LogoutOutlined, BellOutlined, MenuOutlined, MenuFoldOutlined, MenuUnfoldOutlined, MessageOutlined } from '@ant-design/icons';
+import { UserOutlined, LogoutOutlined, BellOutlined, MenuOutlined, MenuFoldOutlined, MenuUnfoldOutlined, MessageOutlined, RobotOutlined } from '@ant-design/icons';
 import Cookies from 'js-cookie';
 import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
@@ -13,12 +13,31 @@ const Header = ({ onMenuToggle, collapsed, onCollapseToggle, chatbotOpen, onChat
     const userCookie = Cookies.get('user');
     const user = userCookie ? JSON.parse(userCookie) : null;
     const [upcomingEvents, setUpcomingEvents] = useState([]);
+    const [facultyName, setFacultyName] = useState(user?.faculty_name || '');
 
     useEffect(() => {
         if (user) {
             fetchUpcoming();
         }
     }, [user]);
+
+    useEffect(() => {
+        if (user && !user.faculty_name && user.faculty_id) {
+            api.get('/structure/faculties')
+                .then(res => {
+                    const faculties = res.data;
+                    const faculty = faculties.find(f => f.id === user.faculty_id);
+                    if (faculty) {
+                        setFacultyName(faculty.name);
+                        const updatedUser = { ...user, faculty_name: faculty.name };
+                        Cookies.set('user', JSON.stringify(updatedUser), { expires: 1 });
+                    }
+                })
+                .catch(err => console.error('Failed to fetch faculties for header fallback:', err));
+        } else if (user?.faculty_name) {
+            setFacultyName(user.faculty_name);
+        }
+    }, [userCookie]);
 
     const fetchUpcoming = async () => {
         try {
@@ -103,16 +122,20 @@ const Header = ({ onMenuToggle, collapsed, onCollapseToggle, chatbotOpen, onChat
             <div className="hidden lg:flex flex-1" />
 
             {/* Chatbot Toggle Button */}
-            <Avatar
+            <button
                 onClick={onChatbotToggle}
-                className={`cursor-pointer transition-all duration-200 ${
-                    chatbotOpen 
-                        ? 'bg-red-600 text-white' 
-                        : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                }`}
-                icon={<MessageOutlined />}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full transition-all duration-300 border font-medium text-xs shadow-md cursor-pointer relative group
+                    ${chatbotOpen 
+                        ? 'bg-vluRed text-white border-vluRed hover:opacity-90' 
+                        : 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white border-transparent hover:shadow-lg hover:shadow-indigo-500/30 hover:scale-105'
+                    }`}
                 aria-label="Toggle chatbot"
-            />
+            >
+                {/* Robot/AI Icon */}
+                <RobotOutlined className="text-sm" />
+                
+                <span className="font-semibold tracking-wide">Trợ lý AI</span>
+            </button>
 
             {/* Notification bell */}
             <Popover content={notificationContent} trigger="click" placement="bottomRight" overlayInnerStyle={{ padding: 0, border: 'none', background: 'transparent', boxShadow: 'none' }}>
@@ -126,10 +149,14 @@ const Header = ({ onMenuToggle, collapsed, onCollapseToggle, chatbotOpen, onChat
 
             {user && (
                 <div className="flex items-center gap-2 sm:gap-3 border-l border-gray-200 dark:border-gray-600 pl-3 sm:pl-6 transition-colors duration-300">
-                    <span className="hidden sm:inline text-gray-600 dark:text-gray-300 font-medium text-sm">
-                        {user.full_name}
-                        <span className="hidden md:inline"> ({user.role})</span>
-                    </span>
+                    <div className="hidden sm:flex flex-col text-right">
+                        <span className="text-gray-800 dark:text-gray-100 font-semibold text-sm leading-tight">
+                            {user.full_name}
+                        </span>
+                        <span className="text-gray-500 dark:text-gray-400 text-xs mt-0.5 font-normal">
+                            {facultyName || (user.role === 'ADMIN' ? 'Quản trị viên Hệ thống' : '')}
+                        </span>
+                    </div>
                     <Dropdown menu={{ items }} placement="bottomRight" arrow>
                         <Avatar className="bg-vluRed cursor-pointer hover:opacity-90 transition-opacity" icon={<UserOutlined />} />
                     </Dropdown>

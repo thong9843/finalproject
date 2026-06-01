@@ -3,6 +3,7 @@ import { message, Card, Select, Typography, Spin, Badge, Button, Modal, Form, In
 import { PlusOutlined, BankOutlined, ProjectOutlined, CalendarOutlined, PushpinOutlined, MoreOutlined, DragOutlined, EditOutlined, DeleteOutlined, UserOutlined, HomeOutlined } from '@ant-design/icons';
 import api from '../utils/api';
 import dayjs from 'dayjs';
+import Cookies from 'js-cookie';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -27,6 +28,15 @@ const ACTIVITY_STATUSES = [
 ];
 
 const KanbanBoard = () => {
+  const userCookie = Cookies.get('user');
+  let user = null;
+  try {
+      if (userCookie) user = JSON.parse(userCookie);
+  } catch (e) {
+      console.error("Failed to parse user cookie", e);
+  }
+  const isAdmin = user?.role === 'ADMIN';
+
   const [view, setView] = useState('ENTERPRISE');
     const { modal } = AntApp.useApp();
   const [items, setItems] = useState([]);
@@ -35,6 +45,7 @@ const KanbanBoard = () => {
   const [departments, setDepartments] = useState([]);
   const [scales, setScales] = useState([]);
   const [fields, setFields] = useState([]);
+  const [faculties, setFaculties] = useState([]);
   const [targets, setTargets] = useState([]);
   const [loading, setLoading] = useState(false);
   
@@ -87,6 +98,10 @@ const KanbanBoard = () => {
       setDepartments(depRes.data);
       setScales(scaleRes.data);
       setFields(fieldRes.data);
+      if (isAdmin) {
+        const facRes = await api.get('/structure/faculties');
+        setFaculties(facRes.data || []);
+      }
     } catch (error) {
       console.error('Error fetching enterprise dependencies:', error);
     }
@@ -342,6 +357,7 @@ const KanbanBoard = () => {
       form.setFieldsValue({
         ...item,
         field_ids: item.field_ids ? item.field_ids.split(',').map(Number) : [],
+        faculty_id: item.faculty_id,
       });
     } else {
       form.setFieldsValue({
@@ -626,6 +642,18 @@ const KanbanBoard = () => {
                       </Form.Item>
                   </Col>
               </Row>
+
+              {isAdmin && (
+                  <Row gutter={16}>
+                      <Col span={24}>
+                          <Form.Item name="faculty_id" label="Khoa quản lý" rules={[{ required: true, message: 'Vui lòng chọn khoa!' }]}>
+                              <Select placeholder="Chọn khoa quản lý..." className="rounded-lg" showSearch optionFilterProp="children">
+                                  {faculties.map(f => <Option key={f.id} value={f.id}>{f.name}</Option>)}
+                              </Select>
+                          </Form.Item>
+                      </Col>
+                  </Row>
+              )}
 
               {/* Đại diện chính */}
               <div className="bg-slate-50 dark:bg-gray-800/50 p-4 rounded-xl mb-4 border border-slate-100 dark:border-gray-700">

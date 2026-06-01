@@ -52,6 +52,10 @@ const ActivityList = () => {
     const [pageSize, setPageSize] = useState(12);
     const [selectedActivities, setSelectedActivities] = useState([]);
 
+    // Faculty states for admin filtering
+    const [faculties, setFaculties] = useState([]);
+    const [filterFaculty, setFilterFaculty] = useState(undefined);
+
     useEffect(() => {
         setCurrentPage(1);
     }, [searchText, filterType, filterStatus, filterEnterprise, dateRange, sortOption]);
@@ -64,7 +68,17 @@ const ActivityList = () => {
         fetchEnterprises();
         fetchActivityTypes();
         fetchTargets();
+        if (user?.role === 'ADMIN') fetchFaculties();
     }, []);
+
+    const fetchFaculties = async () => {
+        try {
+            const res = await api.get('/structure/faculties');
+            setFaculties(res.data || []);
+        } catch (e) {
+            console.error('Failed to fetch faculties:', e);
+        }
+    };
 
     useEffect(() => {
         if (location.state?.openModalWithData) {

@@ -6,7 +6,12 @@ exports.login = async (req, res) => {
     try {
         const { email, password } = req.body;
 
-        const [users] = await pool.query('SELECT * FROM users WHERE email = ?', [email]);
+        const [users] = await pool.query(`
+            SELECT u.*, f.name AS faculty_name 
+            FROM users u
+            LEFT JOIN faculties f ON u.faculty_id = f.id
+            WHERE u.email = ?
+        `, [email]);
         if (users.length === 0) {
             return res.status(404).json({ message: 'User not found' });
         }
@@ -30,6 +35,7 @@ exports.login = async (req, res) => {
             full_name: user.full_name,
             role: user.role,
             faculty_id: user.faculty_id,
+            faculty_name: user.faculty_name,
             accessToken: token
         });
     } catch (error) {
