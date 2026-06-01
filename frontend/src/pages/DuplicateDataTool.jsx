@@ -27,7 +27,7 @@ const DuplicateDataTool = () => {
     };
 
     useEffect(() => {
-        document.title = "Xử lý Trùng lặp Dữ liệu | VLU Enterprise Link Manager";
+        document.title = "Xử lý Dữ liệu Hàng loạt | VLU Enterprise Link Manager";
         fetchDuplicates();
     }, []);
 
@@ -226,10 +226,10 @@ const DuplicateDataTool = () => {
             <div className="flex justify-between items-center bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border-l-4 border-vluRed">
                 <div>
                     <h1 className="text-xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
-                        <WarningOutlined className="text-vluRed" /> Công cụ Xử lý Dữ liệu Trùng
+                        <WarningOutlined className="text-vluRed" /> Công cụ Xử lý Dữ liệu Hàng loạt
                     </h1>
                     <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                        Danh sách các doanh nghiệp có cùng Tên. Bạn có thể dọn dẹp bằng cách xoá doanh nghiệp hoặc chỉ xoá hoạt động của chúng.
+                        Danh sách các công cụ và bộ dọn dẹp dữ liệu quy mô lớn của hệ thống. Bạn có thể dọn dẹp bằng cách xoá doanh nghiệp trùng lặp hoặc chỉ xoá hoạt động của chúng.
                     </p>
                 </div>
                 <Space>

@@ -1,14 +1,21 @@
 import React, { useEffect, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Table, Tag, Card, Row, Col, Statistic, Form, Input, Select, Button, Modal, message, Space, DatePicker, InputNumber, Popover, Badge, Divider, Switch, App as AntApp } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, SearchOutlined, SyncOutlined, ClockCircleOutlined, CheckCircleOutlined, TeamOutlined, UploadOutlined, DownloadOutlined, FilterOutlined, SortAscendingOutlined, ClearOutlined, CalendarOutlined } from '@ant-design/icons';
 import ImportModal from '../components/ImportModal';
 import api from '../utils/api';
 import dayjs from 'dayjs';
 import * as XLSX from 'xlsx';
+import Cookies from 'js-cookie';
 
 const { Option } = Select;
 
 const StudentList = () => {
+    const location = useLocation();
+    const navigate = useNavigate();
+    const userCookie = Cookies.get('user');
+    let user = null;
+    try { if (userCookie) user = JSON.parse(userCookie); } catch (e) { console.error(e); }
     const [data, setData] = useState([]);
     const { modal } = AntApp.useApp();
     const [stats, setStats] = useState(null);
@@ -27,22 +34,57 @@ const StudentList = () => {
     const [filterGpa, setFilterGpa] = useState(null);
     const [selectedRowKeys, setSelectedRowKeys] = useState([]);
 
+    const [faculties, setFaculties] = useState([]);
+    const [filterFaculty, setFilterFaculty] = useState(undefined);
     const [showDeleted, setShowDeleted] = useState(false);
 
     useEffect(() => {
         document.title = "Quản lý Sinh viên | VLU Enterprise Link Manager";
         fetchStats();
         fetchEnterprises();
+        if (user?.role === 'ADMIN') fetchFaculties();
     }, []);
+
+    const fetchFaculties = async () => {
+        try {
+            const res = await api.get('/structure/faculties');
+            setFaculties(res.data || []);
+        } catch (e) { console.error(e); }
+    };
+
+    useEffect(() => {
+        if (location.state?.openModalWithData) {
+            const { actionType, data } = location.state.openModalWithData;
+            if (actionType === 'create_student') {
+                setEditingId(null);
+                form.resetFields();
+                form.setFieldsValue({
+                    student_code: data.student_code,
+                    name: data.name,
+                    major: data.major,
+                    class: data.class,
+                    gpa: data.gpa,
+                    status: data.status || 'Chờ phân công',
+                    start_date: data.start_date ? dayjs(data.start_date) : null,
+                    end_date: data.end_date ? dayjs(data.end_date) : null,
+                    ...data
+                });
+                setIsModalVisible(true);
+                navigate(location.pathname, { replace: true, state: {} });
+            }
+        }
+    }, [location.state, form, navigate]);
 
     useEffect(() => {
         fetchData();
-    }, [showDeleted]);
+    }, [showDeleted, filterFaculty]);
 
     const fetchData = async () => {
         setLoading(true);
         try {
-            const res = await api.get(`/students?is_deleted=${showDeleted ? 1 : 0}`);
+            let url = `/students?is_deleted=${showDeleted ? 1 : 0}`;
+            if (filterFaculty) url += `&faculty_id=${filterFaculty}`;
+            const res = await api.get(url);
             setData(res.data);
         } catch (error) {
             message.error('Lỗi khi tải dữ liệu sinh viên');
@@ -212,6 +254,7 @@ const StudentList = () => {
         setEditingId(record.id);
         form.setFieldsValue({
             ...record,
+            faculty_id: record.faculty_id,
             start_date: record.start_date ? dayjs(record.start_date) : null,
             end_date: record.end_date ? dayjs(record.end_date) : null,
         });
@@ -275,7 +318,7 @@ const StudentList = () => {
         }
     });
 
-    const activeFilterCount = [sortOption, dateRange, filterEnterprise, filterMajor, filterGpa, showDeleted ? true : null].filter(v => v !== null && v !== undefined).length;
+    const activeFilterCount = [sortOption, dateRange, filterEnterprise, filterMajor, filterGpa, showDeleted ? true : null, filterFaculty].filter(v => v !== null && v !== undefined).length;
 
     const sortOptions = [
         { value: 'name_asc', label: '🔤 Tên (A → Z)' },
@@ -310,6 +353,11 @@ const StudentList = () => {
             <div>
                 <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5 flex items-center gap-1"><FilterOutlined /> Bộ lọc</div>
                 <div className="flex flex-col gap-2">
+                    {user?.role === 'ADMIN' && (
+                        <Select allowClear placeholder="Lọc theo khoa" onChange={setFilterFaculty} value={filterFaculty} className="w-full">
+                            {faculties.map(f => <Option key={f.id} value={f.id}>{f.name}</Option>)}
+                        </Select>
+                    )}
                     <Select allowClear placeholder="Doanh nghiệp thực tập" onChange={setFilterEnterprise} value={filterEnterprise} className="w-full" showSearch filterOption={filterOptionIgnoreCase}>
                         {enterprises.map(e => <Option key={e.id} value={e.id}>{e.name}</Option>)}
                     </Select>
@@ -330,7 +378,7 @@ const StudentList = () => {
                 <Switch size="small" checked={showDeleted} onChange={setShowDeleted} />
             </div>
             <Button icon={<ClearOutlined />} type="default" block onClick={() => {
-                setSortOption(null); setDateRange(null); setFilterEnterprise(null); setFilterMajor(null); setFilterGpa(null); setShowDeleted(false);
+                setSortOption(null); setDateRange(null); setFilterEnterprise(null); setFilterMajor(null); setFilterGpa(null); setShowDeleted(false); setFilterFaculty(undefined);
             }}>Xóa tất cả bộ lọc</Button>
         </div>
     );
@@ -356,6 +404,13 @@ const StudentList = () => {
         },
         { title: 'Ngành học', dataIndex: 'major', key: 'major', ellipsis: true },
         { title: 'Lớp', dataIndex: 'class', key: 'class', width: 110 },
+        ...(user?.role === 'ADMIN' ? [{
+            title: 'Khoa',
+            dataIndex: 'faculty_name',
+            key: 'faculty_name',
+            width: 160,
+            render: (text) => text ? <Tag color="orange">{text}</Tag> : <span className="text-slate-300 italic">Chưa phân khoa</span>
+        }] : []),
         { 
             title: 'Doanh nghiệp', 
             dataIndex: 'enterprise_name', 
@@ -435,15 +490,26 @@ const StudentList = () => {
                     <p className="text-gray-400 text-sm">{data.length} sinh viên · {stats?.active || 0} đang thực tập</p>
                 </div>
                 <div className="flex gap-3">
-                    <Button icon={<DownloadOutlined />} className="h-10 rounded-lg text-green-600 border-green-600 hover:bg-green-50" onClick={handleExport}>
-                        Xuất Excel
-                    </Button>
-                    <Button icon={<UploadOutlined />} onClick={() => setShowImport(true)} className="h-10 rounded-lg">
+                    <Button 
+                        size="large"
+                        icon={<UploadOutlined />} 
+                        onClick={() => setShowImport(true)} 
+                        className="border-purple-600 text-purple-600 dark:border-purple-400 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-950/20 rounded-lg shadow-sm font-medium hover:border-purple-700"
+                    >
                         Import
                     </Button>
                     <Button 
+                        size="large"
+                        icon={<DownloadOutlined />} 
+                        onClick={handleExport}
+                        className="border-emerald-600 text-emerald-600 dark:border-emerald-400 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 rounded-lg shadow-sm font-medium hover:border-emerald-700"
+                    >
+                        Xuất Excel
+                    </Button>
+                    <Button 
+                        size="large"
                         type="primary" 
-                        className="bg-vluRed h-10 px-6 rounded-lg"
+                        className="bg-vluRed hover:bg-vluRedHover border-none text-white rounded-lg shadow-sm font-medium"
                         icon={<PlusOutlined />} 
                         onClick={() => { setEditingId(null); form.resetFields(); setIsModalVisible(true); }}
                     >
@@ -453,38 +519,55 @@ const StudentList = () => {
             </div>
 
             {/* Stats Cards */}
-            <Row gutter={[16, 16]} className="mb-6">
-                <Col xs={24} sm={8}>
-                    <Card className="rounded-xl border border-green-100 dark:border-green-900/50 shadow-sm dark:shadow-none hover:shadow-md transition-shadow bg-gradient-to-br from-green-50 to-green-100/50 dark:from-green-900/20 dark:to-green-900/10">
-                        <Statistic 
-                            title={<span className="text-gray-500 dark:text-gray-400">Đang thực tập</span>}
-                            value={stats?.active || 0} 
-                            prefix={<SyncOutlined className="text-green-500 dark:text-green-400" />}
-                            valueStyle={{ color: '#3f8600', fontWeight: 'bold', fontSize: '2rem' }}
-                        />
-                    </Card>
-                </Col>
-                <Col xs={24} sm={8}>
-                    <Card className="rounded-xl border border-orange-100 dark:border-orange-900/50 shadow-sm dark:shadow-none hover:shadow-md transition-shadow bg-gradient-to-br from-orange-50 to-orange-100/50 dark:from-orange-900/20 dark:to-orange-900/10">
-                        <Statistic 
-                            title={<span className="text-gray-500 dark:text-gray-400">Chờ phân công</span>}
-                            value={stats?.pending || 0} 
-                            prefix={<ClockCircleOutlined className="text-orange-500 dark:text-orange-400" />}
-                            valueStyle={{ color: '#faad14', fontWeight: 'bold', fontSize: '2rem' }}
-                        />
-                    </Card>
-                </Col>
-                <Col xs={24} sm={8}>
-                    <Card className="rounded-xl border border-blue-100 dark:border-blue-900/50 shadow-sm dark:shadow-none hover:shadow-md transition-shadow bg-gradient-to-br from-blue-50 to-blue-100/50 dark:from-blue-900/20 dark:to-blue-900/10">
-                        <Statistic 
-                            title={<span className="text-gray-500 dark:text-gray-400">Đã hoàn thành</span>}
-                            value={stats?.completed || 0} 
-                            prefix={<CheckCircleOutlined className="text-blue-500 dark:text-blue-400" />}
-                            valueStyle={{ color: '#1890ff', fontWeight: 'bold', fontSize: '2rem' }}
-                        />
-                    </Card>
-                </Col>
-            </Row>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+                {/* Green Card */}
+                <div className="group relative overflow-hidden bg-gradient-to-br from-emerald-50 to-emerald-100/30 dark:from-emerald-950/20 dark:to-emerald-900/10 rounded-2xl p-5 border-l-4 border-l-emerald-500 border-t border-r border-b border-slate-100 dark:border-emerald-900/30 transition-all duration-300 hover:-translate-y-1 hover:shadow-md cursor-default">
+                    <div className="absolute -right-2 -bottom-2 opacity-10 transition-transform duration-500 group-hover:scale-110">
+                        <SyncOutlined className="text-6xl text-emerald-600 dark:text-emerald-400" />
+                    </div>
+                    <div className="flex items-center gap-3.5 relative z-10">
+                        <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center shadow-md shadow-emerald-200 dark:shadow-none group-hover:scale-105 transition-transform duration-300">
+                            <SyncOutlined className="text-white text-lg" />
+                        </div>
+                        <div>
+                            <div className="text-2xl sm:text-3xl font-extrabold text-emerald-800 dark:text-emerald-400 leading-none mb-1">{stats?.active || 0}</div>
+                            <div className="text-xs font-semibold text-emerald-600/80 uppercase tracking-wider">Đang thực tập</div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Orange Card */}
+                <div className="group relative overflow-hidden bg-gradient-to-br from-orange-50 to-orange-100/30 dark:from-orange-950/20 dark:to-orange-900/10 rounded-2xl p-5 border-l-4 border-l-orange-500 border-t border-r border-b border-slate-100 dark:border-orange-900/30 transition-all duration-300 hover:-translate-y-1 hover:shadow-md cursor-default">
+                    <div className="absolute -right-2 -bottom-2 opacity-10 transition-transform duration-500 group-hover:scale-110">
+                        <ClockCircleOutlined className="text-6xl text-orange-600 dark:text-orange-400" />
+                    </div>
+                    <div className="flex items-center gap-3.5 relative z-10">
+                        <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-amber-600 rounded-xl flex items-center justify-center shadow-md shadow-orange-200 dark:shadow-none group-hover:scale-105 transition-transform duration-300">
+                            <ClockCircleOutlined className="text-white text-lg" />
+                        </div>
+                        <div>
+                            <div className="text-2xl sm:text-3xl font-extrabold text-orange-800 dark:text-orange-400 leading-none mb-1">{stats?.pending || 0}</div>
+                            <div className="text-xs font-semibold text-orange-600/80 uppercase tracking-wider">Chờ phân công</div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Blue Card */}
+                <div className="group relative overflow-hidden bg-gradient-to-br from-blue-50 to-blue-100/30 dark:from-blue-950/20 dark:to-blue-900/10 rounded-2xl p-5 border-l-4 border-l-blue-500 border-t border-r border-b border-slate-100 dark:border-blue-900/30 transition-all duration-300 hover:-translate-y-1 hover:shadow-md cursor-default">
+                    <div className="absolute -right-2 -bottom-2 opacity-10 transition-transform duration-500 group-hover:scale-110">
+                        <CheckCircleOutlined className="text-6xl text-blue-600 dark:text-blue-400" />
+                    </div>
+                    <div className="flex items-center gap-3.5 relative z-10">
+                        <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-md shadow-blue-200 dark:shadow-none group-hover:scale-105 transition-transform duration-300">
+                            <CheckCircleOutlined className="text-white text-lg" />
+                        </div>
+                        <div>
+                            <div className="text-2xl sm:text-3xl font-extrabold text-blue-800 dark:text-blue-400 leading-none mb-1">{stats?.completed || 0}</div>
+                            <div className="text-xs font-semibold text-blue-600/80 uppercase tracking-wider">Đã hoàn thành</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
             {/* Filter Tabs + Search + Filter Popover */}
             <div className="flex justify-between items-center mb-4">
@@ -569,6 +652,13 @@ const StudentList = () => {
                 width={700}
             >
                 <Form form={form} layout="vertical" onFinish={handleSave} className="mt-4">
+                    {user?.role === 'ADMIN' && (
+                        <Form.Item name="faculty_id" label="Khoa quản lý" rules={[{ required: true, message: 'Vui lòng chọn khoa!' }]}>
+                            <Select placeholder="Chọn khoa...">
+                                {faculties.map(f => <Option key={f.id} value={f.id}>{f.name}</Option>)}
+                            </Select>
+                        </Form.Item>
+                    )}
                     <Row gutter={16}>
                         <Col span={8}>
                             <Form.Item name="student_code" label="MSSV" rules={[{ required: true }]}>
@@ -648,8 +738,8 @@ const StudentList = () => {
                         </Col>
                     </Row>
                     <div className="flex justify-end gap-3 pt-4 border-t mt-2">
-                        <Button onClick={() => { setIsModalVisible(false); setEditingId(null); }} size="large">Hủy</Button>
-                        <Button type="primary" htmlType="submit" className="bg-vluRed h-11 px-8 rounded-lg" size="large">
+                        <Button onClick={() => { setIsModalVisible(false); setEditingId(null); }} size="large" className="rounded-lg">Hủy</Button>
+                        <Button type="primary" htmlType="submit" className="bg-vluRed hover:bg-vluRedHover border-none text-white rounded-lg shadow-sm font-medium" size="large">
                             {editingId ? 'Cập nhật' : 'Thêm sinh viên'}
                         </Button>
                     </div>

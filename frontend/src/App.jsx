@@ -115,7 +115,7 @@ const App = () => {
                             <Route path="mous" element={<MOUList />} />
                             <Route path="users" element={<AdminRoute><UserList /></AdminRoute>} />
                             <Route path="duplicates" element={<AdminRoute><DuplicateDataTool /></AdminRoute>} />
-                            <Route path="ai-import" element={<AdminRoute><AiImportTool /></AdminRoute>} />
+                            <Route path="ai-import" element={<AdminOrManagerRoute><AiImportTool /></AdminOrManagerRoute>} />
                             <Route path="history" element={<AdminOrManagerRoute><HistoryLog /></AdminOrManagerRoute>} />
                         </Route>
                     </Routes>

@@ -60,7 +60,17 @@ exports.create = async (req, res) => {
         const { mou_code, enterprise_id, signing_date, partner_contact, org_type, country,
             collaboration_scope, executing_unit_id, vlu_contact, tasks_ay24_25,
             next_steps, past_activities, related_data, working_dir, activity_id, file_url } = req.body;
-        
+
+        if (mou_code) {
+            const [existingMou] = await pool.query(
+                'SELECT id FROM mous WHERE mou_code = ? AND is_deleted = 0',
+                [mou_code]
+            );
+            if (existingMou.length > 0) {
+                return res.status(400).json({ message: 'Mã MOU đã tồn tại trong hệ thống.' });
+            }
+        }
+
         if (req.user.role !== 'ADMIN') {
             const [ents] = await pool.query('SELECT faculty_id FROM enterprises WHERE id = ?', [enterprise_id]);
             if (ents.length === 0) {
@@ -106,7 +116,17 @@ exports.update = async (req, res) => {
         const { mou_code, enterprise_id, signing_date, partner_contact, org_type, country,
             collaboration_scope, executing_unit_id, vlu_contact, tasks_ay24_25,
             next_steps, past_activities, related_data, working_dir, activity_id, file_url } = req.body;
-        
+
+        if (mou_code) {
+            const [existingMou] = await pool.query(
+                'SELECT id FROM mous WHERE mou_code = ? AND id != ? AND is_deleted = 0',
+                [mou_code, id]
+            );
+            if (existingMou.length > 0) {
+                return res.status(400).json({ message: 'Mã MOU đã tồn tại trong hệ thống.' });
+            }
+        }
+
         if (req.user.role !== 'ADMIN') {
             const existing = await pool.query(`
                 SELECT e.faculty_id 
@@ -173,15 +193,15 @@ exports.remove = async (req, res) => {
             FROM mous m 
             JOIN enterprises e ON m.enterprise_id = e.id 
             WHERE m.id = ?`, [id]);
-            
+
         if (existing.length === 0) {
             return res.status(404).json({ message: 'MOU not found' });
         }
-        
+
         if (req.user.role !== 'ADMIN' && existing[0].faculty_id !== req.user.faculty_id) {
             return res.status(403).json({ message: 'Access denied to this MOU' });
         }
-        
+
         if (existing[0].is_deleted === 1) {
             return res.status(400).json({ message: 'MOU này đã được xóa trước đó.' });
         }

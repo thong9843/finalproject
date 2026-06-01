@@ -217,10 +217,21 @@ const CalendarView = () => {
             <div className="flex justify-between items-center mb-6">
                 <Title level={3} className="!m-0">Lịch sự kiện</Title>
                 <div className="flex gap-3">
-                    <Button icon={<DownloadOutlined />} onClick={handleExport}>
+                    <Button 
+                        size="large"
+                        icon={<DownloadOutlined />} 
+                        onClick={handleExport}
+                        className="border-emerald-600 text-emerald-600 dark:border-emerald-400 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 rounded-lg shadow-sm font-medium hover:border-emerald-700"
+                    >
                         Xuất Excel
                     </Button>
-                    <Button type="primary" icon={<PlusOutlined />} className="bg-vluRed text-white" onClick={openAddModal}>
+                    <Button 
+                        size="large"
+                        type="primary" 
+                        icon={<PlusOutlined />} 
+                        className="bg-vluRed hover:bg-vluRedHover border-none text-white rounded-lg shadow-sm font-medium" 
+                        onClick={openAddModal}
+                    >
                         Thêm sự kiện
                     </Button>
                 </div>
@@ -257,8 +268,8 @@ const CalendarView = () => {
                             </Button>
                         </Popconfirm>
                     ),
-                    <Button key="cancel" onClick={handleCancel}>Hủy</Button>,
-                    <Button key="save" type="primary" className="bg-vluRed text-white" onClick={handleSave}>Lưu</Button>
+                    <Button key="cancel" onClick={handleCancel} className="rounded-lg">Hủy</Button>,
+                    <Button key="save" type="primary" className="bg-vluRed hover:bg-vluRedHover border-none text-white rounded-lg shadow-sm font-medium" onClick={handleSave}>Lưu</Button>
                 ]}
             >
                 <Form form={form} layout="vertical" className="mt-4">

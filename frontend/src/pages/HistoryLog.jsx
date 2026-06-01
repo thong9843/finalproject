@@ -413,6 +413,7 @@ const HistoryLog = () => {
                     <p className="text-sm text-slate-500 m-0">Tra cứu lịch sử chỉnh sửa, xóa mềm và khôi phục dữ liệu</p>
                 </div>
                 <Button 
+                    size="large"
                     icon={<ReloadOutlined />} 
                     onClick={fetchHistory} 
                     loading={loading}

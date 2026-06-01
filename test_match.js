@@ -2,24 +2,21 @@ const pool = require('./backend/src/config/db');
 
 async function check() {
     try {
-        const [acts] = await pool.query('SELECT id, title, enterprise_id FROM activities');
-        const [ents] = await pool.query('SELECT id, name FROM enterprises');
-        
-        console.log('Total activities:', acts.length);
-        console.log('Total enterprises:', ents.length);
-        
-        // Count activities per enterprise
-        const counts = {};
-        for (const act of acts) {
-            counts[act.enterprise_id] = (counts[act.enterprise_id] || 0) + 1;
-        }
-        
-        console.log('Enterprises with activities:');
-        for (const ent of ents) {
-            if (counts[ent.id]) {
-                console.log(`- ${ent.name} (ID: ${ent.id}) has ${counts[ent.id]} activities`);
-            }
-        }
+        const [ents] = await pool.query('SELECT id, name, is_deleted FROM enterprises WHERE name = "AWS Việt Nam"');
+        console.log('AWS Việt Nam entries:', ents);
+
+        const [dupEnts] = await pool.query('SELECT name, count(*) as count FROM enterprises WHERE is_deleted = 0 GROUP BY name HAVING count > 1');
+        console.log('Duplicate enterprises:', dupEnts);
+
+        const [dupStudents] = await pool.query('SELECT student_code, count(*) as count FROM students WHERE is_deleted = 0 GROUP BY student_code HAVING count > 1');
+        console.log('Duplicate students (code):', dupStudents);
+
+        const [dupMous] = await pool.query('SELECT mou_code, count(*) as count FROM mous WHERE is_deleted = 0 GROUP BY mou_code HAVING count > 1');
+        console.log('Duplicate MOUs:', dupMous);
+
+        const [dupActivities] = await pool.query('SELECT enterprise_id, title, count(*) as count FROM activities WHERE is_deleted = 0 GROUP BY enterprise_id, title HAVING count > 1');
+        console.log('Duplicate Activities:', dupActivities);
+
         process.exit(0);
     } catch (e) {
         console.error(e);

@@ -99,6 +99,16 @@ exports.create = async (req, res) => {
         const { student_code, name, email, class: className, major, advisor, activity_id, enterprise_id, position, status, gpa, start_date, end_date, faculty_id } = req.body;
         const finalFacultyId = req.user.role === 'ADMIN' ? faculty_id : req.user.faculty_id;
 
+        if (student_code) {
+            const [existingCode] = await pool.query(
+                'SELECT id FROM students WHERE student_code = ? AND is_deleted = 0',
+                [student_code]
+            );
+            if (existingCode.length > 0) {
+                return res.status(400).json({ message: 'Mã số sinh viên đã tồn tại trong hệ thống.' });
+            }
+        }
+
         const [result] = await pool.query(
             `INSERT INTO students (student_code, name, email, class, major, advisor, activity_id, enterprise_id, position, status, gpa, start_date, end_date, faculty_id) 
              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -139,6 +149,16 @@ exports.update = async (req, res) => {
         const [existing] = await pool.query(checkQuery, checkParams);
         if (existing.length === 0) {
             return res.status(404).json({ message: 'Student not found or unauthorized' });
+        }
+
+        if (student_code) {
+            const [existingCode] = await pool.query(
+                'SELECT id FROM students WHERE student_code = ? AND id != ? AND is_deleted = 0',
+                [student_code, id]
+            );
+            if (existingCode.length > 0) {
+                return res.status(400).json({ message: 'Mã số sinh viên đã tồn tại trong hệ thống.' });
+            }
         }
 
         // Fetch old values
@@ -187,7 +207,7 @@ exports.remove = async (req, res) => {
             return res.status(404).json({ message: 'Student not found or unauthorized' });
         }
         const student = existing[0];
-        
+
         if (student.is_deleted === 1) {
             return res.status(400).json({ message: 'Sinh viên này đã được xóa trước đó.' });
         }

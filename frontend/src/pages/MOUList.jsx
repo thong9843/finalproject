@@ -50,20 +50,34 @@ const MOUList = () => {
     const [filterUnit, setFilterUnit] = useState(null);
     const [filterOrgType, setFilterOrgType] = useState(null);
     const [filterCountry, setFilterCountry] = useState(null);
+    const [faculties, setFaculties] = useState([]);
+    const [filterFaculty, setFilterFaculty] = useState(undefined);
+    const [filterEnterprise, setFilterEnterprise] = useState(undefined);
 
     useEffect(() => {
         document.title = "Quản lý Biên bản ghi nhớ (MOU) | VLU Enterprise Link Manager";
         fetchOptions();
+        if (user?.role === 'ADMIN') fetchFaculties();
     }, []);
+
+    const fetchFaculties = async () => {
+        try {
+            const res = await api.get('/structure/faculties');
+            setFaculties(res.data || []);
+        } catch (e) { console.error(e); }
+    };
 
     useEffect(() => {
         fetchMOUs();
-    }, [showDeleted]);
+    }, [showDeleted, filterFaculty, filterEnterprise]);
 
     const fetchMOUs = async () => {
         setLoading(true);
         try {
-            const res = await api.get(`/mous?is_deleted=${showDeleted ? 1 : 0}`);
+            let url = `/mous?is_deleted=${showDeleted ? 1 : 0}`;
+            if (filterFaculty) url += `&faculty_id=${filterFaculty}`;
+            if (filterEnterprise) url += `&enterprise_id=${filterEnterprise}`;
+            const res = await api.get(url);
             setData(res.data);
         } catch (error) {
             message.error('Lỗi khi tải danh sách Biên bản ghi nhớ (MOU)');
@@ -352,6 +366,16 @@ const MOUList = () => {
             <div>
                 <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5 flex items-center gap-1"><FilterOutlined /> Bộ lọc</div>
                 <div className="flex flex-col gap-2">
+                    {user?.role === 'ADMIN' && (
+                        <>
+                            <Select allowClear placeholder="Lọc theo khoa" onChange={setFilterFaculty} value={filterFaculty} className="w-full">
+                                {faculties.map(f => <Option key={f.id} value={f.id}>{f.name}</Option>)}
+                            </Select>
+                            <Select allowClear placeholder="Lọc theo doanh nghiệp" onChange={setFilterEnterprise} value={filterEnterprise} className="w-full" showSearch filterOption={filterOptionIgnoreCase}>
+                                {enterprises.map(e => <Option key={e.id} value={e.id}>{e.name}</Option>)}
+                            </Select>
+                        </>
+                    )}
                     <Select allowClear placeholder="Đơn vị triển khai" onChange={setFilterUnit} value={filterUnit} className="w-full" showSearch filterOption={filterOptionIgnoreCase}>
                         {departments.map(d => <Option key={d.id} value={d.id}>{d.name}</Option>)}
                     </Select>
@@ -369,12 +393,12 @@ const MOUList = () => {
                 <Switch size="small" checked={showDeleted} onChange={setShowDeleted} />
             </div>
             <Button icon={<ClearOutlined />} type="default" block onClick={() => {
-                setSortOption(null); setFilterUnit(null); setFilterOrgType(null); setFilterCountry(null); setShowDeleted(false);
+                setSortOption(null); setFilterUnit(null); setFilterOrgType(null); setFilterCountry(null); setShowDeleted(false); setFilterFaculty(undefined); setFilterEnterprise(undefined);
             }}>Xóa tất cả bộ lọc</Button>
         </div>
     );
 
-    const activeFilterCount = [sortOption, filterUnit, filterOrgType, filterCountry, showDeleted ? true : null].filter(v => v !== null && v !== undefined).length;
+    const activeFilterCount = [sortOption, filterUnit, filterOrgType, filterCountry, showDeleted ? true : null, filterFaculty, filterEnterprise].filter(v => v !== null && v !== undefined).length;
 
     const filteredData = data.filter(item => {
         const q = searchText.toLowerCase();
@@ -433,6 +457,13 @@ const MOUList = () => {
             ellipsis: true,
             render: (text) => text ? <Tag color="purple" className="whitespace-normal text-xs">{text}</Tag> : <span className="text-slate-400 text-xs">Chưa liên kết</span>
         },
+        ...(user?.role === 'ADMIN' ? [{
+            title: 'Khoa',
+            dataIndex: 'faculty_name',
+            key: 'faculty_name',
+            width: 150,
+            render: (text) => text ? <Tag color="orange">{text}</Tag> : <span className="text-slate-300 italic text-xs">Chưa phân khoa</span>
+        }] : []),
         {
             title: 'Ngày ký',
             dataIndex: 'signing_date',
@@ -555,59 +586,66 @@ const MOUList = () => {
 
     return (
         <div>
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-slate-200 dark:border-gray-700">
-                {/* Header */}
-                <div className="p-5 border-b border-slate-100 dark:border-gray-700 flex flex-col sm:flex-row justify-between items-start sm:items-center bg-white dark:bg-gray-800 rounded-t-xl gap-4">
-                    <div>
-                        <h2 className="text-xl font-bold m-0 text-slate-800 dark:text-gray-100">Quản lý Biên Bản Ghi Nhớ (MOU)</h2>
-                        <p className="text-sm text-slate-500 m-0">Danh sách thống kê các MOU đã ký với Đối tác/Doanh nghiệp</p>
-                    </div>
-                    <div className="flex gap-2 w-full sm:w-auto flex-wrap">
-                        <Input
-                            placeholder="Tìm mã MOU, đối tác..."
-                            prefix={<SearchOutlined className="text-slate-400" />}
-                            value={searchText}
-                            onChange={(e) => setSearchText(e.target.value)}
-                            className="w-full sm:w-56 rounded-lg"
-                            allowClear
-                        />
-                        <Popover content={filterContent} title="Bộ lọc & Sắp xếp" trigger="click" placement="bottomRight">
-                            <Button icon={<FilterOutlined />} className="rounded-lg text-gray-600">
-                                Bộ lọc {activeFilterCount > 0 && <Badge count={activeFilterCount} size="small" offset={[2, -2]} style={{ backgroundColor: '#1677ff' }} />}
-                            </Button>
-                        </Popover>
-                        {!isLecturer && (
-                            <>
-                                <Button
-                                    icon={<InboxOutlined />}
-                                    onClick={() => { setScanResult(null); setScanError(null); setUploadedFile(null); setIsScanModalOpen(true); }}
-                                    className="rounded-lg border-purple-600 text-purple-600 dark:border-purple-400 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/30"
-                                >
-                                    Import
-                                </Button>
-                                <Button
-                                    type="primary"
-                                    icon={<PlusOutlined />}
-                                    onClick={() => { setEditingId(null); form.resetFields(); setIsModalOpen(true); }}
-                                    className="bg-blue-600 shadow-sm rounded-lg"
-                                >
-                                    Thêm Biên bản
-                                </Button>
-                            </>
-                        )}
-                    </div>
+            {/* Header */}
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
+                <div>
+                    <h1 className="text-2xl font-bold text-slate-800 dark:text-gray-100 m-0">Quản lý Biên Bản Ghi Nhớ (MOU)</h1>
+                    <p className="text-sm text-slate-500 m-0">Danh sách thống kê các MOU đã ký với Đối tác/Doanh nghiệp</p>
                 </div>
+                <div className="flex gap-3 w-full sm:w-auto flex-wrap">
+                    {!isLecturer && (
+                        <>
+                            <Button
+                                size="large"
+                                icon={<InboxOutlined />}
+                                onClick={() => { setScanResult(null); setScanError(null); setUploadedFile(null); setIsScanModalOpen(true); }}
+                                className="border-purple-600 text-purple-600 dark:border-purple-400 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-950/20 rounded-lg shadow-sm font-medium hover:border-purple-700"
+                            >
+                                Import MOU bằng AI
+                            </Button>
+                            <Button
+                                size="large"
+                                type="primary"
+                                icon={<PlusOutlined />}
+                                onClick={() => { setEditingId(null); form.resetFields(); setIsModalOpen(true); }}
+                                className="bg-vluRed hover:bg-vluRedHover border-none text-white rounded-lg shadow-sm font-medium"
+                            >
+                                Thêm Biên bản
+                            </Button>
+                        </>
+                    )}
+                </div>
+            </div>
 
-                {/* Action Bar for Bulk Selection */}
-                {selectedRowKeys.length > 0 && (
-                    <div className="bg-red-50 border border-red-200 rounded-lg p-3 mx-5 mb-4 flex justify-between items-center animate-fade-in">
-                        <span className="text-red-700 font-medium ml-2">Đã chọn {selectedRowKeys.length} biên bản MOU</span>
-                        <Button size="small" danger icon={<DeleteOutlined />} onClick={handleBulkDelete}>
-                            Xóa đã chọn
-                        </Button>
-                    </div>
-                )}
+            {/* Search + Filters */}
+            <div className="bg-white dark:bg-gray-800 rounded-xl p-4 mb-6 shadow-sm border border-gray-100 dark:border-gray-700 flex flex-wrap items-center gap-3 transition-colors">
+                <Input
+                    placeholder="Tìm mã MOU, đối tác..."
+                    prefix={<SearchOutlined className="text-slate-400" />}
+                    value={searchText}
+                    onChange={(e) => setSearchText(e.target.value)}
+                    className="flex-1 min-w-[200px] rounded-lg h-10"
+                    allowClear
+                />
+                <Popover content={filterContent} title="Bộ lọc & Sắp xếp" trigger="click" placement="bottomRight">
+                    <Button icon={<FilterOutlined />} className="h-10 rounded-lg text-gray-600">
+                        Bộ lọc {activeFilterCount > 0 && <Badge count={activeFilterCount} size="small" offset={[2, -2]} style={{ backgroundColor: '#1677ff' }} />}
+                    </Button>
+                </Popover>
+            </div>
 
+            {/* Action Bar for Bulk Selection */}
+            {selectedRowKeys.length > 0 && (
+                <div className="bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800/50 rounded-lg p-3 mb-4 flex justify-between items-center animate-fade-in">
+                    <span className="text-red-700 dark:text-red-400 font-medium ml-2">Đã chọn {selectedRowKeys.length} biên bản MOU</span>
+                    <Button size="small" danger icon={<DeleteOutlined />} onClick={handleBulkDelete}>
+                        Xóa đã chọn
+                    </Button>
+                </div>
+            )}
+
+            {/* Table */}
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-slate-200 dark:border-gray-700 overflow-hidden">
                 <Table
                     rowSelection={isLecturer ? null : {
                         selectedRowKeys,
@@ -617,7 +655,7 @@ const MOUList = () => {
                     dataSource={filteredData}
                     loading={loading}
                     rowKey="id"
-                    rowClassName={(record) => record.is_deleted === 1 ? 'opacity-65 bg-red-50/20 dark:bg-red-955/10' : ''}
+                    rowClassName={(record) => record.is_deleted === 1 ? 'opacity-65 bg-red-50/20 dark:bg-red-950/10' : ''}
                     pagination={{ pageSize: 12 }}
                     className="border-none"
                     scroll={{ x: 'max-content' }}
@@ -736,7 +774,7 @@ const MOUList = () => {
                     </Row>
                     <div className="flex justify-end gap-3 pt-4 border-t border-slate-100 dark:border-gray-700 mt-4">
                         <Button onClick={() => setIsModalOpen(false)} size="large" className="rounded-lg">Hủy</Button>
-                        <Button type="primary" htmlType="submit" size="large" className="bg-blue-600 rounded-lg">
+                        <Button type="primary" htmlType="submit" size="large" className="bg-vluRed hover:bg-vluRedHover border-none text-white rounded-lg shadow-sm font-medium">
                             {editingId ? "Cập nhật" : "Lưu Biên bản"}
                         </Button>
                     </div>

@@ -4,7 +4,7 @@ const pool = require('../config/db');
 
 // Multer config: lưu file vào memory buffer
 const storage = multer.memoryStorage();
-const upload = multer({ 
+const upload = multer({
     storage,
     fileFilter: (req, file, cb) => {
         const allowedTypes = [
@@ -26,7 +26,7 @@ function parseFileToJSON(buffer, originalname) {
     const sheetName = workbook.SheetNames[0];
     const sheet = workbook.Sheets[sheetName];
     const rawRows = XLSX.utils.sheet_to_json(sheet);
-    
+
     // Chuẩn hóa keys: xóa khoảng trắng 2 đầu và chuyển thành chữ thường để dễ mapping
     return rawRows.map(row => {
         const normalizedRow = {};
@@ -56,7 +56,7 @@ const importEnterprises = async (req, res) => {
                 const scaleStr = r['quy mô'] || r['scale'] || '';
                 const fieldStr = r['lĩnh vực'] || r['fields'] || '';
                 const is_hcmc = r['ở tp.hcm'] ? (r['ở tp.hcm'].toString().toLowerCase() === 'có' || r['ở tp.hcm'] === 1) : true;
-                
+
                 const rep_title = r['danh xưng'] || null;
                 const rep_full_name = r['họ và tên'] || null;
                 const rep_role = r['chức vụ'] || null;
@@ -166,7 +166,7 @@ const importActivities = async (req, res) => {
                 const typeStr = r['loại hình'] || r['type'] || r['loai_hinh'] || 'Khác';
                 const targetStr = r['đối tượng'] || '';
                 const detail = r['mô tả'] || r['detail'] || r['mo_ta'] || '';
-                
+
                 // Format DD/MM/YYYY to YYYY-MM-DD if needed, but assuming ISO format from export for simplicity, 
                 // or just leave it if MySQL accepts it / handle Date object if parsed by xlsx.
                 let start_date = r['ngày bắt đầu'] || r['start_date'] || null;
@@ -267,7 +267,7 @@ const importStudents = async (req, res) => {
                 const position = r['vị trí'] || r['position'] || r['vi_tri'] || '';
                 const status = r['trạng thái'] || r['status'] || 'Chờ phân công';
                 const gpa = r['gpa'] || null;
-                
+
                 const parseDateStr = (d) => {
                     if (!d) return null;
                     if (typeof d === 'string' && d.includes('/')) {
@@ -381,10 +381,10 @@ const aiParseRow = async (req, res) => {
     const { rowText } = req.body;
     if (!rowText) return res.status(400).json({ message: "Missing rowText" });
 
-    const facultyId = req.user.role === 'ADMIN' 
-        ? (req.body.faculty_id || req.body.facultyId || null) 
+    const facultyId = req.user.role === 'ADMIN'
+        ? (req.body.faculty_id || req.body.facultyId || null)
         : req.user.faculty_id;
-    
+
     let parsedData = null;
     let maxRetries = apiKeys.length * 2;
     let waitTime = 5000;
@@ -394,12 +394,12 @@ const aiParseRow = async (req, res) => {
             const model = getGenerativeModel(); // You might want to override model string to "gemini-3.1-flash-lite-preview" or fallback to "gemini-1.5-flash"
             const result = await model.generateContent(system_prompt + "\\nDỮ LIỆU ĐẦU VÀO:\\n" + rowText);
             const text = result.response.text();
-            
+
             let rawJson = text.trim();
             if (rawJson.startsWith('```json')) rawJson = rawJson.replace('```json', '');
             if (rawJson.startsWith('```')) rawJson = rawJson.replace('```', '');
             if (rawJson.endsWith('```')) rawJson = rawJson.substring(0, rawJson.length - 3);
-            
+
             parsedData = JSON.parse(rawJson.trim());
             break;
         } catch (error) {
@@ -444,7 +444,7 @@ const aiParseRow = async (req, res) => {
         const entName = comp.name || "Unknown Company";
         let checkQuery = 'SELECT id FROM enterprises WHERE name = ?';
         const [existingEnt] = await conn.query(checkQuery, [entName]);
-        
+
         let enterpriseId = null;
         if (existingEnt.length > 0) {
             throw new Error(`Doanh nghiệp "${entName}" đã tồn tại trong hệ thống.`);

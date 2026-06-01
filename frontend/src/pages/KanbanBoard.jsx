@@ -397,7 +397,7 @@ const KanbanBoard = () => {
             icon={<PlusOutlined />} 
             size="large"
             onClick={openAddModal}
-            className="bg-blue-600 hover:bg-blue-500 shadow-sm border-none font-medium"
+            className="bg-vluRed hover:bg-vluRedHover border-none text-white rounded-lg shadow-sm font-medium"
           >
             Thêm Mới
           </Button>
@@ -764,7 +764,7 @@ const KanbanBoard = () => {
 
           <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-slate-100 dark:border-gray-700">
             <Button size="large" onClick={() => { setIsModalOpen(false); setEditingId(null); }} className="rounded-lg font-medium">Hủy</Button>
-            <Button size="large" type="primary" htmlType="submit" loading={submitting} className="bg-blue-600 hover:bg-blue-500 rounded-lg shadow-sm font-medium border-none">
+            <Button size="large" type="primary" htmlType="submit" loading={submitting} className="bg-vluRed hover:bg-vluRedHover text-white rounded-lg shadow-sm font-medium border-none">
               {editingId ? 'Cập Nhật Tùy Chọn' : 'Lưu Thành Công'}
             </Button>
           </div>

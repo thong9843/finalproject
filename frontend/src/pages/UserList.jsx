@@ -172,7 +172,8 @@ const UserList = () => {
                     type="primary" 
                     icon={<PlusOutlined />} 
                     onClick={handleAdd}
-                    className="bg-vluRed h-10 px-6 rounded-lg hover:bg-vluRedHover"
+                    size="large"
+                    className="bg-vluRed hover:bg-vluRedHover border-none text-white rounded-lg shadow-sm font-medium"
                 >
                     Thêm người dùng
                 </Button>
@@ -195,7 +196,7 @@ const UserList = () => {
                 onCancel={() => setIsModalVisible(false)}
                 okText="Lưu"
                 cancelText="Hủy"
-                okButtonProps={{ className: 'bg-vluRed hover:bg-vluRedHover' }}
+                okButtonProps={{ className: 'bg-vluRed hover:bg-vluRedHover border-none text-white shadow-sm font-medium' }}
             >
                 <Form form={form} layout="vertical" className="mt-4">
                     <Form.Item

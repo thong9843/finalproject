@@ -103,6 +103,18 @@ exports.create = async (req, res) => {
             type_ids, target_ids
         } = req.body;
 
+        // Check duplicate activity title for the same enterprise
+        if (title && enterprise_id) {
+            const [existingActivity] = await conn.query(
+                'SELECT id FROM activities WHERE title = ? AND enterprise_id = ? AND is_deleted = 0',
+                [title, enterprise_id]
+            );
+            if (existingActivity.length > 0) {
+                await conn.rollback();
+                return res.status(400).json({ message: 'Hoạt động này đã tồn tại cho doanh nghiệp.' });
+            }
+        }
+
         const finalFacultyId = req.user.role === 'ADMIN' ? faculty_id : req.user.faculty_id;
         const tasksJson = tasks ? JSON.stringify(tasks) : null;
 
@@ -111,8 +123,8 @@ exports.create = async (req, res) => {
              start_time, end_time, person_in_charge, tasks, collaboration_date, status, faculty_id)
              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [enterprise_id, title, detail || null, start_date || null, end_date || null,
-             start_time || null, end_time || null, person_in_charge || null,
-             tasksJson, collaboration_date || null, status || 'Đề xuất', finalFacultyId]
+                start_time || null, end_time || null, person_in_charge || null,
+                tasksJson, collaboration_date || null, status || 'Đề xuất', finalFacultyId]
         );
         const activityId = result.insertId;
 
@@ -184,11 +196,23 @@ exports.update = async (req, res) => {
             return res.status(404).json({ message: 'Activity not found or unauthorized' });
         }
 
+        // Check duplicate activity title for the same enterprise
+        if (title) {
+            const [existingActivity] = await conn.query(
+                'SELECT id FROM activities WHERE title = ? AND enterprise_id = ? AND id != ? AND is_deleted = 0',
+                [title, existing[0].enterprise_id, id]
+            );
+            if (existingActivity.length > 0) {
+                await conn.rollback();
+                return res.status(400).json({ message: 'Hoạt động này đã tồn tại cho doanh nghiệp.' });
+            }
+        }
+
         // Fetch old values for logging
         const [oldAct] = await conn.query('SELECT * FROM activities WHERE id = ?', [id]);
         const [oldTypes] = await conn.query('SELECT type_id FROM activity_type_map WHERE activity_id = ?', [id]);
         const [oldTargets] = await conn.query('SELECT target_id FROM activity_target_map WHERE activity_id = ?', [id]);
-        
+
         const oldValue = {
             activity: oldAct[0],
             type_ids: oldTypes.map(t => t.type_id),
@@ -202,8 +226,8 @@ exports.update = async (req, res) => {
              start_time=?, end_time=?, person_in_charge=?, tasks=?,
              collaboration_date=?, status=? WHERE id=?`,
             [title, detail || null, start_date || null, end_date || null,
-             start_time || null, end_time || null, person_in_charge || null,
-             tasksJson, collaboration_date || null, status, id]
+                start_time || null, end_time || null, person_in_charge || null,
+                tasksJson, collaboration_date || null, status, id]
         );
 
         await conn.query('DELETE FROM activity_type_map WHERE activity_id = ?', [id]);
@@ -230,7 +254,7 @@ exports.update = async (req, res) => {
         const [newAct] = await conn.query('SELECT * FROM activities WHERE id = ?', [id]);
         const [newTypes] = await conn.query('SELECT type_id FROM activity_type_map WHERE activity_id = ?', [id]);
         const [newTargets] = await conn.query('SELECT target_id FROM activity_target_map WHERE activity_id = ?', [id]);
-        
+
         const newValue = {
             activity: newAct[0],
             type_ids: newTypes.map(t => t.type_id),

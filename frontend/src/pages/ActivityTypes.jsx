@@ -133,10 +133,11 @@ const ActivityTypes = () => {
                     </div>
                     {!isLecturer && (
                         <Button 
+                            size="large"
                             type="primary" 
                             icon={<PlusOutlined />} 
                             onClick={() => { setEditingId(null); form.resetFields(); setIsModalOpen(true); }}
-                            className="bg-blue-600 shadow-sm rounded-lg"
+                            className="bg-vluRed hover:bg-vluRedHover border-none text-white rounded-lg shadow-sm font-medium"
                         >
                             Thêm mới
                         </Button>
@@ -174,7 +175,7 @@ const ActivityTypes = () => {
                     </Form.Item>
                     <div className="flex justify-end gap-3 pt-4 border-t border-slate-100 dark:border-gray-700 mt-6">
                         <Button onClick={() => setIsModalOpen(false)} size="large" className="rounded-lg">Hủy</Button>
-                        <Button type="primary" htmlType="submit" size="large" className="bg-blue-600 rounded-lg">
+                        <Button type="primary" htmlType="submit" size="large" className="bg-vluRed hover:bg-vluRedHover border-none text-white rounded-lg shadow-sm font-medium">
                             {editingId ? "Cập nhật" : "Lưu"}
                         </Button>
                     </div>

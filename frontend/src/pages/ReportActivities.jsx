@@ -225,7 +225,14 @@ const ReportActivities = () => {
                     <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100">Hoạt động hợp tác theo công ty</h1>
                     <p className="text-gray-400 text-sm">Phân tích chi tiết các hoạt động hợp tác với doanh nghiệp liên kết</p>
                 </div>
-                <Button icon={<DownloadOutlined />} onClick={handleExport} type="primary" className="bg-vluRed h-10 px-5 rounded-lg">Xuất Báo Cáo</Button>
+                <Button 
+                    size="large"
+                    icon={<DownloadOutlined />} 
+                    onClick={handleExport} 
+                    className="border-emerald-600 text-emerald-600 dark:border-emerald-400 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 rounded-lg shadow-sm font-medium hover:border-emerald-700"
+                >
+                    Xuất Báo Cáo
+                </Button>
             </div>
 
             {/* Period Selector */}
@@ -260,29 +267,72 @@ const ReportActivities = () => {
                 )}
             </div>
 
-            {/* Stats */}
-            <Row gutter={[16, 16]} className="mb-8">
-                <Col xs={12} sm={6}>
-                    <Card className="rounded-xl border border-red-100 dark:border-red-900/50 shadow-sm dark:shadow-none bg-gradient-to-br from-red-50 to-red-100/50 dark:from-red-900/20 dark:to-red-900/10">
-                        <Statistic title={<span className="text-gray-500 dark:text-gray-400">Tổng hoạt động</span>} value={overview.total || 0} prefix={<AppstoreOutlined className="text-vluRed dark:text-red-400" />} valueStyle={{ fontWeight: 'bold', color: 'inherit' }} />
-                    </Card>
-                </Col>
-                <Col xs={12} sm={6}>
-                    <Card className="rounded-xl border border-green-100 dark:border-green-900/50 shadow-sm dark:shadow-none bg-gradient-to-br from-green-50 to-green-100/50 dark:from-green-900/20 dark:to-green-900/10">
-                        <Statistic title={<span className="text-gray-500 dark:text-gray-400">Đang hoạt động</span>} value={overview.active || 0} prefix={<SyncOutlined className="text-green-500 dark:text-green-400" />} valueStyle={{ color: '#3f8600', fontWeight: 'bold' }} />
-                    </Card>
-                </Col>
-                <Col xs={12} sm={6}>
-                    <Card className="rounded-xl border border-blue-100 dark:border-blue-900/50 shadow-sm dark:shadow-none bg-gradient-to-br from-blue-50 to-blue-100/50 dark:from-blue-900/20 dark:to-blue-900/10">
-                        <Statistic title={<span className="text-gray-500 dark:text-gray-400">Hoàn thành</span>} value={overview.completed || 0} prefix={<CheckCircleOutlined className="text-blue-500 dark:text-blue-400" />} valueStyle={{ color: '#1890ff', fontWeight: 'bold' }} />
-                    </Card>
-                </Col>
-                <Col xs={12} sm={6}>
-                    <Card className="rounded-xl border border-purple-100 dark:border-purple-900/50 shadow-sm dark:shadow-none bg-gradient-to-br from-purple-50 to-purple-100/50 dark:from-purple-900/20 dark:to-purple-900/10">
-                        <Statistic title={<span className="text-gray-500 dark:text-gray-400">Doanh nghiệp hợp tác</span>} value={overview.enterprises || 0} prefix={<BankOutlined className="text-purple-500 dark:text-purple-400" />} valueStyle={{ color: '#722ed1', fontWeight: 'bold' }} />
-                    </Card>
-                </Col>
-            </Row>
+            {/* Stats Cards */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                {/* Red Card */}
+                <div className="group relative overflow-hidden bg-gradient-to-br from-red-50 to-red-100/30 dark:from-red-950/20 dark:to-red-900/10 rounded-2xl p-5 border-l-4 border-l-vluRed border border-slate-100 dark:border-red-900/30 transition-all duration-300 hover:-translate-y-1 hover:shadow-md cursor-default">
+                    <div className="absolute -right-2 -bottom-2 opacity-10 transition-transform duration-500 group-hover:scale-110">
+                        <AppstoreOutlined className="text-6xl text-vluRed dark:text-red-400" />
+                    </div>
+                    <div className="flex items-center gap-3.5 relative z-10">
+                        <div className="w-12 h-12 bg-gradient-to-br from-vluRed to-red-600 rounded-xl flex items-center justify-center shadow-md shadow-red-200 dark:shadow-none group-hover:scale-105 transition-transform duration-300">
+                            <AppstoreOutlined className="text-white text-lg" />
+                        </div>
+                        <div>
+                            <div className="text-2xl sm:text-3xl font-extrabold text-red-800 dark:text-red-400 leading-none mb-1">{overview.total || 0}</div>
+                            <div className="text-xs font-semibold text-red-600/80 uppercase tracking-wider">Tổng hoạt động</div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Green Card */}
+                <div className="group relative overflow-hidden bg-gradient-to-br from-emerald-50 to-emerald-100/30 dark:from-emerald-950/20 dark:to-emerald-900/10 rounded-2xl p-5 border-l-4 border-l-emerald-500 border border-slate-100 dark:border-emerald-900/30 transition-all duration-300 hover:-translate-y-1 hover:shadow-md cursor-default">
+                    <div className="absolute -right-2 -bottom-2 opacity-10 transition-transform duration-500 group-hover:scale-110">
+                        <SyncOutlined className="text-6xl text-emerald-600 dark:text-emerald-400" />
+                    </div>
+                    <div className="flex items-center gap-3.5 relative z-10">
+                        <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center shadow-md shadow-emerald-200 dark:shadow-none group-hover:scale-105 transition-transform duration-300">
+                            <SyncOutlined className="text-white text-lg" />
+                        </div>
+                        <div>
+                            <div className="text-2xl sm:text-3xl font-extrabold text-emerald-800 dark:text-emerald-400 leading-none mb-1">{overview.active || 0}</div>
+                            <div className="text-xs font-semibold text-emerald-600/80 uppercase tracking-wider">Đang hoạt động</div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Blue Card */}
+                <div className="group relative overflow-hidden bg-gradient-to-br from-blue-50 to-blue-100/30 dark:from-blue-950/20 dark:to-blue-900/10 rounded-2xl p-5 border-l-4 border-l-blue-500 border border-slate-100 dark:border-blue-900/30 transition-all duration-300 hover:-translate-y-1 hover:shadow-md cursor-default">
+                    <div className="absolute -right-2 -bottom-2 opacity-10 transition-transform duration-500 group-hover:scale-110">
+                        <CheckCircleOutlined className="text-6xl text-blue-600 dark:text-blue-400" />
+                    </div>
+                    <div className="flex items-center gap-3.5 relative z-10">
+                        <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-md shadow-blue-200 dark:shadow-none group-hover:scale-105 transition-transform duration-300">
+                            <CheckCircleOutlined className="text-white text-lg" />
+                        </div>
+                        <div>
+                            <div className="text-2xl sm:text-3xl font-extrabold text-blue-800 dark:text-blue-400 leading-none mb-1">{overview.completed || 0}</div>
+                            <div className="text-xs font-semibold text-blue-600/80 uppercase tracking-wider">Hoàn thành</div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Purple Card */}
+                <div className="group relative overflow-hidden bg-gradient-to-br from-purple-50 to-purple-100/30 dark:from-purple-950/20 dark:to-purple-900/10 rounded-2xl p-5 border-l-4 border-l-purple-500 border border-slate-100 dark:border-purple-900/30 transition-all duration-300 hover:-translate-y-1 hover:shadow-md cursor-default">
+                    <div className="absolute -right-2 -bottom-2 opacity-10 transition-transform duration-500 group-hover:scale-110">
+                        <BankOutlined className="text-6xl text-purple-600 dark:text-purple-400" />
+                    </div>
+                    <div className="flex items-center gap-3.5 relative z-10">
+                        <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-md shadow-purple-200 dark:shadow-none group-hover:scale-105 transition-transform duration-300">
+                            <BankOutlined className="text-white text-lg" />
+                        </div>
+                        <div>
+                            <div className="text-2xl sm:text-3xl font-extrabold text-purple-800 dark:text-purple-400 leading-none mb-1">{overview.enterprises || 0}</div>
+                            <div className="text-xs font-semibold text-purple-600/80 uppercase tracking-wider">DN hợp tác</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
             {/* Row 1: Bar + Pie */}
             <Row gutter={[20, 20]} className="mb-6">

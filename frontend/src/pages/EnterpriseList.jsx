@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Table, Tag, Form, Input, Select, Button, Modal, message, Space, Drawer, Timeline, Row, Col, DatePicker, Descriptions, Switch, Popover, Badge, Divider , App as AntApp } from 'antd';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { Table, Tag, Form, Input, Select, Button, Modal, message, Space, Drawer, Timeline, Row, Col, DatePicker, Descriptions, Switch, Popover, Badge, Divider, App as AntApp } from 'antd';
 import { EditOutlined, DeleteOutlined, PlusOutlined, UnorderedListOutlined, UploadOutlined, DownloadOutlined, UserOutlined, HomeOutlined, FilterOutlined, SortAscendingOutlined, ClearOutlined, SearchOutlined } from '@ant-design/icons';
 import ImportModal from '../components/ImportModal';
 import api from '../utils/api';
@@ -11,6 +12,8 @@ const { Option } = Select;
 const { TextArea } = Input;
 
 const EnterpriseList = () => {
+    const location = useLocation();
+    const navigate = useNavigate();
     const userCookie = Cookies.get('user');
     let user = null;
     try {
@@ -49,6 +52,24 @@ const EnterpriseList = () => {
         fetchScales();
         fetchFields();
     }, []);
+
+    useEffect(() => {
+        if (location.state?.openModalWithData) {
+            const { actionType, data } = location.state.openModalWithData;
+            if (actionType === 'create_enterprise') {
+                setEditingId(null);
+                form.resetFields();
+                form.setFieldsValue({
+                    name: data.name,
+                    tax_code: data.tax_code,
+                    status: data.status || 'Tiềm năng',
+                    ...data
+                });
+                setIsModalVisible(true);
+                navigate(location.pathname, { replace: true, state: {} });
+            }
+        }
+    }, [location.state, form, navigate]);
 
     useEffect(() => {
         fetchData();
@@ -251,7 +272,7 @@ const EnterpriseList = () => {
 
     const filteredData = data.filter(item => {
         const q = searchText.toLowerCase();
-        const matchSearch = !searchText || 
+        const matchSearch = !searchText ||
             item.name?.toLowerCase().includes(q) ||
             item.tax_code?.toLowerCase().includes(q) ||
             item.rep_full_name?.toLowerCase().includes(q) ||
@@ -326,11 +347,11 @@ const EnterpriseList = () => {
     );
 
     const columns = [
-        { 
-            title: 'Tên Doanh nghiệp', 
-            dataIndex: 'name', 
-            key: 'name', 
-            width: 220, 
+        {
+            title: 'Tên Doanh nghiệp',
+            dataIndex: 'name',
+            key: 'name',
+            width: 220,
             render: (text, record) => (
                 <span className="font-semibold text-slate-800 dark:text-gray-100 flex items-center gap-2">
                     {text}
@@ -367,10 +388,10 @@ const EnterpriseList = () => {
                 if (isDeleted) {
                     return (
                         <Space size="middle">
-                            <Button 
-                                type="primary" 
-                                size="small" 
-                                className="bg-green-600 hover:bg-green-500 text-white border-0 rounded-md" 
+                            <Button
+                                type="primary"
+                                size="small"
+                                className="bg-green-600 hover:bg-green-500 text-white border-0 rounded-md"
                                 onClick={() => handleRestore(record.id)}
                             >
                                 Khôi phục
@@ -424,12 +445,38 @@ const EnterpriseList = () => {
                     <p className="text-sm text-slate-500 m-0">Cập nhật thông tin Doanh nghiệp & Đầu mối liên hệ Đối tác</p>
                 </div>
                 <div className="flex gap-3">
-                    {!isLecturer && <Button size="large" icon={<UploadOutlined />} onClick={() => setShowImport(true)}>Import</Button>}
-                    <Button size="large" icon={<DownloadOutlined />} onClick={handleExport}>Xuất Excel</Button>
                     {!isLecturer && (
-                        <Button size="large" type="primary" className="bg-blue-600 rounded-lg shadow-sm" icon={<PlusOutlined />} onClick={() => {
-                            setEditingId(null); form.resetFields(); setIsModalVisible(true);
-                        }}>Thêm Đối Tác</Button>
+                        <Button
+                            size="large"
+                            icon={<UploadOutlined />}
+                            onClick={() => setShowImport(true)}
+                            className="border-purple-600 text-purple-600 dark:border-purple-400 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-950/20 rounded-lg shadow-sm font-medium hover:border-purple-700"
+                        >
+                            Import
+                        </Button>
+                    )}
+                    <Button
+                        size="large"
+                        icon={<DownloadOutlined />}
+                        onClick={handleExport}
+                        className="border-emerald-600 text-emerald-600 dark:border-emerald-400 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 rounded-lg shadow-sm font-medium hover:border-emerald-700"
+                    >
+                        Xuất Excel
+                    </Button>
+                    {!isLecturer && (
+                        <Button
+                            size="large"
+                            type="primary"
+                            className="bg-vluRed hover:bg-vluRedHover border-none text-white rounded-lg shadow-sm font-medium"
+                            icon={<PlusOutlined />}
+                            onClick={() => {
+                                setEditingId(null);
+                                form.resetFields();
+                                setIsModalVisible(true);
+                            }}
+                        >
+                            Thêm Đối Tác
+                        </Button>
                     )}
                 </div>
             </div>
@@ -493,14 +540,14 @@ const EnterpriseList = () => {
                 </div>
             )}
 
-            <Table 
+            <Table
                 rowSelection={isLecturer ? null : {
                     selectedRowKeys,
                     onChange: setSelectedRowKeys,
                 }}
-                columns={columns} 
-                dataSource={filteredData} 
-                rowKey="id" 
+                columns={columns}
+                dataSource={filteredData}
+                rowKey="id"
                 loading={loading}
                 rowClassName={(record) => record.is_deleted === 1 ? 'opacity-65 bg-red-50/20 dark:bg-red-950/10' : ''}
                 className="shadow-sm border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-xl overflow-hidden"
@@ -633,7 +680,7 @@ const EnterpriseList = () => {
 
                     <div className="flex justify-end gap-3 pt-4 mt-2 border-t border-slate-100 dark:border-gray-700">
                         <Button onClick={() => setIsModalVisible(false)} size="large" className="rounded-lg">Hủy</Button>
-                        <Button type="primary" htmlType="submit" size="large" className="bg-blue-600 rounded-lg">Lưu vào Hệ thống</Button>
+                        <Button type="primary" htmlType="submit" size="large" className="bg-vluRed hover:bg-vluRedHover border-none text-white rounded-lg shadow-sm font-medium">Lưu vào Hệ thống</Button>
                     </div>
                 </Form>
             </Modal>

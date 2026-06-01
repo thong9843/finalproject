@@ -127,6 +127,28 @@ exports.create = async (req, res) => {
             field_ids
         } = req.body;
 
+        // Check duplicate name
+        const [existingName] = await conn.query(
+            'SELECT id FROM enterprises WHERE name = ? AND is_deleted = 0',
+            [name]
+        );
+        if (existingName.length > 0) {
+            await conn.rollback();
+            return res.status(400).json({ message: 'Tên doanh nghiệp đã tồn tại trong hệ thống.' });
+        }
+
+        // Check duplicate tax code
+        if (tax_code) {
+            const [existingTax] = await conn.query(
+                'SELECT id FROM enterprises WHERE tax_code = ? AND is_deleted = 0',
+                [tax_code]
+            );
+            if (existingTax.length > 0) {
+                await conn.rollback();
+                return res.status(400).json({ message: 'Mã số thuế đã tồn tại trong hệ thống.' });
+            }
+        }
+
         const finalFacultyId = req.user.role === 'ADMIN' ? faculty_id : req.user.faculty_id;
 
         const [result] = await conn.query(
@@ -211,12 +233,34 @@ exports.update = async (req, res) => {
         }
         const oldStatus = existing[0].status;
 
+        // Check duplicate name
+        const [existingName] = await conn.query(
+            'SELECT id FROM enterprises WHERE name = ? AND id != ? AND is_deleted = 0',
+            [name, id]
+        );
+        if (existingName.length > 0) {
+            await conn.rollback();
+            return res.status(400).json({ message: 'Tên doanh nghiệp đã tồn tại trong hệ thống.' });
+        }
+
+        // Check duplicate tax code
+        if (tax_code) {
+            const [existingTax] = await conn.query(
+                'SELECT id FROM enterprises WHERE tax_code = ? AND id != ? AND is_deleted = 0',
+                [tax_code, id]
+            );
+            if (existingTax.length > 0) {
+                await conn.rollback();
+                return res.status(400).json({ message: 'Mã số thuế đã tồn tại trong hệ thống.' });
+            }
+        }
+
         // Fetch old values for logging
         const [oldEnt] = await conn.query('SELECT * FROM enterprises WHERE id = ?', [id]);
         const [oldReps] = await conn.query('SELECT * FROM enterprise_representatives WHERE enterprise_id = ? AND is_primary = 1', [id]);
         const [oldAddrs] = await conn.query('SELECT * FROM enterprise_addresses WHERE enterprise_id = ? AND is_main = 1', [id]);
         const [oldFields] = await conn.query('SELECT field_id FROM enterprise_fields WHERE enterprise_id = ?', [id]);
-        
+
         const oldValue = {
             enterprise: oldEnt[0],
             representatives: oldReps,
@@ -267,7 +311,7 @@ exports.update = async (req, res) => {
         const [newReps] = await conn.query('SELECT * FROM enterprise_representatives WHERE enterprise_id = ? AND is_primary = 1', [id]);
         const [newAddrs] = await conn.query('SELECT * FROM enterprise_addresses WHERE enterprise_id = ? AND is_main = 1', [id]);
         const [newFields] = await conn.query('SELECT field_id FROM enterprise_fields WHERE enterprise_id = ?', [id]);
-        
+
         const newValue = {
             enterprise: newEnt[0],
             representatives: newReps,
@@ -406,7 +450,7 @@ exports.getDuplicates = async (req, res) => {
             HAVING count > 1
         `;
         const [duplicateNames] = await pool.query(duplicateQuery);
-        
+
         if (duplicateNames.length === 0) {
             return res.status(200).json([]);
         }
@@ -423,7 +467,7 @@ exports.getDuplicates = async (req, res) => {
             WHERE e.name IN (?)
             ORDER BY e.name ASC, e.created_at DESC
         `;
-        
+
         const [enterprises] = await pool.query(query, [names]);
 
         // Group by name

@@ -2,7 +2,7 @@ import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { Card, Steps, Upload, Button, message, Table, Select, Progress, Typography, Space } from 'antd';
 import { InboxOutlined, CheckCircleOutlined, SyncOutlined, FileExcelOutlined } from '@ant-design/icons';
 import * as XLSX from 'xlsx';
-import axios from 'axios';
+import api from '../utils/api';
 import Cookies from 'js-cookie';
 
 const { Dragger } = Upload;
@@ -195,11 +195,9 @@ const AiImportTool = () => {
             }
 
             try {
-                const token = Cookies.get('token');
-                const res = await axios.post(
-                    'http://localhost:5000/api/import/ai-parse-row', 
-                    { rowText: item.rowText },
-                    { headers: { Authorization: `Bearer ${token}` } }
+                const res = await api.post(
+                    '/import/ai-parse-row', 
+                    { rowText: item.rowText }
                 );
                 
                 currentStatus = [
@@ -300,8 +298,8 @@ const AiImportTool = () => {
                             ))}
                         </div>
                         <div className="flex justify-end gap-3 mt-6">
-                            <Button onClick={() => setCurrentStep(0)}>Quay lại</Button>
-                            <Button type="primary" className="bg-red-600" onClick={confirmMapping}>
+                            <Button size="large" onClick={() => setCurrentStep(0)} className="rounded-lg font-medium">Quay lại</Button>
+                            <Button size="large" type="primary" className="bg-vluRed hover:bg-vluRedHover border-none text-white rounded-lg shadow-sm font-medium" onClick={confirmMapping}>
                                 Tiếp tục
                             </Button>
                         </div>
@@ -323,8 +321,8 @@ const AiImportTool = () => {
                             size="small"
                         />
                         <div className="flex justify-end gap-3">
-                            <Button onClick={() => setCurrentStep(1)}>Quay lại</Button>
-                            <Button type="primary" className="bg-red-600" onClick={startImport}>
+                            <Button size="large" onClick={() => setCurrentStep(1)} className="rounded-lg font-medium">Quay lại</Button>
+                            <Button size="large" type="primary" className="bg-vluRed hover:bg-vluRedHover border-none text-white rounded-lg shadow-sm font-medium" onClick={startImport}>
                                 Bắt đầu Import bằng AI
                             </Button>
                         </div>
@@ -353,26 +351,26 @@ const AiImportTool = () => {
                         {!isImporting && (
                             <div className="flex justify-center gap-4 mt-6">
                                 {importProgress < 100 ? (
-                                    <Button type="primary" className="bg-red-600" onClick={startImport}>
+                                    <Button size="large" type="primary" className="bg-vluRed hover:bg-vluRedHover border-none text-white rounded-lg shadow-sm font-medium" onClick={startImport}>
                                         Tiếp tục Import
                                     </Button>
                                 ) : null}
-                                <Button onClick={() => {
+                                <Button size="large" onClick={() => {
                                     setFileList([]);
                                     setCurrentStep(0);
                                     setImportProgress(0);
                                     setImportStatus([]);
-                                }}>
+                                }} className="rounded-lg font-medium">
                                     Import File Khác
                                 </Button>
                             </div>
                         )}
                         {isImporting && (
                             <div className="flex justify-center gap-4 mt-6">
-                                <Button type="default" onClick={pauseImport}>
+                                <Button size="large" type="default" onClick={pauseImport} className="rounded-lg font-medium">
                                     Tạm dừng
                                 </Button>
-                                <Button type="default" danger onClick={cancelImport}>
+                                <Button size="large" type="default" danger onClick={cancelImport} className="rounded-lg font-medium">
                                     Hủy Import
                                 </Button>
                             </div>

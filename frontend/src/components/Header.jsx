@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Dropdown, Avatar, Badge, List, Typography, Button, Popover } from 'antd';
-import { UserOutlined, LogoutOutlined, BellOutlined, MenuOutlined } from '@ant-design/icons';
+import { UserOutlined, LogoutOutlined, BellOutlined, MenuOutlined, MenuFoldOutlined, MenuUnfoldOutlined, MessageOutlined } from '@ant-design/icons';
 import Cookies from 'js-cookie';
 import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
@@ -8,7 +8,7 @@ import api from '../utils/api';
 
 const { Text } = Typography;
 
-const Header = ({ onMenuToggle }) => {
+const Header = ({ onMenuToggle, collapsed, onCollapseToggle, chatbotOpen, onChatbotToggle }) => {
     const navigate = useNavigate();
     const userCookie = Cookies.get('user');
     const user = userCookie ? JSON.parse(userCookie) : null;
@@ -71,7 +71,7 @@ const Header = ({ onMenuToggle }) => {
     );
 
     return (
-        <div className="h-16 bg-white/90 dark:bg-gray-800/90 backdrop-blur-md shadow-sm border-b border-gray-200 dark:border-gray-700/50 flex items-center px-4 sm:px-6 fixed top-0 right-0 left-0 lg:left-64 z-10 gap-3 sm:gap-6 transition-colors duration-300">
+        <div className={`h-16 bg-white/90 dark:bg-gray-800/90 backdrop-blur-md shadow-sm border-b border-gray-200 dark:border-gray-700/50 flex items-center px-4 sm:px-6 fixed top-0 right-0 left-0 z-10 gap-3 sm:gap-6 transition-all duration-300 ${collapsed ? 'lg:left-20' : 'lg:left-64'}`}>
             {/* Hamburger - chỉ hiện trên mobile */}
             <button
                 className="lg:hidden flex items-center justify-center w-9 h-9 rounded-md text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
@@ -79,6 +79,15 @@ const Header = ({ onMenuToggle }) => {
                 aria-label="Toggle menu"
             >
                 <MenuOutlined className="text-lg" />
+            </button>
+
+            {/* Desktop collapse toggle - chỉ hiện trên desktop */}
+            <button
+                className="hidden lg:flex items-center justify-center w-9 h-9 rounded-md text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                onClick={onCollapseToggle}
+                aria-label="Toggle sidebar collapse"
+            >
+                {collapsed ? <MenuUnfoldOutlined className="text-lg" /> : <MenuFoldOutlined className="text-lg" />}
             </button>
 
             {/* Logo nhỏ cho mobile */}
@@ -92,6 +101,18 @@ const Header = ({ onMenuToggle }) => {
 
             {/* Spacer for desktop */}
             <div className="hidden lg:flex flex-1" />
+
+            {/* Chatbot Toggle Button */}
+            <Avatar
+                onClick={onChatbotToggle}
+                className={`cursor-pointer transition-all duration-200 ${
+                    chatbotOpen 
+                        ? 'bg-red-600 text-white' 
+                        : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                }`}
+                icon={<MessageOutlined />}
+                aria-label="Toggle chatbot"
+            />
 
             {/* Notification bell */}
             <Popover content={notificationContent} trigger="click" placement="bottomRight" overlayInnerStyle={{ padding: 0, border: 'none', background: 'transparent', boxShadow: 'none' }}>

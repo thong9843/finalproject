@@ -1,14 +1,27 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Menu } from 'antd';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { DashboardOutlined, BankOutlined, CalendarOutlined, SettingOutlined, LogoutOutlined, TeamOutlined, BarChartOutlined, AppstoreOutlined, CloseOutlined } from '@ant-design/icons';
+import { DashboardOutlined, BankOutlined, CalendarOutlined, SettingOutlined, LogoutOutlined, TeamOutlined, BarChartOutlined, AppstoreOutlined, CloseOutlined, ToolOutlined } from '@ant-design/icons';
 import Cookies from 'js-cookie';
 import { useTheme } from '../context/ThemeContext';
 
-const Sidebar = ({ isOpen, onClose }) => {
+const Sidebar = ({ isOpen, onClose, collapsed }) => {
     const navigate = useNavigate();
     const location = useLocation();
     const { isDark } = useTheme();
+
+    const [isMobile, setIsMobile] = useState(false);
+
+    useEffect(() => {
+        const handleResize = () => {
+            setIsMobile(window.innerWidth < 1024);
+        };
+        handleResize();
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
+    const isCollapsedDesktop = collapsed && !isMobile;
 
     const userCookie = Cookies.get('user');
     const user = userCookie ? JSON.parse(userCookie) : null;
@@ -72,9 +85,9 @@ const Sidebar = ({ isOpen, onClose }) => {
             ]
         },
         {
-            key: 'system-settings',
-            icon: <SettingOutlined />,
-            label: 'Cấu hình hệ thống',
+            key: 'other-tools',
+            icon: <ToolOutlined />,
+            label: 'Công cụ khác',
             children: [
                 {
                     key: '/activity-types',
@@ -84,6 +97,10 @@ const Sidebar = ({ isOpen, onClose }) => {
                     {
                         key: '/history',
                         label: 'Lịch sử hệ thống',
+                    },
+                    {
+                        key: '/ai-import',
+                        label: 'Import dữ liệu AI',
                     }
                 ] : []),
                 ...(isAdmin ? [
@@ -93,11 +110,7 @@ const Sidebar = ({ isOpen, onClose }) => {
                     },
                     {
                         key: '/duplicates',
-                        label: 'Xử lý dữ liệu trùng',
-                    },
-                    {
-                        key: '/ai-import',
-                        label: 'Import dữ liệu AI',
+                        label: 'Xử lý dữ liệu hàng loạt',
                     }
                 ] : [])
             ]
@@ -132,32 +145,36 @@ const Sidebar = ({ isOpen, onClose }) => {
     return (
         <div
             className={`
-                w-64 h-screen fixed left-0 top-0 z-30 flex flex-col pt-4
+                h-screen fixed left-0 top-0 z-30 flex flex-col pt-4 overflow-x-hidden
                 bg-white dark:bg-gray-800
                 shadow-lg dark:shadow-gray-900/50 border-r border-transparent dark:border-gray-700/50
-                transition-transform duration-300 ease-in-out
+                transition-all duration-300 ease-in-out
                 ${isOpen ? 'translate-x-0' : '-translate-x-full'}
                 lg:translate-x-0
+                ${isCollapsedDesktop ? 'w-64 lg:w-20' : 'w-64'}
             `}
         >
             {/* Header with logo + close button on mobile */}
-            <div className="flex justify-between items-center px-4 mb-4">
+            <div className={`flex items-center mb-6 transition-all duration-300 ${isCollapsedDesktop ? 'justify-center px-2' : 'justify-center px-4 relative'}`}>
                 <img
-                    src="https://cdn.haitrieu.com/wp-content/uploads/2022/12/Logo-Dai-Hoc-Van-Lang-H.png"
+                    src={isCollapsedDesktop ? "https://cdn.haitrieu.com/wp-content/uploads/2022/12/Icon-Dai-Hoc-Van-Lang.png" : "https://upload.wikimedia.org/wikipedia/commons/d/d1/Logo_VLU_2022.png"}
                     alt="VLU Logo"
-                    className="h-10 object-contain"
+                    className={`${isCollapsedDesktop ? 'h-10 w-10' : 'h-10'} object-contain transition-all duration-300`}
                 />
-                <button
-                    className="lg:hidden p-1 rounded-md text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-100"
-                    onClick={onClose}
-                >
-                    <CloseOutlined className="text-lg" />
-                </button>
+                {!isCollapsedDesktop && (
+                    <button
+                        className="lg:hidden absolute right-4 p-1 rounded-md text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-100"
+                        onClick={onClose}
+                    >
+                        <CloseOutlined className="text-lg" />
+                    </button>
+                )}
             </div>
 
-            <div className="flex-1 overflow-y-auto">
+            <div className="flex-1 overflow-y-auto overflow-x-hidden">
                 <Menu
                     mode="inline"
+                    inlineCollapsed={isCollapsedDesktop}
                     selectedKeys={[location.pathname]}
                     onClick={handleMenuClick}
                     items={items}
@@ -168,6 +185,7 @@ const Sidebar = ({ isOpen, onClose }) => {
             <div className="border-t border-gray-100 dark:border-gray-700/50 pb-4 pt-2">
                 <Menu
                     mode="inline"
+                    inlineCollapsed={isCollapsedDesktop}
                     selectedKeys={[location.pathname]}
                     onClick={handleMenuClick}
                     items={bottomItems}

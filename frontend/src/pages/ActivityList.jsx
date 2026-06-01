@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Card, Row, Col, Tag, Form, Select, Button, Modal, message, Input, DatePicker, TimePicker, Statistic, Spin, Empty, Tooltip, Drawer, Descriptions, Popover, Badge, Divider, Pagination, Checkbox, Switch, Space , App as AntApp } from 'antd';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { Card, Row, Col, Tag, Form, Select, Button, Modal, message, Input, DatePicker, TimePicker, Statistic, Spin, Empty, Tooltip, Drawer, Descriptions, Popover, Badge, Divider, Pagination, Checkbox, Switch, Space, App as AntApp } from 'antd';
 import {
     ClockCircleOutlined, SyncOutlined, CheckOutlined, PauseCircleOutlined,
     UploadOutlined, DownloadOutlined, PlusOutlined, CheckCircleOutlined,
@@ -16,6 +17,8 @@ import Cookies from 'js-cookie';
 const { Option } = Select;
 
 const ActivityList = () => {
+    const location = useLocation();
+    const navigate = useNavigate();
     const { modal } = AntApp.useApp();
     const userCookie = Cookies.get('user');
     let user = null;
@@ -64,8 +67,31 @@ const ActivityList = () => {
     }, []);
 
     useEffect(() => {
+        if (location.state?.openModalWithData) {
+            const { actionType, data } = location.state.openModalWithData;
+            if (actionType === 'create_activity') {
+                setEditingId(null);
+                form.resetFields();
+                form.setFieldsValue({
+                    title: data.title,
+                    person_in_charge: data.person_in_charge,
+                    status: data.status || 'Đề xuất',
+                    start_date: data.start_date ? dayjs(data.start_date) : dayjs(),
+                    end_date: data.end_date ? dayjs(data.end_date) : null,
+                    start_time: data.start_time ? dayjs(`1970-01-01 ${data.start_time}`) : null,
+                    end_time: data.end_time ? dayjs(`1970-01-01 ${data.end_time}`) : null,
+                    collaboration_date: data.collaboration_date ? dayjs(data.collaboration_date) : null,
+                    ...data
+                });
+                setIsModalVisible(true);
+                navigate(location.pathname, { replace: true, state: {} });
+            }
+        }
+    }, [location.state, form, navigate]);
+
+    useEffect(() => {
         fetchData();
-    }, [showDeleted]);
+    }, [showDeleted, filterFaculty]);
 
     const fetchActivityTypes = async () => {
         try {
@@ -84,7 +110,9 @@ const ActivityList = () => {
     const fetchData = async () => {
         setLoading(true);
         try {
-            const res = await api.get(`/activities?is_deleted=${showDeleted ? 1 : 0}`);
+            let url = `/activities?is_deleted=${showDeleted ? 1 : 0}`;
+            if (filterFaculty) url += `&faculty_id=${filterFaculty}`;
+            const res = await api.get(url);
             setData(res.data);
         } catch (error) {
             message.error('Lỗi khi tải dữ liệu hoạt động');
@@ -261,11 +289,11 @@ const ActivityList = () => {
         return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
     };
 
-    const filterOptionIgnoreCase = (input, option) => 
+    const filterOptionIgnoreCase = (input, option) =>
         removeAccents(option?.children || '').includes(removeAccents(input));
 
     const handleToggleActivity = (id) => {
-        setSelectedActivities(prev => 
+        setSelectedActivities(prev =>
             prev.includes(id) ? prev.filter(aid => aid !== id) : [...prev, id]
         );
     };
@@ -383,13 +411,39 @@ const ActivityList = () => {
                     <p className="text-gray-400 text-sm">{data.length} hoạt động · {stats?.active || 0} đang diễn ra</p>
                 </div>
                 <div className="flex gap-3">
-                    {!isLecturer && <Button icon={<UploadOutlined />} onClick={() => setShowImport(true)} className="h-10 rounded-lg">Import</Button>}
-                    <Button icon={<DownloadOutlined />} onClick={handleExport} className="h-10 rounded-lg">Xuất Excel</Button>
-                    {!isLecturer && <Button type="primary" className="bg-vluRed h-10 px-5 rounded-lg" icon={<PlusOutlined />} onClick={() => {
-                        setEditingId(null);
-                        form.resetFields();
-                        setIsModalVisible(true);
-                    }}>Thêm hoạt động</Button>}
+                    {!isLecturer && (
+                        <Button
+                            size="large"
+                            icon={<UploadOutlined />}
+                            onClick={() => setShowImport(true)}
+                            className="border-purple-600 text-purple-600 dark:border-purple-400 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-950/20 rounded-lg shadow-sm font-medium hover:border-purple-700"
+                        >
+                            Import
+                        </Button>
+                    )}
+                    <Button
+                        size="large"
+                        icon={<DownloadOutlined />}
+                        onClick={handleExport}
+                        className="border-emerald-600 text-emerald-600 dark:border-emerald-400 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 rounded-lg shadow-sm font-medium hover:border-emerald-700"
+                    >
+                        Xuất Excel
+                    </Button>
+                    {!isLecturer && (
+                        <Button
+                            size="large"
+                            type="primary"
+                            className="bg-vluRed hover:bg-vluRedHover border-none text-white rounded-lg shadow-sm font-medium"
+                            icon={<PlusOutlined />}
+                            onClick={() => {
+                                setEditingId(null);
+                                form.resetFields();
+                                setIsModalVisible(true);
+                            }}
+                        >
+                            Thêm hoạt động
+                        </Button>
+                    )}
                 </div>
             </div>
 
@@ -397,47 +451,66 @@ const ActivityList = () => {
 
             {/* Stats Cards */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                <div className="bg-gradient-to-br from-green-50 to-green-100/50 dark:from-green-900/20 dark:to-green-900/10 rounded-2xl p-5 border border-green-100 dark:border-green-900/50 transition-colors">
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-green-500 rounded-xl flex items-center justify-center">
+                {/* Green Card */}
+                <div className="group relative overflow-hidden bg-gradient-to-br from-emerald-50 to-emerald-100/30 dark:from-emerald-950/20 dark:to-emerald-900/10 rounded-2xl p-5 border-l-4 border-l-emerald-500 border-t border-r border-b border-slate-100 dark:border-emerald-900/30 transition-all duration-300 hover:-translate-y-1 hover:shadow-md cursor-default">
+                    <div className="absolute -right-2 -bottom-2 opacity-10 transition-transform duration-500 group-hover:scale-110">
+                        <SyncOutlined className="text-6xl text-emerald-600 dark:text-emerald-400" />
+                    </div>
+                    <div className="flex items-center gap-3.5 relative z-10">
+                        <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center shadow-md shadow-emerald-200 dark:shadow-none group-hover:scale-105 transition-transform duration-300">
                             <SyncOutlined className="text-white text-lg" />
                         </div>
                         <div>
-                            <div className="text-2xl font-bold text-green-700">{activeCount}</div>
-                            <div className="text-xs text-green-600/70/70">Đang hoạt động</div>
+                            <div className="text-2xl sm:text-3xl font-extrabold text-emerald-800 dark:text-emerald-400 leading-none mb-1">{activeCount}</div>
+                            <div className="text-xs font-semibold text-emerald-600/80 uppercase tracking-wider">Đang hoạt động</div>
                         </div>
                     </div>
                 </div>
-                <div className="bg-gradient-to-br from-blue-50 to-blue-100/50 dark:from-blue-900/20 dark:to-blue-900/10 rounded-2xl p-5 border border-blue-100 dark:border-blue-900/50 transition-colors">
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-blue-500 rounded-xl flex items-center justify-center">
+
+                {/* Blue Card */}
+                <div className="group relative overflow-hidden bg-gradient-to-br from-blue-50 to-blue-100/30 dark:from-blue-950/20 dark:to-blue-900/10 rounded-2xl p-5 border-l-4 border-l-blue-500 border-t border-r border-b border-slate-100 dark:border-blue-900/30 transition-all duration-300 hover:-translate-y-1 hover:shadow-md cursor-default">
+                    <div className="absolute -right-2 -bottom-2 opacity-10 transition-transform duration-500 group-hover:scale-110">
+                        <CheckCircleOutlined className="text-6xl text-blue-600 dark:text-blue-400" />
+                    </div>
+                    <div className="flex items-center gap-3.5 relative z-10">
+                        <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-md shadow-blue-200 dark:shadow-none group-hover:scale-105 transition-transform duration-300">
                             <CheckCircleOutlined className="text-white text-lg" />
                         </div>
                         <div>
-                            <div className="text-2xl font-bold text-blue-700">{completedCount}</div>
-                            <div className="text-xs text-blue-600/70/70">Hoàn thành</div>
+                            <div className="text-2xl sm:text-3xl font-extrabold text-blue-800 dark:text-blue-400 leading-none mb-1">{completedCount}</div>
+                            <div className="text-xs font-semibold text-blue-600/80 uppercase tracking-wider">Hoàn thành</div>
                         </div>
                     </div>
                 </div>
-                <div className="bg-gradient-to-br from-orange-50 to-orange-100/50 dark:from-orange-900/20 dark:to-orange-900/10 rounded-2xl p-5 border border-orange-100 dark:border-orange-900/50 transition-colors">
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-orange-500 rounded-xl flex items-center justify-center">
+
+                {/* Orange Card */}
+                <div className="group relative overflow-hidden bg-gradient-to-br from-orange-50 to-orange-100/30 dark:from-orange-950/20 dark:to-orange-900/10 rounded-2xl p-5 border-l-4 border-l-orange-500 border-t border-r border-b border-slate-100 dark:border-orange-900/30 transition-all duration-300 hover:-translate-y-1 hover:shadow-md cursor-default">
+                    <div className="absolute -right-2 -bottom-2 opacity-10 transition-transform duration-500 group-hover:scale-110">
+                        <ClockCircleOutlined className="text-6xl text-orange-600 dark:text-orange-400" />
+                    </div>
+                    <div className="flex items-center gap-3.5 relative z-10">
+                        <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-amber-600 rounded-xl flex items-center justify-center shadow-md shadow-orange-200 dark:shadow-none group-hover:scale-105 transition-transform duration-300">
                             <ClockCircleOutlined className="text-white text-lg" />
                         </div>
                         <div>
-                            <div className="text-2xl font-bold text-orange-700">{pendingCount}</div>
-                            <div className="text-xs text-orange-600/70/70">Chờ triển khai</div>
+                            <div className="text-2xl sm:text-3xl font-extrabold text-orange-800 dark:text-orange-400 leading-none mb-1">{pendingCount}</div>
+                            <div className="text-xs font-semibold text-orange-600/80 uppercase tracking-wider">Chờ triển khai</div>
                         </div>
                     </div>
                 </div>
-                <div className="bg-gradient-to-br from-purple-50 to-purple-100/50 dark:from-purple-900/20 dark:to-purple-900/10 rounded-2xl p-5 border border-purple-100 dark:border-purple-900/50 transition-colors">
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-purple-500 rounded-xl flex items-center justify-center">
+
+                {/* Purple Card */}
+                <div className="group relative overflow-hidden bg-gradient-to-br from-purple-50 to-purple-100/30 dark:from-purple-950/20 dark:to-purple-900/10 rounded-2xl p-5 border-l-4 border-l-purple-500 border-t border-r border-b border-slate-100 dark:border-purple-900/30 transition-all duration-300 hover:-translate-y-1 hover:shadow-md cursor-default">
+                    <div className="absolute -right-2 -bottom-2 opacity-10 transition-transform duration-500 group-hover:scale-110">
+                        <TeamOutlined className="text-6xl text-purple-600 dark:text-purple-400" />
+                    </div>
+                    <div className="flex items-center gap-3.5 relative z-10">
+                        <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-md shadow-purple-200 dark:shadow-none group-hover:scale-105 transition-transform duration-300">
                             <TeamOutlined className="text-white text-lg" />
                         </div>
                         <div>
-                            <div className="text-2xl font-bold text-purple-700">{totalStudents}</div>
-                            <div className="text-xs text-purple-600/70/70">Sinh viên tham gia</div>
+                            <div className="text-2xl sm:text-3xl font-extrabold text-purple-800 dark:text-purple-400 leading-none mb-1">{totalStudents}</div>
+                            <div className="text-xs font-semibold text-purple-600/80 uppercase tracking-wider">Sinh viên tham gia</div>
                         </div>
                     </div>
                 </div>
@@ -509,6 +582,11 @@ const ActivityList = () => {
                             <div>
                                 <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5 flex items-center gap-1"><FilterOutlined /> Bộ lọc</div>
                                 <div className="flex flex-col gap-2">
+                                    {user?.role === 'ADMIN' && (
+                                        <Select allowClear placeholder="Lọc theo khoa" onChange={setFilterFaculty} value={filterFaculty} className="w-full">
+                                            {faculties.map(f => <Option key={f.id} value={f.id}>{f.name}</Option>)}
+                                        </Select>
+                                    )}
                                     <Select allowClear placeholder="Doanh nghiệp" onChange={setFilterEnterprise} value={filterEnterprise} className="w-full" showSearch optionFilterProp="children">
                                         {enterprises.map(e => <Option key={e.id} value={e.id}>{e.name}</Option>)}
                                     </Select>
@@ -528,7 +606,7 @@ const ActivityList = () => {
                                 <Switch size="small" checked={showDeleted} onChange={setShowDeleted} />
                             </div>
                             <Button icon={<ClearOutlined />} type="default" block onClick={() => {
-                                setFilterEnterprise(null); setFilterType(null); setFilterStatus(null); setSortOption(null); setDateRange(null); setShowDeleted(false);
+                                setFilterEnterprise(null); setFilterType(null); setFilterStatus(null); setSortOption(null); setDateRange(null); setShowDeleted(false); setFilterFaculty(undefined);
                             }}>Xóa tất cả bộ lọc</Button>
                         </div>
                     }
@@ -591,8 +669,8 @@ const ActivityList = () => {
                                 >
                                     {!isLecturer && item.is_deleted !== 1 && (
                                         <div className="absolute top-3 right-3 z-10">
-                                            <Checkbox 
-                                                checked={selectedActivities.includes(item.id)} 
+                                            <Checkbox
+                                                checked={selectedActivities.includes(item.id)}
                                                 onChange={() => handleToggleActivity(item.id)}
                                                 className="scale-110"
                                             />
@@ -613,6 +691,11 @@ const ActivityList = () => {
                                                         <BankOutlined />
                                                         <span className="truncate">{item.enterprise_name}</span>
                                                     </div>
+                                                    {user?.role === 'ADMIN' && item.faculty_name && (
+                                                        <div className="mt-1">
+                                                            <Tag color="orange" className="text-[10px] px-1.5 py-0">{item.faculty_name}</Tag>
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </div>
                                             <div className="flex items-center gap-1">
@@ -657,10 +740,10 @@ const ActivityList = () => {
                                     {/* Card Footer */}
                                     <div className="px-5 py-3 border-t border-gray-50 flex items-center justify-between bg-white dark:bg-gray-800/50 transition-colors action-buttons">
                                         {item.is_deleted === 1 ? (
-                                            <Button 
-                                                type="primary" 
-                                                size="small" 
-                                                className="bg-green-600 hover:bg-green-500 text-white border-0 rounded-md animate-fade-in" 
+                                            <Button
+                                                type="primary"
+                                                size="small"
+                                                className="bg-green-600 hover:bg-green-500 text-white border-0 rounded-md animate-fade-in"
                                                 onClick={() => handleRestore(item.id)}
                                             >
                                                 Khôi phục
@@ -695,6 +778,7 @@ const ActivityList = () => {
                                                                         start_time: item.start_time ? dayjs(`1970-01-01 ${item.start_time}`) : null,
                                                                         end_time: item.end_time ? dayjs(`1970-01-01 ${item.end_time}`) : null,
                                                                         collaboration_date: item.collaboration_date ? dayjs(item.collaboration_date) : null,
+                                                                        faculty_id: item.faculty_id,
                                                                     });
                                                                     setIsModalVisible(true);
                                                                 }}>
@@ -749,6 +833,13 @@ const ActivityList = () => {
                     <Form.Item name="title" label="Tên Hoạt động" rules={[{ required: true }]}>
                         <Input placeholder="VD: Thực tập sinh Marketing 2024" />
                     </Form.Item>
+                    {user?.role === 'ADMIN' && (
+                        <Form.Item name="faculty_id" label="Khoa quản lý" rules={[{ required: true, message: 'Vui lòng chọn khoa!' }]}>
+                            <Select placeholder="Chọn khoa...">
+                                {faculties.map(f => <Option key={f.id} value={f.id}>{f.name}</Option>)}
+                            </Select>
+                        </Form.Item>
+                    )}
                     <Row gutter={16}>
                         <Col span={12}>
                             <Form.Item name="enterprise_id" label="Doanh nghiệp liên kết" rules={[{ required: true }]}>
@@ -815,8 +906,8 @@ const ActivityList = () => {
                         </Select>
                     </Form.Item>
                     <div className="flex justify-end gap-3 pt-4 border-t mt-6">
-                        <Button onClick={() => { setIsModalVisible(false); setEditingId(null); }} size="large">Hủy</Button>
-                        <Button type="primary" htmlType="submit" className="bg-vluRed h-11 px-8 rounded-lg" size="large">
+                        <Button onClick={() => { setIsModalVisible(false); setEditingId(null); }} size="large" className="rounded-lg">Hủy</Button>
+                        <Button type="primary" htmlType="submit" className="bg-vluRed hover:bg-vluRedHover border-none text-white rounded-lg shadow-sm font-medium" size="large">
                             {editingId ? 'Cập nhật' : 'Lưu hoạt động'}
                         </Button>
                     </div>
