@@ -27,8 +27,8 @@ COPY Output_DB /app/Output_DB
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
-# Expose ports: 5173 (Vite Dev Server), 5000 (Backend API)
-EXPOSE 5173 5000
+# Expose ports: 8080 (Vite Dev Server), 5000 (Backend API)
+EXPOSE 8080 5000
 
 # Run entrypoint script
 ENTRYPOINT ["/entrypoint.sh"]

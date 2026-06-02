@@ -63,17 +63,23 @@ if [ ! -f /app/backend/.env ]; then
     echo "✔ Created /app/backend/.env successfully."
 fi
 
-# Run migrations and seed data inside container
-echo "Running database migrations..."
-export DB_HOST=127.0.0.1
-export DB_USER=root
-export DB_PASSWORD=rootpassword
-export DB_NAME=vlu_enterprise_link
+# Run migrations and seed data inside container only if not already initialized
+TABLE_COUNT=$(mysql -uroot -prootpassword -sse "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'vlu_enterprise_link';" 2>/dev/null || echo 0)
 
-node /app/backend/migrations/run-sql.js
-node /app/backend/import-csv.js
-node /app/backend/migrations/run_seed_students.js
-echo "✔ Database migrations completed."
+if [ "$TABLE_COUNT" -gt 0 ]; then
+    echo "✔ Database is already initialized. Skipping migrations to preserve data."
+else
+    echo "Running database migrations..."
+    export DB_HOST=127.0.0.1
+    export DB_USER=root
+    export DB_PASSWORD=rootpassword
+    export DB_NAME=vlu_enterprise_link
+
+    node /app/backend/migrations/run-sql.js
+    node /app/backend/import-csv.js
+    node /app/backend/migrations/run_seed_students.js
+    echo "✔ Database migrations completed."
+fi
 
 # Start Node.js Backend Server in background
 echo "Starting Backend API on port 5000..."
@@ -81,8 +87,8 @@ cd /app/backend
 node src/index.js &
 
 # Start Frontend (Vite Dev Server) in foreground
-echo "Starting Frontend Vite Dev Server on port 5173..."
+echo "Starting Frontend Vite Dev Server on port 8080..."
 cd /app/frontend
-npm run dev -- --host 0.0.0.0
+npm run dev -- --host 0.0.0.0 --port 8080
 
 
