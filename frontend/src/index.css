@@ -105,3 +105,64 @@ html.dark .custom-scroller::-webkit-scrollbar-thumb {
 html.dark .custom-scroller::-webkit-scrollbar-thumb:hover {
   background: #64748b;
 }
+
+/* Hide scrollbar utility */
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-none {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+/* Responsive adjustments for Ant Design buttons on mobile screens */
+@media (max-width: 640px) {
+  /* Scale down large buttons to middle size */
+  .ant-btn.ant-btn-lg {
+    height: 36px !important;
+    padding: 4px 14px !important;
+    font-size: 14px !important;
+    border-radius: 8px !important;
+  }
+  
+  /* Scale down middle/default buttons to look compact */
+  .ant-btn:not(.ant-btn-sm):not(.ant-btn-lg) {
+    height: 32px !important;
+    padding: 4px 10px !important;
+    font-size: 13px !important;
+    border-radius: 6px !important;
+  }
+}
+
+/* Animations for floating bottom action bar */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeInUpCentered {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 20px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@media (min-width: 768px) {
+  .md\:animate-fade-in-up-centered {
+    animation: fadeInUpCentered 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+}

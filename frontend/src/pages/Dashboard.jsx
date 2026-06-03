@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { Card, Row, Col, Spin, List, Tag, Typography, Segmented, DatePicker } from 'antd';
+import { Card, Row, Col, Spin, List, Tag, Typography, Segmented, DatePicker, Select } from 'antd';
 import {
     BankOutlined,
     CheckCircleOutlined,
@@ -228,38 +228,40 @@ const Dashboard = () => {
         <div>
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
                 <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-red-50 dark:bg-red-950/30 text-vluRed dark:text-red-400 rounded-2xl flex items-center justify-center shadow-sm flex-shrink-0">
-                        <DashboardOutlined className="text-2xl" />
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-red-50 dark:bg-red-950/30 text-vluRed dark:text-red-400 rounded-xl sm:rounded-2xl flex items-center justify-center shadow-sm flex-shrink-0">
+                        <DashboardOutlined className="text-xl sm:text-2xl" />
                     </div>
                     <div>
-                        <h1 className="text-2xl font-bold text-slate-800 dark:text-gray-100 m-0">Tổng quan hệ thống</h1>
-                        <p className="text-sm text-slate-500 m-0 mt-0.5">Theo dõi các chỉ số quan trọng và hoạt động hợp tác doanh nghiệp</p>
+                        <h1 className="text-xl sm:text-2xl font-bold text-slate-800 dark:text-gray-100 m-0">Tổng quan hệ thống</h1>
+                        <p className="text-xs sm:text-sm text-slate-500 m-0 mt-0.5">Theo dõi các chỉ số quan trọng và hoạt động hợp tác doanh nghiệp</p>
                     </div>
                 </div>
             </div>
 
             {/* Period Selector */}
-            <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 mb-8 border border-gray-100 dark:border-gray-700 shadow-sm flex flex-wrap items-center gap-4">
-                <div className="flex items-center gap-2 text-gray-500">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 mb-8 border border-gray-100 dark:border-gray-700 shadow-sm flex flex-col sm:flex-row sm:items-center gap-4">
+                <div className="flex items-center gap-2 text-gray-500 flex-shrink-0">
                     <CalendarOutlined className="text-lg" />
                     <span className="text-sm font-medium">Khoảng thời gian:</span>
                 </div>
-                <Segmented
-                    options={periodOptions}
-                    value={period}
-                    onChange={(val) => {
-                        setPeriod(val);
-                        if (val !== 'custom') setCustomRange(null);
-                    }}
-                    className="bg-gray-50 dark:bg-gray-800/50"
-                />
+                <div className="w-full sm:w-auto overflow-x-auto whitespace-nowrap pb-2 sm:pb-0 scrollbar-none">
+                    <Segmented
+                        options={periodOptions}
+                        value={period}
+                        onChange={(val) => {
+                            setPeriod(val);
+                            if (val !== 'custom') setCustomRange(null);
+                        }}
+                        className="bg-gray-50 dark:bg-gray-800/50 inline-block sm:inline-flex"
+                    />
+                </div>
                 {period === 'custom' && (
                     <RangePicker
                         format="DD/MM/YYYY"
                         value={customRange}
                         onChange={setCustomRange}
                         placeholder={['Từ ngày', 'Đến ngày']}
-                        className="rounded-lg"
+                        className="rounded-lg w-full sm:w-auto flex-shrink-0"
                         allowClear={false}
                     />
                 )}
@@ -271,19 +273,19 @@ const Dashboard = () => {
             </div>
 
             {/* KPI Cards */}
-            <Row gutter={[24, 24]} className="mb-8">
+            <Row gutter={[16, 16]} className="mb-8">
                 {kpiCards.map((kpi, idx) => (
-                    <Col xs={24} sm={12} xl={6} key={idx}>
-                        <div className={`group relative overflow-hidden rounded-2xl ${kpi.bg} p-6 shadow-lg ${kpi.shadow} transition-all duration-300 hover:-translate-y-1 hover:shadow-xl cursor-default`}>
+                    <Col xs={12} sm={12} xl={6} key={idx}>
+                        <div className={`group relative overflow-hidden rounded-2xl ${kpi.bg} p-4 sm:p-6 shadow-md sm:shadow-lg ${kpi.shadow} transition-all duration-300 hover:-translate-y-1 hover:shadow-xl cursor-default`}>
                             <div className="absolute -right-4 -top-4 opacity-20 transition-transform duration-500 group-hover:rotate-12 group-hover:scale-110">
-                                {React.cloneElement(kpi.icon, { className: 'text-8xl' })}
+                                {React.cloneElement(kpi.icon, { className: 'text-6xl sm:text-8xl' })}
                             </div>
                             <div className="relative z-10 flex justify-between items-center">
                                 <div>
-                                    <p className="text-white/80 text-sm font-medium mb-1">{kpi.title}</p>
-                                    <h3 className="text-4xl font-bold text-white m-0">{kpi.value}</h3>
+                                    <p className="text-white/90 text-xs sm:text-sm font-medium mb-1">{kpi.title}</p>
+                                    <h3 className="text-xl sm:text-3xl md:text-4xl font-bold text-white m-0 leading-none">{kpi.value}</h3>
                                 </div>
-                                <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm">
+                                <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm hidden sm:block">
                                     {kpi.icon}
                                 </div>
                             </div>
@@ -339,7 +341,7 @@ const Dashboard = () => {
                             </div>
                         }
                         className="shadow-sm rounded-xl h-full border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow"
-                        bodyStyle={{ padding: '0 24px' }}
+                        styles={{ body: { padding: '0 24px' } }}
                     >
                         {upcomingActivities && upcomingActivities.length > 0 ? (
                             <List

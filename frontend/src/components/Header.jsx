@@ -138,7 +138,7 @@ const Header = ({ onMenuToggle, collapsed, onCollapseToggle, chatbotOpen, onChat
             </button>
 
             {/* Notification bell */}
-            <Popover content={notificationContent} trigger="click" placement="bottomRight" overlayInnerStyle={{ padding: 0, border: 'none', background: 'transparent', boxShadow: 'none' }}>
+            <Popover content={notificationContent} trigger="click" placement="bottomRight" styles={{ container: { padding: 0, border: 'none', background: 'transparent', boxShadow: 'none' } }}>
                 <Badge count={upcomingEvents.length} size="small">
                     <Avatar
                         className="bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"

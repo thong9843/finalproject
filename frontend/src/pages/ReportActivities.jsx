@@ -241,32 +241,34 @@ const ReportActivities = () => {
             </div>
 
             {/* Period Selector */}
-            <div className="bg-gradient-to-r from-slate-50 to-gray-50 dark:from-gray-800/50 dark:to-gray-900/50 rounded-2xl p-4 mb-6 border border-gray-100 dark:border-gray-700 flex flex-wrap items-center gap-4">
-                <div className="flex items-center gap-2 text-gray-500">
+            <div className="bg-gradient-to-r from-slate-50 to-gray-50 dark:from-gray-800/50 dark:to-gray-900/50 rounded-2xl p-4 mb-6 border border-gray-100 dark:border-gray-700 flex flex-col sm:flex-row sm:items-center gap-4">
+                <div className="flex items-center gap-2 text-gray-500 flex-shrink-0">
                     <CalendarOutlined className="text-lg" />
                     <span className="text-sm font-medium">Khoảng thời gian:</span>
                 </div>
-                <Segmented
-                    options={periodOptions}
-                    value={period}
-                    onChange={(val) => {
-                        setPeriod(val);
-                        if (val !== 'custom') setCustomRange(null);
-                    }}
-                    className="bg-white dark:bg-gray-800 shadow-sm"
-                />
+                <div className="w-full sm:w-auto overflow-x-auto whitespace-nowrap pb-2 sm:pb-0 scrollbar-none">
+                    <Segmented
+                        options={periodOptions}
+                        value={period}
+                        onChange={(val) => {
+                            setPeriod(val);
+                            if (val !== 'custom') setCustomRange(null);
+                        }}
+                        className="bg-white dark:bg-gray-800 shadow-sm inline-block sm:inline-flex"
+                    />
+                </div>
                 {period === 'custom' && (
                     <RangePicker
                         format="DD/MM/YYYY"
                         value={customRange}
                         onChange={setCustomRange}
                         placeholder={['Từ ngày', 'Đến ngày']}
-                        className="rounded-lg"
+                        className="rounded-lg w-full sm:w-auto flex-shrink-0"
                         allowClear={false}
                     />
                 )}
                 {dateRange[0] && dateRange[1] && (
-                    <span className="text-xs text-gray-400 ml-auto">
+                    <span className="text-xs text-gray-400 sm:ml-auto">
                         📅 {getPeriodLabel()}
                     </span>
                 )}

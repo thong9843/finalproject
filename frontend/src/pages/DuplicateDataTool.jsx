@@ -226,24 +226,24 @@ const DuplicateDataTool = () => {
         <div className="space-y-6 animate-fade-in">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
                 <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-red-50 dark:bg-red-950/30 text-vluRed dark:text-red-400 rounded-2xl flex items-center justify-center shadow-sm flex-shrink-0">
-                        <MergeCellsOutlined className="text-2xl" />
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-red-50 dark:bg-red-950/30 text-vluRed dark:text-red-400 rounded-xl sm:rounded-2xl flex items-center justify-center shadow-sm flex-shrink-0">
+                        <MergeCellsOutlined className="text-xl sm:text-2xl" />
                     </div>
                     <div>
-                        <h1 className="text-2xl font-bold text-slate-800 dark:text-gray-100 m-0">Xử lý dữ liệu trùng lặp</h1>
-                        <p className="text-sm text-slate-500 m-0 mt-0.5">Tìm kiếm và xử lý gộp các bản ghi doanh nghiệp trùng tên</p>
+                        <h1 className="text-xl sm:text-2xl font-bold text-slate-800 dark:text-gray-100 m-0">Xử lý dữ liệu trùng lặp</h1>
+                        <p className="text-xs sm:text-sm text-slate-500 m-0 mt-0.5">Tìm kiếm và xử lý gộp các bản ghi doanh nghiệp trùng tên</p>
                     </div>
                 </div>
-                <Space>
+                <div className="flex flex-wrap gap-2 w-full sm:w-auto">
                     {duplicates.length > 0 && (
-                        <Button type="primary" icon={<MergeCellsOutlined />} onClick={handleMergeAllDuplicates} disabled={loading} className="bg-blue-600 hover:bg-blue-500 border-none rounded-lg shadow-sm font-medium">
+                        <Button type="primary" icon={<MergeCellsOutlined />} onClick={handleMergeAllDuplicates} disabled={loading} className="bg-blue-600 hover:bg-blue-500 border-none rounded-lg shadow-sm font-medium w-full sm:w-auto">
                             Gộp tất cả trùng lặp
                         </Button>
                     )}
-                    <Button type="default" onClick={fetchDuplicates} loading={loading} className="rounded-lg shadow-sm font-medium border-slate-300 dark:border-gray-600 hover:border-vluRed hover:text-vluRed">
+                    <Button type="default" onClick={fetchDuplicates} loading={loading} className="rounded-lg shadow-sm font-medium border-slate-300 dark:border-gray-600 hover:border-vluRed hover:text-vluRed w-full sm:w-auto">
                         Tải lại dữ liệu
                     </Button>
-                </Space>
+                </div>
             </div>
 
             {loading ? (
@@ -279,7 +279,7 @@ const DuplicateDataTool = () => {
                                 </Tooltip>
                             }
                             className="shadow-sm border border-red-100 dark:border-red-900/30 overflow-hidden"
-                            headStyle={{ backgroundColor: 'rgba(254, 226, 226, 0.5)' }}
+                            styles={{ header: { backgroundColor: 'rgba(254, 226, 226, 0.5)' } }}
                         >
                             <Table 
                                 columns={columns} 

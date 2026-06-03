@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Table, Button, Modal, Form, Input, Select, DatePicker, message, Space, Tooltip, Row, Col, Upload, Spin, Tag, Alert, Switch, Popover, Badge, Divider, App as AntApp } from 'antd';
+import { Table, Button, Modal, Form, Input, Select, DatePicker, message, Space, Tooltip, Row, Col, Upload, Spin, Tag, Alert, Switch, Popover, Badge, Divider, App as AntApp, Card, Checkbox } from 'antd';
 import {
     PlusOutlined, EditOutlined, DeleteOutlined, LinkOutlined, SearchOutlined,
     FilePdfOutlined, ScanOutlined, InboxOutlined, CheckCircleOutlined, RobotOutlined, DownloadOutlined,
@@ -593,19 +593,19 @@ const MOUList = () => {
             {/* Header */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
                 <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-red-50 dark:bg-red-950/30 text-vluRed dark:text-red-400 rounded-2xl flex items-center justify-center shadow-sm flex-shrink-0">
-                        <AuditOutlined className="text-2xl" />
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-red-50 dark:bg-red-950/30 text-vluRed dark:text-red-400 rounded-xl sm:rounded-2xl flex items-center justify-center shadow-sm flex-shrink-0">
+                        <AuditOutlined className="text-xl sm:text-2xl" />
                     </div>
                     <div>
-                        <h1 className="text-2xl font-bold text-slate-800 dark:text-gray-100 m-0">Biên bản ghi nhớ (MOU)</h1>
-                        <p className="text-sm text-slate-500 m-0 mt-0.5">Danh sách thống kê các MOU đã ký với Đối tác/Doanh nghiệp</p>
+                        <h1 className="text-xl sm:text-2xl font-bold text-slate-800 dark:text-gray-100 m-0">Biên bản ghi nhớ (MOU)</h1>
+                        <p className="text-xs sm:text-sm text-slate-500 m-0 mt-0.5">Danh sách thống kê các MOU đã ký với Đối tác/Doanh nghiệp</p>
                     </div>
                 </div>
-                <div className="flex gap-3 w-full sm:w-auto flex-wrap">
+                <div className="flex flex-wrap gap-2 w-full sm:w-auto">
                     {!isLecturer && (
                         <>
                             <Button
-                                size="large"
+                                size="middle"
                                 icon={<InboxOutlined />}
                                 onClick={() => { setScanResult(null); setScanError(null); setUploadedFile(null); setIsScanModalOpen(true); }}
                                 className="border-purple-600 text-purple-600 dark:border-purple-400 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-950/20 rounded-lg shadow-sm font-medium hover:border-purple-700"
@@ -613,7 +613,7 @@ const MOUList = () => {
                                 Import MOU bằng AI
                             </Button>
                             <Button
-                                size="large"
+                                size="middle"
                                 type="primary"
                                 icon={<PlusOutlined />}
                                 onClick={() => { setEditingId(null); form.resetFields(); setIsModalOpen(true); }}
@@ -636,25 +636,45 @@ const MOUList = () => {
                     className="flex-1 min-w-[200px] rounded-lg h-10"
                     allowClear
                 />
-                <Popover content={filterContent} title="Bộ lọc & Sắp xếp" trigger="click" placement="bottomRight">
-                    <Button icon={<FilterOutlined />} className="h-10 rounded-lg text-gray-600">
+                <Popover content={filterContent} title="Bộ lọc nâng cao" trigger="click" placement="bottomLeft">
+                    <Button icon={<FilterOutlined />} className="h-10 rounded-lg text-slate-600">
                         Bộ lọc {activeFilterCount > 0 && <Badge count={activeFilterCount} size="small" offset={[2, -2]} style={{ backgroundColor: '#1677ff' }} />}
                     </Button>
                 </Popover>
             </div>
 
-            {/* Action Bar for Bulk Selection */}
+            {/* Floating Action Bar for Bulk Selection */}
             {selectedRowKeys.length > 0 && (
-                <div className="bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800/50 rounded-lg p-3 mb-4 flex justify-between items-center animate-fade-in">
-                    <span className="text-red-700 dark:text-red-400 font-medium ml-2">Đã chọn {selectedRowKeys.length} biên bản MOU</span>
-                    <Button size="small" danger icon={<DeleteOutlined />} onClick={handleBulkDelete}>
-                        Xóa đã chọn
-                    </Button>
+                <div className="fixed bottom-6 left-4 right-4 md:left-1/2 md:right-auto md:-translate-x-1/2 md:w-[600px] z-50 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md border border-slate-200 dark:border-gray-800 shadow-[0_10px_30px_rgba(0,0,0,0.15)] dark:shadow-[0_10px_30px_rgba(0,0,0,0.5)] rounded-2xl p-4 flex items-center justify-between gap-4 animate-fade-in-up md:animate-fade-in-up-centered">
+                    <div className="flex items-center gap-2">
+                        <span className="bg-red-100 dark:bg-red-950 text-red-700 dark:text-red-400 text-xs font-bold px-2.5 py-1 rounded-full">
+                            {selectedRowKeys.length}
+                        </span>
+                        <span className="text-slate-700 dark:text-gray-200 text-sm font-semibold hidden xs:inline">Biên bản MOU đã chọn</span>
+                    </div>
+                    <div className="flex items-center gap-2 flex-1 justify-end">
+                        <Button 
+                            type="primary"
+                            danger 
+                            icon={<DeleteOutlined />} 
+                            onClick={handleBulkDelete}
+                            className="flex items-center justify-center font-medium"
+                        >
+                            Xóa đã chọn
+                        </Button>
+                        <Button 
+                            type="text" 
+                            onClick={() => setSelectedRowKeys([])}
+                            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                        >
+                            Hủy
+                        </Button>
+                    </div>
                 </div>
             )}
 
-            {/* Table */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-slate-200 dark:border-gray-700 overflow-hidden">
+            {/* Desktop View */}
+            <div className="hidden md:block bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-slate-200 dark:border-gray-700 overflow-hidden">
                 <Table
                     rowSelection={isLecturer ? null : {
                         selectedRowKeys,
@@ -669,6 +689,109 @@ const MOUList = () => {
                     className="border-none"
                     scroll={{ x: 'max-content' }}
                 />
+            </div>
+
+            {/* Mobile View */}
+            <div className="block md:hidden space-y-4">
+                {!isLecturer && !loading && filteredData.length > 0 && (
+                    <div className="bg-slate-50 dark:bg-gray-800 p-3 rounded-lg border border-slate-200 dark:border-gray-700 mb-2 flex items-center justify-between">
+                        <Checkbox
+                            checked={filteredData.length > 0 && selectedRowKeys.length === filteredData.length}
+                            indeterminate={selectedRowKeys.length > 0 && selectedRowKeys.length < filteredData.length}
+                            onChange={(e) => {
+                                if (e.target.checked) {
+                                    setSelectedRowKeys(filteredData.map(mou => mou.id));
+                                } else {
+                                    setSelectedRowKeys([]);
+                                }
+                            }}
+                        >
+                            Chọn tất cả ({filteredData.length} biên bản)
+                        </Checkbox>
+                    </div>
+                )}
+
+                {loading ? (
+                    <div className="flex justify-center p-10"><Spin size="large" /></div>
+                ) : filteredData.length === 0 ? (
+                    <Card className="text-center py-6 text-gray-400">Không có dữ liệu</Card>
+                ) : (
+                    filteredData.map(record => {
+                        const isChecked = selectedRowKeys.includes(record.id);
+                        return (
+                            <Card
+                                key={record.id}
+                                className={`shadow-sm border rounded-xl bg-white dark:bg-gray-800 transition-colors ${
+                                    isChecked 
+                                        ? 'border-blue-400 dark:border-blue-500 bg-blue-50/5 dark:bg-blue-955/5' 
+                                        : 'border-slate-200 dark:border-gray-700'
+                                } ${record.is_deleted === 1 ? 'opacity-65 bg-red-50/10' : ''}`}
+                                title={
+                                    <div className="flex items-center gap-3 w-full">
+                                        {!isLecturer && record.is_deleted !== 1 && (
+                                            <Checkbox
+                                                checked={isChecked}
+                                                onChange={(e) => {
+                                                    if (e.target.checked) {
+                                                        setSelectedRowKeys([...selectedRowKeys, record.id]);
+                                                    } else {
+                                                        setSelectedRowKeys(selectedRowKeys.filter(key => key !== record.id));
+                                                    }
+                                                }}
+                                            />
+                                        )}
+                                        <span className="font-semibold text-blue-600 truncate flex-1">
+                                            {record.mou_code}
+                                        </span>
+                                        {record.is_deleted === 1 && <Tag color="red">Đã xóa</Tag>}
+                                    </div>
+                                }
+                            >
+                            <div className="space-y-2 text-sm">
+                                <div>
+                                    <span className="text-gray-400 font-medium">Đối tác:</span>{' '}
+                                    <span className="text-slate-800 dark:text-gray-200 font-semibold">{record.enterprise_name}</span>
+                                </div>
+                                {record.activity_title && (
+                                    <div>
+                                        <span className="text-gray-400 font-medium">Hoạt động:</span>{' '}
+                                        <Tag color="purple" className="m-0 text-xs whitespace-normal">{record.activity_title}</Tag>
+                                    </div>
+                                )}
+                                <div>
+                                    <span className="text-gray-400 font-medium">Ngày ký:</span>{' '}
+                                    <span className="text-slate-700 dark:text-gray-300">{record.signing_date ? dayjs(record.signing_date).format('DD/MM/YYYY') : '---'}</span>
+                                </div>
+                                {record.executing_unit_name && (
+                                    <div>
+                                        <span className="text-gray-400 font-medium">Đơn vị:</span>{' '}
+                                        <span className="text-slate-700 dark:text-gray-300">{record.executing_unit_name}</span>
+                                    </div>
+                                )}
+                                <div className="flex justify-end gap-3 pt-2 border-t border-gray-100 dark:border-gray-700 mt-2">
+                                    {record.working_dir && (
+                                        <Button type="text" icon={<LinkOutlined />} onClick={() => window.open(record.working_dir, '_blank')} />
+                                    )}
+                                    <Button
+                                        type="text"
+                                        icon={record.file_url ? <InboxOutlined className="text-purple-500" /> : <FilePdfOutlined className="text-red-500" />}
+                                        loading={exportingId === record.id}
+                                        onClick={() => handleSmartPdfAction(record)}
+                                    />
+                                    {!isLecturer && record.is_deleted !== 1 && (
+                                        <>
+                                            <Button type="text" icon={<EditOutlined className="text-blue-500" />} onClick={() => openEditModal(record)} />
+                                            <Button type="text" danger icon={<DeleteOutlined />} onClick={() => handleDelete(record.id)} />
+                                        </>
+                                    )}
+                                    {record.is_deleted === 1 && (
+                                        <Button type="primary" size="small" className="bg-green-600 hover:bg-green-500 text-white border-0 rounded-md" onClick={() => handleRestore(record.id)}>Khôi phục</Button>
+                                    )}
+                                </div>
+                            </div>
+                        </Card>
+                    );
+                }))}
             </div>
 
             {/* ==================== ADD/EDIT MODAL ==================== */}

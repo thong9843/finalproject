@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Table, Tag, Form, Input, Select, Button, Modal, message, Space, Drawer, Timeline, Row, Col, DatePicker, Descriptions, Switch, Popover, Badge, Divider, App as AntApp } from 'antd';
+import { Table, Tag, Form, Input, Select, Button, Modal, message, Space, Drawer, Timeline, Row, Col, DatePicker, Descriptions, Switch, Popover, Badge, Divider, App as AntApp, Spin, Card, Checkbox } from 'antd';
 import { EditOutlined, DeleteOutlined, PlusOutlined, UnorderedListOutlined, UploadOutlined, DownloadOutlined, UserOutlined, HomeOutlined, FilterOutlined, SortAscendingOutlined, ClearOutlined, SearchOutlined, BankOutlined } from '@ant-design/icons';
 import ImportModal from '../components/ImportModal';
 import api from '../utils/api';
@@ -462,18 +462,18 @@ const EnterpriseList = () => {
         <div>
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
                 <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-red-50 dark:bg-red-950/30 text-vluRed dark:text-red-400 rounded-2xl flex items-center justify-center shadow-sm flex-shrink-0">
-                        <BankOutlined className="text-2xl" />
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-red-50 dark:bg-red-950/30 text-vluRed dark:text-red-400 rounded-xl sm:rounded-2xl flex items-center justify-center shadow-sm flex-shrink-0">
+                        <BankOutlined className="text-xl sm:text-2xl" />
                     </div>
                     <div>
-                        <h1 className="text-2xl font-bold text-slate-800 dark:text-gray-100 m-0">Quản lý Doanh nghiệp</h1>
-                        <p className="text-sm text-slate-500 m-0 mt-0.5">Cập nhật thông tin Doanh nghiệp & Đầu mối liên hệ Đối tác</p>
+                        <h1 className="text-xl sm:text-2xl font-bold text-slate-800 dark:text-gray-100 m-0">Quản lý Doanh nghiệp</h1>
+                        <p className="text-xs sm:text-sm text-slate-500 m-0 mt-0.5">Cập nhật thông tin Doanh nghiệp & Đầu mối liên hệ Đối tác</p>
                     </div>
                 </div>
-                <div className="flex gap-3">
+                <div className="flex flex-wrap gap-2 w-full sm:w-auto">
                     {!isLecturer && (
                         <Button
-                            size="large"
+                            size="middle"
                             icon={<UploadOutlined />}
                             onClick={() => setShowImport(true)}
                             className="border-purple-600 text-purple-600 dark:border-purple-400 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-950/20 rounded-lg shadow-sm font-medium hover:border-purple-700"
@@ -482,7 +482,7 @@ const EnterpriseList = () => {
                         </Button>
                     )}
                     <Button
-                        size="large"
+                        size="middle"
                         icon={<DownloadOutlined />}
                         onClick={handleExport}
                         className="border-emerald-600 text-emerald-600 dark:border-emerald-400 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 rounded-lg shadow-sm font-medium hover:border-emerald-700"
@@ -491,7 +491,7 @@ const EnterpriseList = () => {
                     </Button>
                     {!isLecturer && (
                         <Button
-                            size="large"
+                            size="middle"
                             type="primary"
                             className="bg-vluRed hover:bg-vluRedHover border-none text-white rounded-lg shadow-sm font-medium"
                             icon={<PlusOutlined />}
@@ -546,39 +546,193 @@ const EnterpriseList = () => {
                 </Popover>
             </div>
 
-            {/* Action Bar for Bulk Selection */}
+            {/* Floating Action Bar for Bulk Selection */}
             {selectedRowKeys.length > 0 && (
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4 flex justify-between items-center animate-fade-in">
-                    <span className="text-blue-700 font-medium ml-2">Đã chọn {selectedRowKeys.length} doanh nghiệp</span>
-                    <Space>
+                <div className="fixed bottom-6 left-4 right-4 md:left-1/2 md:right-auto md:-translate-x-1/2 md:w-[600px] z-50 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md border border-slate-200 dark:border-gray-800 shadow-[0_10px_30px_rgba(0,0,0,0.15)] dark:shadow-[0_10px_30px_rgba(0,0,0,0.5)] rounded-2xl p-4 flex items-center justify-between gap-4 animate-fade-in-up md:animate-fade-in-up-centered">
+                    <div className="flex items-center gap-2">
+                        <span className="bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-400 text-xs font-bold px-2.5 py-1 rounded-full">
+                            {selectedRowKeys.length}
+                        </span>
+                        <span className="text-slate-700 dark:text-gray-200 text-sm font-semibold hidden xs:inline">Doanh nghiệp đã chọn</span>
+                    </div>
+                    <div className="flex items-center gap-2 flex-1 justify-end">
                         <Select
                             placeholder="Đổi trạng thái..."
                             onChange={handleBulkUpdateStatus}
-                            className="w-48"
-                            size="small"
+                            className="w-36 sm:w-44"
+                            size="middle"
                         >
                             {Object.keys(statusColors).map(s => <Option key={s} value={s}>{s}</Option>)}
                         </Select>
-                        <Button size="small" danger icon={<DeleteOutlined />} onClick={handleBulkDelete}>
-                            Xóa đã chọn
+                        <Button 
+                            type="primary"
+                            danger 
+                            icon={<DeleteOutlined />} 
+                            onClick={handleBulkDelete}
+                            className="flex items-center justify-center font-medium"
+                        >
+                            Xóa
                         </Button>
-                    </Space>
+                        <Button 
+                            type="text" 
+                            onClick={() => setSelectedRowKeys([])}
+                            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                        >
+                            Hủy
+                        </Button>
+                    </div>
                 </div>
             )}
 
-            <Table
-                rowSelection={isLecturer ? null : {
-                    selectedRowKeys,
-                    onChange: setSelectedRowKeys,
-                }}
-                columns={columns}
-                dataSource={filteredData}
-                rowKey="id"
-                loading={loading}
-                rowClassName={(record) => record.is_deleted === 1 ? 'opacity-65 bg-red-50/20 dark:bg-red-950/10' : ''}
-                className="shadow-sm border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-xl overflow-hidden"
-                scroll={{ x: 'max-content' }}
-                pagination={{ pageSize: 12 }} />
+            {/* Desktop View */}
+            <div className="hidden md:block">
+                <Table
+                    rowSelection={isLecturer ? null : {
+                        selectedRowKeys,
+                        onChange: setSelectedRowKeys,
+                    }}
+                    columns={columns}
+                    dataSource={filteredData}
+                    rowKey="id"
+                    loading={loading}
+                    rowClassName={(record) => record.is_deleted === 1 ? 'opacity-65 bg-red-50/20 dark:bg-red-955/10' : ''}
+                    className="shadow-sm border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-xl overflow-hidden"
+                    scroll={{ x: 'max-content' }}
+                    pagination={{ pageSize: 12 }} />
+            </div>
+
+            {/* Mobile View */}
+            <div className="block md:hidden space-y-4">
+                {!isLecturer && !loading && filteredData.length > 0 && (
+                    <div className="bg-slate-50 dark:bg-gray-800 p-3 rounded-lg border border-slate-200 dark:border-gray-700 mb-2 flex items-center justify-between">
+                        <Checkbox
+                            checked={filteredData.length > 0 && selectedRowKeys.length === filteredData.length}
+                            indeterminate={selectedRowKeys.length > 0 && selectedRowKeys.length < filteredData.length}
+                            onChange={(e) => {
+                                if (e.target.checked) {
+                                    setSelectedRowKeys(filteredData.map(ent => ent.id));
+                                } else {
+                                    setSelectedRowKeys([]);
+                                }
+                            }}
+                        >
+                            Chọn tất cả ({filteredData.length} DN)
+                        </Checkbox>
+                    </div>
+                )}
+
+                {loading ? (
+                    <div className="flex justify-center p-10"><Spin size="large" /></div>
+                ) : filteredData.length === 0 ? (
+                    <Card className="text-center py-6 text-gray-400">Không có dữ liệu</Card>
+                ) : (
+                    filteredData.map(record => {
+                        const isChecked = selectedRowKeys.includes(record.id);
+                        return (
+                            <Card
+                                key={record.id}
+                                className={`shadow-sm border rounded-xl bg-white dark:bg-gray-800 transition-colors ${
+                                    isChecked 
+                                        ? 'border-blue-400 dark:border-blue-500 bg-blue-50/5 dark:bg-blue-955/5' 
+                                        : 'border-slate-200 dark:border-gray-700'
+                                } ${record.is_deleted === 1 ? 'opacity-65 bg-red-50/10' : ''}`}
+                                title={
+                                    <div className="flex items-center gap-3 w-full">
+                                        {!isLecturer && record.is_deleted !== 1 && (
+                                            <Checkbox
+                                                checked={isChecked}
+                                                onChange={(e) => {
+                                                    if (e.target.checked) {
+                                                        setSelectedRowKeys([...selectedRowKeys, record.id]);
+                                                    } else {
+                                                        setSelectedRowKeys(selectedRowKeys.filter(key => key !== record.id));
+                                                    }
+                                                }}
+                                            />
+                                        )}
+                                        <span className="font-semibold text-slate-800 dark:text-gray-100 truncate flex-1">
+                                            {record.name}
+                                        </span>
+                                        <div>
+                                            {record.is_deleted === 1 ? <Tag color="red">Đã xóa</Tag> : <Tag color={statusColors[record.status]}>{record.status}</Tag>}
+                                        </div>
+                                    </div>
+                                }
+                            >
+                            <div className="space-y-2 text-sm">
+                                {record.tax_code && (
+                                    <div>
+                                        <span className="text-gray-400 font-medium">MST:</span>{' '}
+                                        <span className="text-slate-700 dark:text-gray-300 font-semibold">{record.tax_code}</span>
+                                    </div>
+                                )}
+                                <div>
+                                    <span className="text-gray-400 font-medium">Đại diện:</span>{' '}
+                                    <span className="text-slate-700 dark:text-gray-300">
+                                        {record.rep_title} {record.rep_full_name} {record.rep_role && `(${record.rep_role})`}
+                                    </span>
+                                </div>
+                                {record.fields_text && (
+                                    <div>
+                                        <span className="text-gray-400 font-medium">Lĩnh vực:</span>{' '}
+                                        <div className="inline-flex flex-wrap gap-1 mt-0.5">
+                                            {record.fields_text.split(', ').map((f, i) => <Tag key={i} color="blue" className="m-0 text-xs">{f}</Tag>)}
+                                        </div>
+                                    </div>
+                                )}
+                                {record.scale_name && (
+                                    <div>
+                                        <span className="text-gray-400 font-medium">Quy mô:</span>{' '}
+                                        <Tag color="geekblue">{record.scale_name}</Tag>
+                                    </div>
+                                )}
+                                {record.faculty_name && (
+                                    <div>
+                                        <span className="text-gray-400 font-medium">Khoa quản lý:</span>{' '}
+                                        <Tag color="cyan">{record.faculty_name}</Tag>
+                                    </div>
+                                )}
+                                <div className="flex justify-end gap-3 pt-2 border-t border-gray-100 dark:border-gray-700 mt-2">
+                                    <Button type="text" icon={<UnorderedListOutlined />} onClick={() => handleViewTimeline(record)} />
+                                    {!isLecturer && record.is_deleted !== 1 && (
+                                        <Button type="text" className="text-blue-500" icon={<EditOutlined />} onClick={() => {
+                                            setEditingId(record.id);
+                                            form.setFieldsValue({
+                                                name: record.name,
+                                                tax_code: record.tax_code,
+                                                scale_id: record.scale_id,
+                                                is_hcmc: record.is_hcmc,
+                                                status: record.status,
+                                                department_id: record.department_id,
+                                                field_ids: record.field_ids ? record.field_ids.split(',').map(Number) : [],
+                                                faculty_id: record.faculty_id,
+                                                rep_title: record.rep_title,
+                                                rep_full_name: record.rep_full_name,
+                                                rep_role: record.rep_role,
+                                                rep_phone: record.rep_phone,
+                                                rep_email: record.rep_email,
+                                                building_street: record.building_street,
+                                                district: record.district,
+                                                province: record.province,
+                                                country: record.country,
+                                            });
+                                            setIsModalVisible(true);
+                                        }} />
+                                    )}
+                                    {!isLecturer && record.is_deleted !== 1 && (
+                                        <Button type="text" danger icon={<DeleteOutlined />} onClick={() => {
+                                            modal.confirm({ title: 'Bạn có chắc chắn muốn xóa?', okButtonProps: { danger: true, className: '!bg-red-600 hover:!bg-red-500 text-white' }, onOk: () => handleDelete(record.id) });
+                                        }} />
+                                    )}
+                                    {record.is_deleted === 1 && (
+                                        <Button type="primary" size="small" className="bg-green-600 hover:bg-green-500 text-white border-0 rounded-md" onClick={() => handleRestore(record.id)}>Khôi phục</Button>
+                                    )}
+                                </div>
+                            </div>
+                        </Card>
+                    );
+                }))}
+            </div>
 
             <Modal
                 title={<div className="text-xl font-bold">{editingId ? 'Chỉnh sửa Đối Tác' : 'Thêm mới Doanh Nghiệp'}</div>}
@@ -725,7 +879,7 @@ const EnterpriseList = () => {
 
             <Drawer
                 title={<span className="font-bold flex items-center gap-2"><UnorderedListOutlined /> {selectedEnterprise?.name}</span>}
-                placement="right" width={720}
+                placement="right" style={{ width: 720 }}
                 onClose={() => setIsDrawerVisible(false)}
                 open={isDrawerVisible} className="bg-slate-50 dark:bg-gray-800/50"
             >

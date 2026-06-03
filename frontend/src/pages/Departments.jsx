@@ -135,12 +135,12 @@ const Departments = () => {
         <div>
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
                 <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-red-50 dark:bg-red-950/30 text-vluRed dark:text-red-400 rounded-2xl flex items-center justify-center shadow-sm flex-shrink-0">
-                        <ApartmentOutlined className="text-2xl" />
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-red-50 dark:bg-red-950/30 text-vluRed dark:text-red-400 rounded-xl sm:rounded-2xl flex items-center justify-center shadow-sm flex-shrink-0">
+                        <ApartmentOutlined className="text-xl sm:text-2xl" />
                     </div>
                     <div>
-                        <h1 className="text-2xl font-bold text-slate-800 dark:text-gray-100 m-0">Bộ môn phân loại</h1>
-                        <p className="text-sm text-slate-500 m-0 mt-0.5">Quản lý các bộ môn trực thuộc khoa để phân loại hoạt động và doanh nghiệp</p>
+                        <h1 className="text-xl sm:text-2xl font-bold text-slate-800 dark:text-gray-100 m-0">Bộ môn phân loại</h1>
+                        <p className="text-xs sm:text-sm text-slate-500 m-0 mt-0.5">Quản lý các bộ môn trực thuộc khoa để phân loại hoạt động và doanh nghiệp</p>
                     </div>
                 </div>
                 {!isLecturer && (
@@ -149,7 +149,7 @@ const Departments = () => {
                         type="primary" 
                         icon={<PlusOutlined />} 
                         onClick={() => { setEditingId(null); form.resetFields(); setIsModalOpen(true); }}
-                        className="bg-vluRed hover:bg-vluRedHover border-none text-white rounded-lg shadow-sm font-medium"
+                        className="bg-vluRed hover:bg-vluRedHover border-none text-white rounded-lg shadow-sm font-medium w-full sm:w-auto"
                     >
                         Thêm mới
                     </Button>

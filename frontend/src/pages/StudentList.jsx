@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Table, Tag, Card, Row, Col, Statistic, Form, Input, Select, Button, Modal, message, Space, DatePicker, InputNumber, Popover, Badge, Divider, Switch, App as AntApp } from 'antd';
+import { Table, Tag, Card, Row, Col, Statistic, Form, Input, Select, Button, Modal, message, Space, DatePicker, InputNumber, Popover, Badge, Divider, Switch, App as AntApp, Spin, Checkbox } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, SearchOutlined, SyncOutlined, ClockCircleOutlined, CheckCircleOutlined, TeamOutlined, UploadOutlined, DownloadOutlined, FilterOutlined, SortAscendingOutlined, ClearOutlined, CalendarOutlined } from '@ant-design/icons';
 import ImportModal from '../components/ImportModal';
 import api from '../utils/api';
@@ -489,17 +489,17 @@ const StudentList = () => {
             {/* Header */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
                 <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-red-50 dark:bg-red-950/30 text-vluRed dark:text-red-400 rounded-2xl flex items-center justify-center shadow-sm flex-shrink-0">
-                        <TeamOutlined className="text-2xl" />
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-red-50 dark:bg-red-950/30 text-vluRed dark:text-red-400 rounded-xl sm:rounded-2xl flex items-center justify-center shadow-sm flex-shrink-0">
+                        <TeamOutlined className="text-xl sm:text-2xl" />
                     </div>
                     <div>
-                        <h1 className="text-2xl font-bold text-slate-800 dark:text-gray-100 m-0">Quản lý sinh viên</h1>
-                        <p className="text-sm text-slate-500 m-0 mt-0.5">{data.length} sinh viên · {stats?.active || 0} đang thực tập</p>
+                        <h1 className="text-xl sm:text-2xl font-bold text-slate-800 dark:text-gray-100 m-0">Quản lý sinh viên</h1>
+                        <p className="text-xs sm:text-sm text-slate-500 m-0 mt-0.5">{data.length} sinh viên · {stats?.active || 0} đang thực tập</p>
                     </div>
                 </div>
-                <div className="flex gap-3">
+                <div className="flex flex-wrap gap-2 w-full sm:w-auto">
                     <Button 
-                        size="large"
+                        size="middle"
                         icon={<UploadOutlined />} 
                         onClick={() => setShowImport(true)} 
                         className="border-purple-600 text-purple-600 dark:border-purple-400 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-950/20 rounded-lg shadow-sm font-medium hover:border-purple-700"
@@ -507,7 +507,7 @@ const StudentList = () => {
                         Import
                     </Button>
                     <Button 
-                        size="large"
+                        size="middle"
                         icon={<DownloadOutlined />} 
                         onClick={handleExport}
                         className="border-emerald-600 text-emerald-600 dark:border-emerald-400 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 rounded-lg shadow-sm font-medium hover:border-emerald-700"
@@ -515,7 +515,7 @@ const StudentList = () => {
                         Xuất Excel
                     </Button>
                     <Button 
-                        size="large"
+                        size="middle"
                         type="primary" 
                         className="bg-vluRed hover:bg-vluRedHover border-none text-white rounded-lg shadow-sm font-medium"
                         icon={<PlusOutlined />} 
@@ -529,49 +529,49 @@ const StudentList = () => {
             {/* Stats Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
                 {/* Green Card */}
-                <div className="group relative overflow-hidden bg-gradient-to-br from-emerald-50 to-emerald-100/30 dark:from-emerald-950/20 dark:to-emerald-900/10 rounded-2xl p-5 border-l-4 border-l-emerald-500 border-t border-r border-b border-slate-100 dark:border-emerald-900/30 transition-all duration-300 hover:-translate-y-1 hover:shadow-md cursor-default">
+                <div className="group relative overflow-hidden bg-gradient-to-br from-emerald-50 to-emerald-100/30 dark:from-emerald-950/20 dark:to-emerald-900/10 rounded-2xl p-4 sm:p-5 border-l-4 border-l-emerald-500 border-t border-r border-b border-slate-100 dark:border-emerald-900/30 transition-all duration-300 hover:-translate-y-1 hover:shadow-md cursor-default">
                     <div className="absolute -right-2 -bottom-2 opacity-10 transition-transform duration-500 group-hover:scale-110">
-                        <SyncOutlined className="text-6xl text-emerald-600 dark:text-emerald-400" />
+                        <SyncOutlined className="text-5xl sm:text-6xl text-emerald-600 dark:text-emerald-400" />
                     </div>
-                    <div className="flex items-center gap-3.5 relative z-10">
-                        <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center shadow-md shadow-emerald-200 dark:shadow-none group-hover:scale-105 transition-transform duration-300">
-                            <SyncOutlined className="text-white text-lg" />
+                    <div className="flex items-center gap-3 relative z-10">
+                        <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-lg sm:rounded-xl flex items-center justify-center shadow-md shadow-emerald-200 dark:shadow-none group-hover:scale-105 transition-transform duration-300">
+                            <SyncOutlined className="text-white text-base sm:text-lg" />
                         </div>
                         <div>
-                            <div className="text-2xl sm:text-3xl font-extrabold text-emerald-800 dark:text-emerald-400 leading-none mb-1">{stats?.active || 0}</div>
-                            <div className="text-xs font-semibold text-emerald-600/80 uppercase tracking-wider">Đang thực tập</div>
+                            <div className="text-xl sm:text-2xl md:text-3xl font-extrabold text-emerald-800 dark:text-emerald-400 leading-none mb-1">{stats?.active || 0}</div>
+                            <div className="text-[10px] sm:text-xs font-semibold text-emerald-600/80 uppercase tracking-wider">Đang thực tập</div>
                         </div>
                     </div>
                 </div>
 
                 {/* Orange Card */}
-                <div className="group relative overflow-hidden bg-gradient-to-br from-orange-50 to-orange-100/30 dark:from-orange-950/20 dark:to-orange-900/10 rounded-2xl p-5 border-l-4 border-l-orange-500 border-t border-r border-b border-slate-100 dark:border-orange-900/30 transition-all duration-300 hover:-translate-y-1 hover:shadow-md cursor-default">
+                <div className="group relative overflow-hidden bg-gradient-to-br from-orange-50 to-orange-100/30 dark:from-orange-950/20 dark:to-orange-900/10 rounded-2xl p-4 sm:p-5 border-l-4 border-l-orange-500 border-t border-r border-b border-slate-100 dark:border-orange-900/30 transition-all duration-300 hover:-translate-y-1 hover:shadow-md cursor-default">
                     <div className="absolute -right-2 -bottom-2 opacity-10 transition-transform duration-500 group-hover:scale-110">
-                        <ClockCircleOutlined className="text-6xl text-orange-600 dark:text-orange-400" />
+                        <ClockCircleOutlined className="text-5xl sm:text-6xl text-orange-600 dark:text-orange-400" />
                     </div>
-                    <div className="flex items-center gap-3.5 relative z-10">
-                        <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-amber-600 rounded-xl flex items-center justify-center shadow-md shadow-orange-200 dark:shadow-none group-hover:scale-105 transition-transform duration-300">
-                            <ClockCircleOutlined className="text-white text-lg" />
+                    <div className="flex items-center gap-3 relative z-10">
+                        <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-orange-500 to-amber-600 rounded-lg sm:rounded-xl flex items-center justify-center shadow-md shadow-orange-200 dark:shadow-none group-hover:scale-105 transition-transform duration-300">
+                            <ClockCircleOutlined className="text-white text-base sm:text-lg" />
                         </div>
                         <div>
-                            <div className="text-2xl sm:text-3xl font-extrabold text-orange-800 dark:text-orange-400 leading-none mb-1">{stats?.pending || 0}</div>
-                            <div className="text-xs font-semibold text-orange-600/80 uppercase tracking-wider">Chờ phân công</div>
+                            <div className="text-xl sm:text-2xl md:text-3xl font-extrabold text-orange-800 dark:text-orange-400 leading-none mb-1">{stats?.pending || 0}</div>
+                            <div className="text-[10px] sm:text-xs font-semibold text-orange-600/80 uppercase tracking-wider">Chờ phân công</div>
                         </div>
                     </div>
                 </div>
 
                 {/* Blue Card */}
-                <div className="group relative overflow-hidden bg-gradient-to-br from-blue-50 to-blue-100/30 dark:from-blue-950/20 dark:to-blue-900/10 rounded-2xl p-5 border-l-4 border-l-blue-500 border-t border-r border-b border-slate-100 dark:border-blue-900/30 transition-all duration-300 hover:-translate-y-1 hover:shadow-md cursor-default">
+                <div className="group relative overflow-hidden bg-gradient-to-br from-blue-50 to-blue-100/30 dark:from-blue-950/20 dark:to-blue-900/10 rounded-2xl p-4 sm:p-5 border-l-4 border-l-blue-500 border-t border-r border-b border-slate-100 dark:border-blue-900/30 transition-all duration-300 hover:-translate-y-1 hover:shadow-md cursor-default">
                     <div className="absolute -right-2 -bottom-2 opacity-10 transition-transform duration-500 group-hover:scale-110">
-                        <CheckCircleOutlined className="text-6xl text-blue-600 dark:text-blue-400" />
+                        <CheckCircleOutlined className="text-5xl sm:text-6xl text-blue-600 dark:text-blue-400" />
                     </div>
-                    <div className="flex items-center gap-3.5 relative z-10">
-                        <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-md shadow-blue-200 dark:shadow-none group-hover:scale-105 transition-transform duration-300">
-                            <CheckCircleOutlined className="text-white text-lg" />
+                    <div className="flex items-center gap-3 relative z-10">
+                        <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg sm:rounded-xl flex items-center justify-center shadow-md shadow-blue-200 dark:shadow-none group-hover:scale-105 transition-transform duration-300">
+                            <CheckCircleOutlined className="text-white text-base sm:text-lg" />
                         </div>
                         <div>
-                            <div className="text-2xl sm:text-3xl font-extrabold text-blue-800 dark:text-blue-400 leading-none mb-1">{stats?.completed || 0}</div>
-                            <div className="text-xs font-semibold text-blue-600/80 uppercase tracking-wider">Đã hoàn thành</div>
+                            <div className="text-xl sm:text-2xl md:text-3xl font-extrabold text-blue-800 dark:text-blue-400 leading-none mb-1">{stats?.completed || 0}</div>
+                            <div className="text-[10px] sm:text-xs font-semibold text-blue-600/80 uppercase tracking-wider">Đã hoàn thành</div>
                         </div>
                     </div>
                 </div>
@@ -610,30 +610,49 @@ const StudentList = () => {
                 </div>
             </div>
 
-            {/* Action Bar for Bulk Selection */}
+            {/* Floating Action Bar for Bulk Selection */}
             {selectedRowKeys.length > 0 && (
-                <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800/50 rounded-lg p-3 mb-4 flex justify-between items-center animate-fade-in">
-                    <span className="text-blue-700 dark:text-blue-400 font-medium ml-2">Đã chọn {selectedRowKeys.length} sinh viên</span>
-                    <Space>
+                <div className="fixed bottom-6 left-4 right-4 md:left-1/2 md:right-auto md:-translate-x-1/2 md:w-[600px] z-50 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md border border-slate-200 dark:border-gray-800 shadow-[0_10px_30px_rgba(0,0,0,0.15)] dark:shadow-[0_10px_30px_rgba(0,0,0,0.5)] rounded-2xl p-4 flex items-center justify-between gap-4 animate-fade-in-up md:animate-fade-in-up-centered">
+                    <div className="flex items-center gap-2">
+                        <span className="bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-400 text-xs font-bold px-2.5 py-1 rounded-full">
+                            {selectedRowKeys.length}
+                        </span>
+                        <span className="text-slate-700 dark:text-gray-200 text-sm font-semibold hidden xs:inline">Sinh viên đã chọn</span>
+                    </div>
+                    <div className="flex items-center gap-2 flex-1 justify-end">
                         <Select
                             placeholder="Đổi trạng thái..."
                             onChange={handleBulkUpdateStatus}
-                            className="w-40"
-                            size="small"
+                            className="w-36 sm:w-40"
+                            size="middle"
                         >
                             <Option value="Đang thực tập">Đang thực tập</Option>
                             <Option value="Hoàn thành">Hoàn thành</Option>
                             <Option value="Chờ phân công">Chờ phân công</Option>
                         </Select>
-                        <Button size="small" danger icon={<DeleteOutlined />} onClick={handleBulkDelete}>
-                            Xóa đã chọn
+                        <Button 
+                            type="primary"
+                            danger 
+                            icon={<DeleteOutlined />} 
+                            onClick={handleBulkDelete}
+                            className="flex items-center justify-center font-medium"
+                        >
+                            Xóa
                         </Button>
-                    </Space>
+                        <Button 
+                            type="text" 
+                            onClick={() => setSelectedRowKeys([])}
+                            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                        >
+                            Hủy
+                        </Button>
+                    </div>
                 </div>
             )}
 
             {/* Table */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
+            {/* Desktop View */}
+            <div className="hidden md:block bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
                 <Table 
                     rowSelection={{
                         selectedRowKeys,
@@ -649,6 +668,110 @@ const StudentList = () => {
                     className="student-table"
                     size="middle"
                 />
+            </div>
+
+            {/* Mobile View */}
+            <div className="block md:hidden space-y-4">
+                {!loading && filteredData.length > 0 && (
+                    <div className="bg-slate-50 dark:bg-gray-800 p-3 rounded-lg border border-slate-200 dark:border-gray-700 mb-2 flex items-center justify-between">
+                        <Checkbox
+                            checked={filteredData.length > 0 && selectedRowKeys.length === filteredData.length}
+                            indeterminate={selectedRowKeys.length > 0 && selectedRowKeys.length < filteredData.length}
+                            onChange={(e) => {
+                                if (e.target.checked) {
+                                    setSelectedRowKeys(filteredData.map(std => std.id));
+                                } else {
+                                    setSelectedRowKeys([]);
+                                }
+                            }}
+                        >
+                            Chọn tất cả ({filteredData.length} sinh viên)
+                        </Checkbox>
+                    </div>
+                )}
+
+                {loading ? (
+                    <div className="flex justify-center p-10"><Spin size="large" /></div>
+                ) : filteredData.length === 0 ? (
+                    <Card className="text-center py-6 text-gray-400">Không có dữ liệu</Card>
+                ) : (
+                    filteredData.map(record => {
+                        const isChecked = selectedRowKeys.includes(record.id);
+                        return (
+                            <Card
+                                key={record.id}
+                                className={`shadow-sm border rounded-xl bg-white dark:bg-gray-800 transition-colors ${
+                                    isChecked 
+                                        ? 'border-blue-400 dark:border-blue-500 bg-blue-50/5 dark:bg-blue-955/5' 
+                                        : 'border-slate-200 dark:border-gray-700'
+                                } ${record.is_deleted === 1 ? 'opacity-65 bg-red-50/10' : ''}`}
+                                title={
+                                    <div className="flex items-center gap-3 w-full">
+                                        {record.is_deleted !== 1 && (
+                                            <Checkbox
+                                                checked={isChecked}
+                                                onChange={(e) => {
+                                                    if (e.target.checked) {
+                                                        setSelectedRowKeys([...selectedRowKeys, record.id]);
+                                                    } else {
+                                                        setSelectedRowKeys(selectedRowKeys.filter(key => key !== record.id));
+                                                    }
+                                                }}
+                                            />
+                                        )}
+                                        <span className="font-semibold text-slate-800 dark:text-gray-100 truncate flex-1">
+                                            {record.name}
+                                        </span>
+                                        <span className="text-xs text-gray-400">{record.student_code}</span>
+                                    </div>
+                                }
+                            >
+                            <div className="space-y-2 text-sm">
+                                <div>
+                                    <span className="text-gray-400 font-medium">Lớp:</span>{' '}
+                                    <span className="text-slate-700 dark:text-gray-300 font-semibold">{record.class}</span>
+                                    <span className="text-gray-400 font-medium ml-4">GPA:</span>{' '}
+                                    <span className="font-bold text-blue-600">{record.gpa || '---'}</span>
+                                </div>
+                                <div>
+                                    <span className="text-gray-400 font-medium">Ngành:</span>{' '}
+                                    <span className="text-slate-700 dark:text-gray-300">{record.major}</span>
+                                </div>
+                                <div>
+                                    <span className="text-gray-400 font-medium">Nơi thực tập:</span>{' '}
+                                    <span className="text-slate-700 dark:text-gray-300 font-semibold">{record.enterprise_name || 'Chưa phân công'}</span>
+                                </div>
+                                {user?.role === 'ADMIN' && record.faculty_name && (
+                                    <div>
+                                        <span className="text-gray-400 font-medium">Khoa:</span>{' '}
+                                        <Tag color="orange">{record.faculty_name}</Tag>
+                                    </div>
+                                )}
+                                <div className="flex justify-between items-center pt-2 border-t border-gray-100 dark:border-gray-700 mt-2">
+                                    <div>
+                                        {record.is_deleted === 1 ? (
+                                            <Tag color="red">Đã xóa</Tag>
+                                        ) : (
+                                            <Tag color={statusConfig[record.status]?.color || 'default'}>{record.status}</Tag>
+                                        )}
+                                    </div>
+                                    <Space>
+                                        {record.is_deleted !== 1 ? (
+                                            <>
+                                                <Button type="text" size="small" icon={<EditOutlined />} onClick={() => openEditModal(record)} />
+                                                <Button type="text" size="small" danger icon={<DeleteOutlined />} onClick={() => {
+                                                    modal.confirm({ title: 'Xác nhận xóa sinh viên này?', okButtonProps: { danger: true, className: '!bg-red-600 hover:!bg-red-500 text-white' }, onOk: () => handleDelete(record.id) });
+                                                }} />
+                                            </>
+                                        ) : (
+                                            <Button type="primary" size="small" className="bg-green-600 hover:bg-green-500 text-white border-0 rounded-md" onClick={() => handleRestore(record.id)}>Khôi phục</Button>
+                                        )}
+                                    </Space>
+                                </div>
+                            </div>
+                        </Card>
+                    );
+                }))}
             </div>
 
             {/* Modal Form */}

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Table, Button, Modal, Form, Input, Select, Space, message, Tag, Popconfirm, App as AntApp, Badge } from 'antd';
+import { Table, Button, Modal, Form, Input, Select, Space, message, Tag, Popconfirm, App as AntApp, Badge, Card, Spin } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, SearchOutlined, ClearOutlined, FilterOutlined, UserOutlined } from '@ant-design/icons';
 import api from '../utils/api';
 import dayjs from 'dayjs';
@@ -247,12 +247,12 @@ const UserList = () => {
         <div>
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
                 <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-red-50 dark:bg-red-950/30 text-vluRed dark:text-red-400 rounded-2xl flex items-center justify-center shadow-sm flex-shrink-0">
-                        <UserOutlined className="text-2xl" />
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-red-50 dark:bg-red-950/30 text-vluRed dark:text-red-400 rounded-xl sm:rounded-2xl flex items-center justify-center shadow-sm flex-shrink-0">
+                        <UserOutlined className="text-xl sm:text-2xl" />
                     </div>
                     <div>
-                        <h1 className="text-2xl font-bold text-slate-800 dark:text-gray-100 m-0">Quản lý người dùng</h1>
-                        <p className="text-sm text-slate-500 m-0 mt-0.5">Phân quyền và quản lý tài khoản người dùng hệ thống</p>
+                        <h1 className="text-xl sm:text-2xl font-bold text-slate-800 dark:text-gray-100 m-0">Quản lý người dùng</h1>
+                        <p className="text-xs sm:text-sm text-slate-500 m-0 mt-0.5">Phân quyền và quản lý tài khoản người dùng hệ thống</p>
                     </div>
                 </div>
                 <Button 
@@ -260,7 +260,7 @@ const UserList = () => {
                     icon={<PlusOutlined />} 
                     onClick={handleAdd}
                     size="large"
-                    className="bg-vluRed hover:bg-vluRedHover border-none text-white rounded-lg shadow-sm font-medium"
+                    className="bg-vluRed hover:bg-vluRedHover border-none text-white rounded-lg shadow-sm font-medium w-full sm:w-auto"
                 >
                     Thêm người dùng
                 </Button>
@@ -339,16 +339,100 @@ const UserList = () => {
                 )}
             </div>
 
-            <Table 
-                columns={columns} 
-                dataSource={filteredUsers} 
-                rowKey="id" 
-                loading={loading}
-                pagination={{ pageSize: 10 }}
-                className="shadow-sm border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-xl overflow-hidden"
-                scroll={{ x: 'max-content' }}
-                rowClassName="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-            />
+            {/* Desktop View */}
+            <div className="hidden md:block">
+                <Table 
+                    columns={columns} 
+                    dataSource={filteredUsers} 
+                    rowKey="id" 
+                    loading={loading}
+                    pagination={{ pageSize: 10 }}
+                    className="shadow-sm border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-xl overflow-hidden"
+                    scroll={{ x: 'max-content' }}
+                    rowClassName="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                />
+            </div>
+
+            {/* Mobile View */}
+            <div className="block md:hidden space-y-4">
+                {loading ? (
+                    <div className="flex justify-center p-10"><Spin size="large" /></div>
+                ) : filteredUsers.length === 0 ? (
+                    <Card className="text-center py-6 text-gray-400">Không có dữ liệu</Card>
+                ) : (
+                    filteredUsers.map(record => (
+                        <Card
+                            key={record.id}
+                            className="shadow-sm border border-slate-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800"
+                            title={
+                                <div className="flex justify-between items-center w-full">
+                                    <span className="font-semibold text-slate-800 dark:text-gray-100 truncate max-w-[180px]">
+                                        {record.full_name}
+                                    </span>
+                                    <span className="text-xs text-gray-400">ID: {record.id}</span>
+                                </div>
+                            }
+                        >
+                            <div className="space-y-2 text-sm">
+                                <div>
+                                    <span className="text-gray-400 font-medium">Email:</span>{' '}
+                                    <span className="text-slate-700 dark:text-gray-300 font-semibold">{record.email}</span>
+                                </div>
+                                <div>
+                                    <span className="text-gray-400 font-medium">Vai trò:</span>{' '}
+                                    {(() => {
+                                        let color = 'blue';
+                                        if (record.role === 'ADMIN') color = 'red';
+                                        if (record.role === 'FACULTY_MANAGER') color = 'purple';
+                                        return <Tag color={color} className="m-0 text-xs font-medium rounded-md">{record.role}</Tag>;
+                                    })()}
+                                </div>
+                                <div>
+                                    <span className="text-gray-400 font-medium">Khoa / Đơn vị:</span>{' '}
+                                    {record.role === 'ADMIN' ? (
+                                        <span className="text-gray-400 italic">Tất cả khoa</span>
+                                    ) : record.faculty_name ? (
+                                        <Tag color="cyan" className="m-0 text-xs rounded-md">{record.faculty_name}</Tag>
+                                    ) : (
+                                        <span className="text-gray-400">Không có</span>
+                                    )}
+                                </div>
+                                {record.tags && (
+                                    <div>
+                                        <span className="text-gray-400 font-medium">Nhãn dán:</span>{' '}
+                                        <div className="inline-flex flex-wrap gap-1 mt-0.5">
+                                            {record.tags.split(',').filter(Boolean).map(tag => (
+                                                <Tag key={tag} color="gold" className="m-0 text-xs px-2 py-0.5 rounded-full font-medium">
+                                                    {tag}
+                                                </Tag>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                                <div className="flex justify-end gap-3 pt-2 border-t border-gray-100 dark:border-gray-700 mt-2">
+                                    <Button 
+                                        type="text" 
+                                        icon={<EditOutlined className="text-blue-500" />} 
+                                        onClick={() => handleEdit(record)} 
+                                    />
+                                    <Button 
+                                        type="text" 
+                                        danger 
+                                        icon={<DeleteOutlined />} 
+                                        onClick={() => {
+                                            modal.confirm({ 
+                                                title: 'Bạn có chắc chắn muốn xóa người dùng này?', 
+                                                okButtonProps: { danger: true, className: '!bg-red-600 hover:!bg-red-500 text-white' }, 
+                                                onOk: () => handleDelete(record.id) 
+                                            });
+                                        }} 
+                                    />
+                                </div>
+                            </div>
+                        </Card>
+                    ))
+                )}
+            </div>
 
             <Modal
                 title={editingUser ? "Cập nhật người dùng" : "Thêm người dùng mới"}
