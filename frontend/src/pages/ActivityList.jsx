@@ -420,9 +420,14 @@ const ActivityList = () => {
         <div>
             {/* Header */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-                <div>
-                    <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100 transition-colors">Hoạt động hợp tác</h1>
-                    <p className="text-gray-400 text-sm">{data.length} hoạt động · {stats?.active || 0} đang diễn ra</p>
+                <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 bg-red-50 dark:bg-red-950/30 text-vluRed dark:text-red-400 rounded-2xl flex items-center justify-center shadow-sm flex-shrink-0">
+                        <AppstoreOutlined className="text-2xl" />
+                    </div>
+                    <div>
+                        <h1 className="text-2xl font-bold text-slate-800 dark:text-gray-100 m-0">Hoạt động hợp tác</h1>
+                        <p className="text-sm text-slate-500 m-0 mt-0.5">{data.length} hoạt động · {stats?.active || 0} đang diễn ra</p>
+                    </div>
                 </div>
                 <div className="flex gap-3">
                     {!isLecturer && (
@@ -670,7 +675,8 @@ const ActivityList = () => {
                 <Row gutter={[20, 20]}>
                     {paginatedData.map(item => {
                         const sc = statusConfig[item.status] || { colorClass: 'text-gray-500 bg-gray-50', icon: <ClockCircleOutlined /> };
-                        const tc = typeConfig[item.type] || typeConfig['Khác'];
+                        const firstType = item.type ? item.type.split(',')[0].trim() : 'Khác';
+                        const tc = typeConfig[firstType] || typeConfig['Khác'];
 
                         return (
                             <Col xs={24} sm={viewMode === 'list' ? 24 : 12} lg={viewMode === 'list' ? 24 : 8} key={item.id}>
@@ -681,21 +687,12 @@ const ActivityList = () => {
                                         setIsDrawerVisible(true);
                                     }}
                                 >
-                                    {!isLecturer && item.is_deleted !== 1 && (
-                                        <div className="absolute top-3 right-3 z-10">
-                                            <Checkbox
-                                                checked={selectedActivities.includes(item.id)}
-                                                onChange={() => handleToggleActivity(item.id)}
-                                                className="scale-110"
-                                            />
-                                        </div>
-                                    )}
                                     {/* Card Header */}
                                     <div className="p-5 pb-3 flex-1">
-                                        <div className="flex justify-between items-start mb-3 pr-6">
-                                            <div className="flex items-start gap-3 flex-1">
+                                        <div className="flex justify-between items-start mb-3">
+                                            <div className="flex items-start gap-3 flex-1 min-w-0">
                                                 <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 text-lg shadow-sm dark:shadow-none ${tc.colorClass}`}>
-                                                    {typeIcons[item.type] || '📋'}
+                                                    {typeIcons[firstType] || '📋'}
                                                 </div>
                                                 <div className="flex-1 min-w-0">
                                                     <h3 className="font-bold text-gray-800 dark:text-gray-100 text-[15px] leading-snug line-clamp-2 mb-1 transition-colors">
@@ -712,13 +709,20 @@ const ActivityList = () => {
                                                     )}
                                                 </div>
                                             </div>
-                                            <div className="flex items-center gap-1">
-                                                {item.is_deleted === 1 && <Tag color="red" className="m-0 mr-1">Đã xóa</Tag>}
+                                            <div className="flex items-center gap-2 flex-shrink-0 ml-2 mt-1">
+                                                {item.is_deleted === 1 && <Tag color="red" className="m-0 mr-1 flex-shrink-0">Đã xóa</Tag>}
                                                 <div
                                                     className={`rounded-full px-2.5 py-0.5 text-xs font-medium flex-shrink-0 border-0 ${sc.colorClass}`}
                                                 >
                                                     {item.status}
                                                 </div>
+                                                {!isLecturer && item.is_deleted !== 1 && (
+                                                    <Checkbox
+                                                        checked={selectedActivities.includes(item.id)}
+                                                        onChange={() => handleToggleActivity(item.id)}
+                                                        className="scale-110 ml-1"
+                                                    />
+                                                )}
                                             </div>
                                         </div>
 
@@ -743,11 +747,17 @@ const ActivityList = () => {
 
                                         {/* Tags */}
                                         <div className="flex gap-1.5 ml-[52px] flex-wrap">
-                                            {item.type && (
-                                                <span className={`px-2 py-0.5 rounded-md text-[10px] font-medium ${tc.colorClass}`}>
-                                                    {item.type}
-                                                </span>
-                                            )}
+                                            {item.type ? (
+                                                item.type.split(',').map(t => {
+                                                    const trimmed = t.trim();
+                                                    const tagConf = typeConfig[trimmed] || typeConfig['Khác'];
+                                                    return (
+                                                        <span key={trimmed} className={`px-2 py-0.5 rounded-md text-[10px] font-medium whitespace-nowrap ${tagConf.colorClass}`}>
+                                                            {trimmed}
+                                                        </span>
+                                                    );
+                                                })
+                                            ) : null}
                                         </div>
                                     </div>
 

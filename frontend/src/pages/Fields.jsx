@@ -1,12 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { Table, Button, Modal, Form, Input, Select, message, Space , App as AntApp } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, TagsOutlined } from '@ant-design/icons';
+import { Table, Button, Modal, Form, Input, message, Space, App as AntApp } from 'antd';
+import { PlusOutlined, EditOutlined, DeleteOutlined, CompassOutlined } from '@ant-design/icons';
 import api from '../utils/api';
 import Cookies from 'js-cookie';
 
-const { Option } = Select;
-
-const ActivityTypes = () => {
+const Fields = () => {
     const userCookie = Cookies.get('user');
     let user = null;
     try {
@@ -18,69 +16,58 @@ const ActivityTypes = () => {
 
     const [data, setData] = useState([]);
     const { modal } = AntApp.useApp();
-    const [faculties, setFaculties] = useState([]);
     const [loading, setLoading] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingId, setEditingId] = useState(null);
     const [form] = Form.useForm();
 
     useEffect(() => {
-        document.title = "Quản lý Loại hình Hoạt động | VLU Enterprise Link Manager";
-        fetchActivityTypes();
-        fetchFaculties();
+        document.title = "Quản lý Lĩnh vực / Ngành nghề | VLU Enterprise Link Manager";
+        fetchFields();
     }, []);
 
-    const fetchActivityTypes = async () => {
+    const fetchFields = async () => {
         setLoading(true);
         try {
-            const res = await api.get('/structure/activity-types');
+            const res = await api.get('/structure/fields');
             setData(res.data);
         } catch (error) {
-            message.error('Lỗi khi tải danh sách loại hoạt động');
+            message.error('Lỗi khi tải danh sách lĩnh vực');
         } finally {
             setLoading(false);
-        }
-    };
-
-    const fetchFaculties = async () => {
-        try {
-            const res = await api.get('/structure/departments');
-            setFaculties(res.data || []);
-        } catch (e) {
-            console.log(e);
         }
     };
 
     const handleSave = async (values) => {
         try {
             if (editingId) {
-                await api.put(`/structure/activity-types/${editingId}`, values);
+                await api.put(`/structure/fields/${editingId}`, values);
                 message.success('Cập nhật thành công!');
             } else {
-                await api.post('/structure/activity-types', values);
+                await api.post('/structure/fields', values);
                 message.success('Thêm mới thành công!');
             }
             setIsModalOpen(false);
             setEditingId(null);
             form.resetFields();
-            fetchActivityTypes();
+            fetchFields();
         } catch (error) {
-            message.error('Lỗi khi lưu dữ liệu!');
+            message.error(error.response?.data?.message || 'Lỗi khi lưu dữ liệu!');
         }
     };
 
     const handleDelete = (id) => {
         modal.confirm({
             title: 'Xác nhận xóa?',
-            content: 'Loại hoạt động này sẽ bị xóa khỏi hệ thống.',
+            content: 'Lĩnh vực này sẽ bị xóa khỏi hệ thống.',
             okButtonProps: { danger: true, className: '!bg-red-600 hover:!bg-red-500 text-white' },
             onOk: async () => {
                 try {
-                    await api.delete(`/structure/activity-types/${id}`);
+                    await api.delete(`/structure/fields/${id}`);
                     message.success('Xóa thành công!');
-                    fetchActivityTypes();
+                    fetchFields();
                 } catch (error) {
-                    message.error('Lỗi khi xóa!');
+                    message.error(error.response?.data?.message || 'Lỗi khi xóa!');
                 }
             }
         });
@@ -100,15 +87,9 @@ const ActivityTypes = () => {
             width: 80,
         },
         {
-            title: 'Tên loại hoạt động',
+            title: 'Tên Lĩnh vực / Ngành nghề',
             dataIndex: 'name',
             key: 'name',
-        },
-        {
-            title: 'Khoa áp dụng (Trống = Chung)',
-            dataIndex: 'faculty_name',
-            key: 'faculty_name',
-            render: (text) => text || <span className="text-gray-400 italic">Dùng chung toàn trường</span>
         },
         ...(!isLecturer ? [{
             title: 'Thao tác',
@@ -128,11 +109,11 @@ const ActivityTypes = () => {
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
                 <div className="flex items-center gap-3">
                     <div className="w-12 h-12 bg-red-50 dark:bg-red-950/30 text-vluRed dark:text-red-400 rounded-2xl flex items-center justify-center shadow-sm flex-shrink-0">
-                        <TagsOutlined className="text-2xl" />
+                        <CompassOutlined className="text-2xl" />
                     </div>
                     <div>
-                        <h1 className="text-2xl font-bold text-slate-800 dark:text-gray-100 m-0">Loại hình hoạt động</h1>
-                        <p className="text-sm text-slate-500 m-0 mt-0.5">Quản lý danh mục loại hình hoạt động hợp tác của trường</p>
+                        <h1 className="text-2xl font-bold text-slate-800 dark:text-gray-100 m-0">Lĩnh vực / Ngành nghề</h1>
+                        <p className="text-sm text-slate-500 m-0 mt-0.5">Quản lý danh mục các lĩnh vực hoạt động, ngành nghề của doanh nghiệp đối tác</p>
                     </div>
                 </div>
                 {!isLecturer && (
@@ -161,21 +142,15 @@ const ActivityTypes = () => {
             </div>
 
             <Modal
-                title={editingId ? "Chỉnh sửa Loại Hoạt động" : "Thêm mới Loại Hoạt động"}
+                title={editingId ? "Chỉnh sửa Lĩnh vực" : "Thêm mới Lĩnh vực"}
                 open={isModalOpen}
                 onCancel={() => setIsModalOpen(false)}
                 footer={null}
                 destroyOnClose
             >
                 <Form layout="vertical" form={form} onFinish={handleSave} className="mt-4">
-                    <Form.Item name="name" label="Tên Loại Hoạt động" rules={[{ required: true, message: 'Vui lòng nhập tên!' }]}>
+                    <Form.Item name="name" label="Tên Lĩnh vực / Ngành nghề" rules={[{ required: true, message: 'Vui lòng nhập tên!' }]}>
                         <Input placeholder="Nhập tên..." size="large" className="rounded-lg" />
-                    </Form.Item>
-                    <Form.Item name="faculty_id" label="Khoa áp dụng đặc thù (Bỏ trống nếu là loại chung)">
-                        <Select allowClear placeholder="Chọn Khoa..." size="large" className="rounded-lg">
-                            {/* faculties data would be populated here if we fetch it properly. Currently static fallback for UI. */}
-                            {faculties.map(f => <Option key={f.id} value={f.id}>{f.name}</Option>)}
-                        </Select>
                     </Form.Item>
                     <div className="flex justify-end gap-3 pt-4 border-t border-slate-100 dark:border-gray-700 mt-6">
                         <Button onClick={() => setIsModalOpen(false)} size="large" className="rounded-lg">Hủy</Button>
@@ -189,4 +164,4 @@ const ActivityTypes = () => {
     );
 };
 
-export default ActivityTypes;
+export default Fields;

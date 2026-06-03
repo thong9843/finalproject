@@ -6,7 +6,8 @@ import {
     AppstoreOutlined,
     TeamOutlined,
     CalendarOutlined,
-    RightOutlined
+    RightOutlined,
+    DashboardOutlined
 } from '@ant-design/icons';
 import api from '../utils/api';
 import { Doughnut, Bar } from 'react-chartjs-2';
@@ -225,9 +226,16 @@ const Dashboard = () => {
 
     return (
         <div>
-            <div className="mb-8">
-                <AntTitle level={2} className="!mb-1 !text-gray-800 dark:!text-gray-100">Tổng quan hệ thống</AntTitle>
-                <Text type="secondary">Theo dõi các chỉ số quan trọng và hoạt động hợp tác doanh nghiệp</Text>
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+                <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 bg-red-50 dark:bg-red-950/30 text-vluRed dark:text-red-400 rounded-2xl flex items-center justify-center shadow-sm flex-shrink-0">
+                        <DashboardOutlined className="text-2xl" />
+                    </div>
+                    <div>
+                        <h1 className="text-2xl font-bold text-slate-800 dark:text-gray-100 m-0">Tổng quan hệ thống</h1>
+                        <p className="text-sm text-slate-500 m-0 mt-0.5">Theo dõi các chỉ số quan trọng và hoạt động hợp tác doanh nghiệp</p>
+                    </div>
+                </div>
             </div>
 
             {/* Period Selector */}

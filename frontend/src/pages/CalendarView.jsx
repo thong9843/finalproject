@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, Badge, Modal, Form, Input, Select, DatePicker, TimePicker, Button, Space, Typography, Spin, Tag, List, message, Popconfirm } from 'antd';
-import { PlusOutlined, DeleteOutlined, EditOutlined, EyeOutlined, DownloadOutlined } from '@ant-design/icons';
+import { PlusOutlined, DeleteOutlined, EditOutlined, EyeOutlined, DownloadOutlined, CalendarOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import api from '../utils/api';
 import * as XLSX from 'xlsx';
@@ -214,8 +214,16 @@ const CalendarView = () => {
 
     return (
         <div>
-            <div className="flex justify-between items-center mb-6">
-                <Title level={3} className="!m-0">Lịch sự kiện</Title>
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+                <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 bg-red-50 dark:bg-red-950/30 text-vluRed dark:text-red-400 rounded-2xl flex items-center justify-center shadow-sm flex-shrink-0">
+                        <CalendarOutlined className="text-2xl" />
+                    </div>
+                    <div>
+                        <h1 className="text-2xl font-bold text-slate-800 dark:text-gray-100 m-0">Lịch hoạt động</h1>
+                        <p className="text-sm text-slate-500 m-0 mt-0.5">Xem lịch trình các hoạt động hợp tác doanh nghiệp trực quan</p>
+                    </div>
+                </div>
                 <div className="flex gap-3">
                     <Button 
                         size="large"

@@ -5,7 +5,7 @@
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
-  background-color: #f0f2f5;
+  background-color: #f8fafc;
   transition: background-color 0.3s, color 0.3s;
   overflow-x: hidden;
 }
@@ -13,6 +13,48 @@ body {
 html.dark body {
   background-color: #111827;
   color: #f3f4f6;
+}
+
+/* Custom styling for Ant Design Segmented component to match VLU brand */
+.ant-segmented {
+  padding: 3px;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  background-color: #f1f5f9 !important; /* Slate-100 for lighter contrast */
+}
+
+html.dark .ant-segmented {
+  background-color: #1f2937 !important; /* Gray-800 for dark mode */
+}
+
+.ant-segmented .ant-segmented-thumb {
+  background-color: #DA251D !important; /* VLU brand red */
+  border-radius: 6px;
+  box-shadow: 0 2px 4px rgba(218, 37, 29, 0.2);
+}
+
+.ant-segmented .ant-segmented-item {
+  transition: color 0.2s ease;
+}
+
+.ant-segmented .ant-segmented-item-selected {
+  background-color: #DA251D !important;
+  color: #ffffff !important;
+  font-weight: 600;
+  border-radius: 6px;
+}
+
+.ant-segmented .ant-segmented-item-selected .ant-segmented-item-label {
+  color: #ffffff !important;
+}
+
+/* Hover/active item text color when not selected */
+.ant-segmented .ant-segmented-item:hover:not(.ant-segmented-item-selected) {
+  color: #DA251D !important;
+}
+
+html.dark .ant-segmented .ant-segmented-item:hover:not(.ant-segmented-item-selected) {
+  color: #ff4d4f !important;
 }
 
 

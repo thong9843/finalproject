@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { Card, Form, Input, Button, Switch, Divider, message } from 'antd';
-import { UserOutlined, MailOutlined, LockOutlined, BellOutlined, BulbOutlined } from '@ant-design/icons';
+import { UserOutlined, MailOutlined, LockOutlined, BellOutlined, BulbOutlined, SettingOutlined } from '@ant-design/icons';
 import Cookies from 'js-cookie';
 import { useTheme } from '../context/ThemeContext';
 
@@ -23,7 +23,17 @@ const Settings = () => {
 
     return (
         <div className="max-w-4xl mx-auto">
-            <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-6">Cài đặt Hệ thống</h1>
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+                <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 bg-red-50 dark:bg-red-950/30 text-vluRed dark:text-red-400 rounded-2xl flex items-center justify-center shadow-sm flex-shrink-0">
+                        <SettingOutlined className="text-2xl" />
+                    </div>
+                    <div>
+                        <h1 className="text-2xl font-bold text-slate-800 dark:text-gray-100 m-0">Cài đặt hệ thống</h1>
+                        <p className="text-sm text-slate-500 m-0 mt-0.5">Cấu hình thông tin tài khoản và giao diện</p>
+                    </div>
+                </div>
+            </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {/* Cột trái */}

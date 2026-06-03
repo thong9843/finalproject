@@ -18,6 +18,9 @@ import UserList from './pages/UserList';
 import DuplicateDataTool from './pages/DuplicateDataTool';
 import AiImportTool from './pages/AiImportTool';
 import HistoryLog from './pages/HistoryLog';
+import Fields from './pages/Fields';
+import Departments from './pages/Departments';
+import BulkDataTool from './pages/BulkDataTool';
 import Cookies from 'js-cookie';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
 
@@ -112,9 +115,12 @@ const App = () => {
                             <Route path="reports/students" element={<ReportStudents />} />
                             <Route path="reports/activities" element={<ReportActivities />} />
                             <Route path="activity-types" element={<ActivityTypes />} />
+                            <Route path="fields" element={<Fields />} />
+                            <Route path="departments" element={<Departments />} />
                             <Route path="mous" element={<MOUList />} />
                             <Route path="users" element={<AdminRoute><UserList /></AdminRoute>} />
                             <Route path="duplicates" element={<AdminRoute><DuplicateDataTool /></AdminRoute>} />
+                            <Route path="bulk-data" element={<AdminRoute><BulkDataTool /></AdminRoute>} />
                             <Route path="ai-import" element={<AdminOrManagerRoute><AiImportTool /></AdminOrManagerRoute>} />
                             <Route path="history" element={<AdminOrManagerRoute><HistoryLog /></AdminOrManagerRoute>} />
                         </Route>

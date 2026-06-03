@@ -522,3 +522,130 @@ exports.restore = async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 };
+
+// Bulk Update Status
+exports.bulkUpdateStatus = async (req, res) => {
+    const { ids, status } = req.body;
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+        return res.status(400).json({ message: 'Danh sách ID không hợp lệ.' });
+    }
+    if (!status) {
+        return res.status(400).json({ message: 'Trạng thái mới không hợp lệ.' });
+    }
+    const conn = await pool.getConnection();
+    try {
+        await conn.beginTransaction();
+        const [oldStatuses] = await conn.query('SELECT id, status FROM enterprises WHERE id IN (?)', [ids]);
+        await conn.query('UPDATE enterprises SET status = ? WHERE id IN (?)', [status, ids]);
+        
+        for (const ent of oldStatuses) {
+            if (ent.status !== status) {
+                await conn.query(
+                    'INSERT INTO workflow_history (entity_type, entity_id, old_status, new_status, changed_by) VALUES (?, ?, ?, ?, ?)',
+                    ['ENTERPRISE', ent.id, ent.status, status, req.user.id]
+                );
+            }
+        }
+        await conn.commit();
+        res.json({ message: `Đã cập nhật trạng thái cho ${ids.length} doanh nghiệp.` });
+    } catch (e) {
+        await conn.rollback();
+        res.status(500).json({ message: e.message });
+    } finally {
+        conn.release();
+    }
+};
+
+// Bulk Update Faculty
+exports.bulkUpdateFaculty = async (req, res) => {
+    const { ids, faculty_id } = req.body;
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+        return res.status(400).json({ message: 'Danh sách ID không hợp lệ.' });
+    }
+    if (!faculty_id) {
+        return res.status(400).json({ message: 'Khoa mới không hợp lệ.' });
+    }
+    try {
+        await pool.query('UPDATE enterprises SET faculty_id = ? WHERE id IN (?)', [faculty_id, ids]);
+        res.json({ message: `Đã chuyển khoa cho ${ids.length} doanh nghiệp.` });
+    } catch (e) {
+        res.status(500).json({ message: e.message });
+    }
+};
+
+// Bulk Delete Enterprises
+exports.bulkDelete = async (req, res) => {
+    const { ids } = req.body;
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+        return res.status(400).json({ message: 'Danh sách ID không hợp lệ.' });
+    }
+    const conn = await pool.getConnection();
+    try {
+        await conn.beginTransaction();
+        await conn.query('UPDATE enterprises SET is_deleted = 1 WHERE id IN (?)', [ids]);
+        await conn.query('UPDATE activities SET is_deleted = 1 WHERE enterprise_id IN (?)', [ids]);
+        await conn.commit();
+        res.json({ message: `Đã xóa ${ids.length} doanh nghiệp và các hoạt động liên quan.` });
+    } catch (e) {
+        await conn.rollback();
+        res.status(500).json({ message: e.message });
+    } finally {
+        conn.release();
+    }
+};
+
+// Merge duplicates intelligently (transferring all references to targetId)
+exports.mergeDuplicates = async (req, res) => {
+    const { targetId, duplicateIds } = req.body;
+    if (!targetId || !duplicateIds || !Array.isArray(duplicateIds) || duplicateIds.length === 0) {
+        return res.status(400).json({ message: 'Thiếu Target ID hoặc Duplicate IDs.' });
+    }
+    const conn = await pool.getConnection();
+    try {
+        await conn.beginTransaction();
+        
+        // 1. Re-associate activities
+        await conn.query('UPDATE activities SET enterprise_id = ? WHERE enterprise_id IN (?)', [targetId, duplicateIds]);
+        
+        // 2. Re-associate students
+        await conn.query('UPDATE students SET enterprise_id = ? WHERE enterprise_id IN (?)', [targetId, duplicateIds]);
+        
+        // 3. Re-associate MOUs
+        await conn.query('UPDATE mous SET enterprise_id = ? WHERE enterprise_id IN (?)', [targetId, duplicateIds]);
+        
+        // 4. Re-associate representatives
+        await conn.query('UPDATE enterprise_representatives SET enterprise_id = ? WHERE enterprise_id IN (?)', [targetId, duplicateIds]);
+        const [targetPrimary] = await conn.query('SELECT id FROM enterprise_representatives WHERE enterprise_id = ? AND is_primary = 1', [targetId]);
+        if (targetPrimary.length > 0) {
+            await conn.query('UPDATE enterprise_representatives SET is_primary = 0 WHERE enterprise_id = ? AND id NOT IN (?)', [targetId, targetPrimary.map(tp => tp.id)]);
+        }
+        
+        // 5. Re-associate addresses
+        await conn.query('UPDATE enterprise_addresses SET enterprise_id = ? WHERE enterprise_id IN (?)', [targetId, duplicateIds]);
+        const [targetMainAddr] = await conn.query('SELECT id FROM enterprise_addresses WHERE enterprise_id = ? AND is_main = 1', [targetId]);
+        if (targetMainAddr.length > 0) {
+            await conn.query('UPDATE enterprise_addresses SET is_main = 0 WHERE enterprise_id = ? AND id NOT IN (?)', [targetId, targetMainAddr.map(ta => ta.id)]);
+        }
+
+        // 6. Re-associate ratings
+        await conn.query('UPDATE enterprise_ratings SET enterprise_id = ? WHERE enterprise_id IN (?)', [targetId, duplicateIds]);
+        
+        // 7. Re-associate fields
+        await conn.query(`
+            INSERT IGNORE INTO enterprise_fields (enterprise_id, field_id)
+            SELECT ?, field_id FROM enterprise_fields WHERE enterprise_id IN (?)
+        `, [targetId, duplicateIds]);
+        await conn.query('DELETE FROM enterprise_fields WHERE enterprise_id IN (?)', [duplicateIds]);
+        
+        // 8. Soft-delete the duplicate enterprises (is_deleted = 1)
+        await conn.query('UPDATE enterprises SET is_deleted = 1 WHERE id IN (?)', [duplicateIds]);
+        
+        await conn.commit();
+        res.json({ message: `Đã gộp ${duplicateIds.length} doanh nghiệp trùng lặp thành công.` });
+    } catch (e) {
+        await conn.rollback();
+        res.status(500).json({ message: e.message });
+    } finally {
+        conn.release();
+    }
+};

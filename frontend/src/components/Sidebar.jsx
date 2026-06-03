@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Menu } from 'antd';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { DashboardOutlined, BankOutlined, CalendarOutlined, SettingOutlined, LogoutOutlined, TeamOutlined, BarChartOutlined, AppstoreOutlined, CloseOutlined, ToolOutlined } from '@ant-design/icons';
+import { DashboardOutlined, BankOutlined, CalendarOutlined, SettingOutlined, LogoutOutlined, TeamOutlined, BarChartOutlined, AppstoreOutlined, CloseOutlined, ToolOutlined, DatabaseOutlined } from '@ant-design/icons';
 import Cookies from 'js-cookie';
 import { useTheme } from '../context/ThemeContext';
 
@@ -85,14 +85,29 @@ const Sidebar = ({ isOpen, onClose, collapsed }) => {
             ]
         },
         {
-            key: 'other-tools',
-            icon: <ToolOutlined />,
-            label: 'Công cụ khác',
+            key: 'master-data-group',
+            icon: <DatabaseOutlined />,
+            label: 'Dữ liệu mẫu',
             children: [
                 {
                     key: '/activity-types',
                     label: 'Loại hình hoạt động',
                 },
+                {
+                    key: '/fields',
+                    label: 'Lĩnh vực / Ngành nghề',
+                },
+                {
+                    key: '/departments',
+                    label: 'Bộ môn phân loại',
+                }
+            ]
+        },
+        {
+            key: 'other-tools',
+            icon: <ToolOutlined />,
+            label: 'Công cụ khác',
+            children: [
                 ...(isManagerOrAdmin ? [
                     {
                         key: '/history',
@@ -110,6 +125,10 @@ const Sidebar = ({ isOpen, onClose, collapsed }) => {
                     },
                     {
                         key: '/duplicates',
+                        label: 'Xử lý dữ liệu trùng lặp',
+                    },
+                    {
+                        key: '/bulk-data',
                         label: 'Xử lý dữ liệu hàng loạt',
                     }
                 ] : [])
@@ -145,7 +164,7 @@ const Sidebar = ({ isOpen, onClose, collapsed }) => {
     return (
         <div
             className={`
-                h-screen fixed left-0 top-0 z-30 flex flex-col pt-4 overflow-x-hidden
+                h-screen fixed left-0 top-0 z-40 flex flex-col pt-4 overflow-x-hidden
                 bg-white dark:bg-gray-800
                 shadow-lg dark:shadow-gray-900/50 border-r border-transparent dark:border-gray-700/50
                 transition-all duration-300 ease-in-out

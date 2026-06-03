@@ -3,7 +3,7 @@ import { Table, Button, Modal, Form, Input, Select, DatePicker, message, Space, 
 import {
     PlusOutlined, EditOutlined, DeleteOutlined, LinkOutlined, SearchOutlined,
     FilePdfOutlined, ScanOutlined, InboxOutlined, CheckCircleOutlined, RobotOutlined, DownloadOutlined,
-    FilterOutlined, ClearOutlined, SortAscendingOutlined
+    FilterOutlined, ClearOutlined, SortAscendingOutlined, AuditOutlined
 } from '@ant-design/icons';
 import api from '../utils/api';
 import dayjs from 'dayjs';
@@ -435,6 +435,7 @@ const MOUList = () => {
             dataIndex: 'mou_code',
             key: 'mou_code',
             width: 130,
+            fixed: 'left',
             render: (text, record) => (
                 <span className="font-semibold text-blue-600 flex items-center gap-2">
                     {text}
@@ -447,6 +448,7 @@ const MOUList = () => {
             dataIndex: 'enterprise_name',
             key: 'enterprise_name',
             width: 220,
+            fixed: 'left',
             ellipsis: true,
             render: (text) => <span className="font-semibold text-slate-800 dark:text-gray-100">{text}</span>
         },
@@ -496,6 +498,7 @@ const MOUList = () => {
             title: 'Thao tác',
             key: 'action',
             width: 180,
+            fixed: 'right',
             align: 'center',
             render: (_, record) => {
                 const isDeleted = record.is_deleted === 1;
@@ -588,10 +591,15 @@ const MOUList = () => {
     return (
         <div>
             {/* Header */}
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
-                <div>
-                    <h1 className="text-2xl font-bold text-slate-800 dark:text-gray-100 m-0">Quản lý Biên Bản Ghi Nhớ (MOU)</h1>
-                    <p className="text-sm text-slate-500 m-0">Danh sách thống kê các MOU đã ký với Đối tác/Doanh nghiệp</p>
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+                <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 bg-red-50 dark:bg-red-950/30 text-vluRed dark:text-red-400 rounded-2xl flex items-center justify-center shadow-sm flex-shrink-0">
+                        <AuditOutlined className="text-2xl" />
+                    </div>
+                    <div>
+                        <h1 className="text-2xl font-bold text-slate-800 dark:text-gray-100 m-0">Biên bản ghi nhớ (MOU)</h1>
+                        <p className="text-sm text-slate-500 m-0 mt-0.5">Danh sách thống kê các MOU đã ký với Đối tác/Doanh nghiệp</p>
+                    </div>
                 </div>
                 <div className="flex gap-3 w-full sm:w-auto flex-wrap">
                     {!isLecturer && (

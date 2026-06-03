@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { Card, Steps, Upload, Button, message, Table, Select, Progress, Typography, Space } from 'antd';
-import { InboxOutlined, CheckCircleOutlined, SyncOutlined, FileExcelOutlined } from '@ant-design/icons';
+import { InboxOutlined, CheckCircleOutlined, SyncOutlined, FileExcelOutlined, RobotOutlined } from '@ant-design/icons';
 import * as XLSX from 'xlsx';
 import api from '../utils/api';
 import Cookies from 'js-cookie';
@@ -242,10 +242,16 @@ const AiImportTool = () => {
 
     return (
         <div className="space-y-6">
-            <div className="flex justify-between items-center">
-                <Title level={2} className="m-0 text-gray-800 dark:text-gray-100">
-                    Import Dữ Liệu Tự Động (AI)
-                </Title>
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+                <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 bg-red-50 dark:bg-red-950/30 text-vluRed dark:text-red-400 rounded-2xl flex items-center justify-center shadow-sm flex-shrink-0">
+                        <RobotOutlined className="text-2xl" />
+                    </div>
+                    <div>
+                        <h1 className="text-2xl font-bold text-slate-800 dark:text-gray-100 m-0">Import dữ liệu bằng AI</h1>
+                        <p className="text-sm text-slate-500 m-0 mt-0.5">Tự động phân tích và import dữ liệu từ file Excel bằng trợ lý AI</p>
+                    </div>
+                </div>
             </div>
 
             <Card className="shadow-sm dark:bg-gray-800 dark:border-gray-700">

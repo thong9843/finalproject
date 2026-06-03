@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Table, Button, Space, message, Modal, Tag, Spin, Tooltip } from 'antd';
-import { DeleteOutlined, WarningOutlined, ExclamationCircleOutlined, ClearOutlined } from '@ant-design/icons';
+import { DeleteOutlined, WarningOutlined, ExclamationCircleOutlined, ClearOutlined, MergeCellsOutlined } from '@ant-design/icons';
 import Cookies from 'js-cookie';
 import axios from 'axios';
 
@@ -79,72 +79,73 @@ const DuplicateDataTool = () => {
         });
     };
 
-    const handleDeleteNewest = (group) => {
-        // Group is ordered by created_at DESC, so the oldest is the last one.
-        // We delete all except the last one.
-        const toDelete = group.enterprises.slice(0, -1);
-        
-        if (toDelete.length === 0) return;
+    const handleMergeDuplicates = (group) => {
+        const target = group.enterprises[group.enterprises.length - 1];
+        const duplicatesToMerge = group.enterprises.slice(0, -1);
+        const duplicateIds = duplicatesToMerge.map(e => e.id);
 
         confirm({
-            title: 'Bạn có chắc chắn muốn xoá các bản ghi mới nhất?',
-            icon: <WarningOutlined />,
-            content: `Hệ thống sẽ xoá ${toDelete.length} doanh nghiệp tạo sau, CHỈ GIỮ LẠI bản ghi cũ nhất (ID: ${group.enterprises[group.enterprises.length - 1].id}).`,
-            okText: 'Xoá mới nhất',
-            okType: 'danger',
+            title: 'Xác nhận gộp doanh nghiệp trùng lặp?',
+            icon: <MergeCellsOutlined className="text-blue-500" />,
+            content: (
+                <div>
+                    <p>Hệ thống sẽ tiến hành gộp <strong>{duplicateIds.length}</strong> bản ghi trùng lặp vào bản ghi gốc (cũ nhất, ID: {target.id}).</p>
+                    <p className="text-red-500 font-semibold">Tất cả hoạt động cộng tác, sinh viên thực tập, MOU, địa chỉ, người đại diện của các bản ghi trùng lặp sẽ được chuyển đổi và liên kết sang bản ghi gốc này (Không bị mất dữ liệu của bất kỳ khoa nào).</p>
+                    <p>Các bản ghi trùng lặp sau đó sẽ được gỡ bỏ khỏi danh sách.</p>
+                </div>
+            ),
+            okText: 'Gộp dữ liệu',
+            okType: 'primary',
             cancelText: 'Huỷ',
             onOk: async () => {
                 try {
                     const token = Cookies.get('token');
-                    await Promise.all(toDelete.map(ent => 
-                        axios.delete(`/api/enterprises/${ent.id}`, {
-                            headers: { Authorization: `Bearer ${token}` }
-                        })
-                    ));
-                    message.success(`Đã xoá ${toDelete.length} doanh nghiệp thành công.`);
+                    await axios.post('/api/enterprises/bulk/merge', {
+                        targetId: target.id,
+                        duplicateIds: duplicateIds
+                    }, {
+                        headers: { Authorization: `Bearer ${token}` }
+                    });
+                    message.success('Đã gộp dữ liệu trùng lặp thành công!');
                     fetchDuplicates();
                 } catch (error) {
-                    console.error('Lỗi khi xoá hàng loạt:', error);
-                    message.error('Có lỗi xảy ra khi xoá một số doanh nghiệp.');
-                    fetchDuplicates(); // Reload to see what was actually deleted
+                    console.error('Lỗi khi gộp doanh nghiệp:', error);
+                    message.error(error.response?.data?.message || 'Không thể gộp doanh nghiệp.');
                 }
             }
         });
     };
 
-    const handleDeleteAllNewest = () => {
-        let toDelete = [];
-        duplicates.forEach(group => {
-            const newest = group.enterprises.slice(0, -1);
-            toDelete = toDelete.concat(newest);
-        });
-
-        if (toDelete.length === 0) {
-            message.info('Không có dữ liệu trùng nào cần dọn dẹp.');
-            return;
-        }
-
+    const handleMergeAllDuplicates = () => {
         confirm({
-            title: 'Dọn dẹp tất cả dữ liệu trùng lặp?',
-            icon: <WarningOutlined />,
-            content: `Hệ thống sẽ xoá tổng cộng ${toDelete.length} doanh nghiệp trùng lặp trên tất cả các nhóm, chỉ giữ lại các bản ghi gốc (cũ nhất) cho mỗi công ty. Hành động này không thể hoàn tác.`,
-            okText: 'Xoá tất cả trùng lặp',
-            okType: 'danger',
+            title: 'Gộp tất cả dữ liệu trùng lặp?',
+            icon: <MergeCellsOutlined className="text-blue-500" />,
+            content: `Hệ thống sẽ tự động gộp tất cả các bản ghi trùng lặp trên mọi nhóm vào bản ghi gốc tương ứng của chúng. Toàn bộ hoạt động và liên kết dữ liệu sẽ được giữ lại. Hành động này không thể hoàn tác.`,
+            okText: 'Gộp tất cả',
+            okType: 'primary',
             cancelText: 'Huỷ',
             onOk: async () => {
                 setLoading(true);
                 try {
                     const token = Cookies.get('token');
-                    await Promise.all(toDelete.map(ent => 
-                        axios.delete(`/api/enterprises/${ent.id}`, {
-                            headers: { Authorization: `Bearer ${token}` }
-                        })
-                    ));
-                    message.success(`Đã xoá hàng loạt ${toDelete.length} doanh nghiệp trùng lặp thành công.`);
+                    for (const group of duplicates) {
+                        const target = group.enterprises[group.enterprises.length - 1];
+                        const duplicatesToMerge = group.enterprises.slice(0, -1);
+                        const duplicateIds = duplicatesToMerge.map(e => e.id);
+                        if (duplicateIds.length > 0) {
+                            await axios.post('/api/enterprises/bulk/merge', {
+                                targetId: target.id,
+                                duplicateIds: duplicateIds
+                            }, {
+                                headers: { Authorization: `Bearer ${token}` }
+                            });
+                        }
+                    }
+                    message.success('Đã gộp tất cả dữ liệu trùng lặp thành công!');
                     fetchDuplicates();
                 } catch (error) {
-                    console.error('Lỗi khi xoá hàng loạt:', error);
-                    message.error('Có lỗi xảy ra khi dọn dẹp hàng loạt.');
+                    console.error('Lỗi khi gộp hàng loạt:', error);
+                    message.error('Có lỗi xảy ra khi gộp hàng loạt.');
                     fetchDuplicates();
                 }
             }
@@ -223,22 +224,23 @@ const DuplicateDataTool = () => {
 
     return (
         <div className="space-y-6 animate-fade-in">
-            <div className="flex justify-between items-center bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border-l-4 border-vluRed">
-                <div>
-                    <h1 className="text-xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
-                        <WarningOutlined className="text-vluRed" /> Công cụ Xử lý Dữ liệu Hàng loạt
-                    </h1>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                        Danh sách các công cụ và bộ dọn dẹp dữ liệu quy mô lớn của hệ thống. Bạn có thể dọn dẹp bằng cách xoá doanh nghiệp trùng lặp hoặc chỉ xoá hoạt động của chúng.
-                    </p>
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+                <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 bg-red-50 dark:bg-red-950/30 text-vluRed dark:text-red-400 rounded-2xl flex items-center justify-center shadow-sm flex-shrink-0">
+                        <MergeCellsOutlined className="text-2xl" />
+                    </div>
+                    <div>
+                        <h1 className="text-2xl font-bold text-slate-800 dark:text-gray-100 m-0">Xử lý dữ liệu trùng lặp</h1>
+                        <p className="text-sm text-slate-500 m-0 mt-0.5">Tìm kiếm và xử lý gộp các bản ghi doanh nghiệp trùng tên</p>
+                    </div>
                 </div>
                 <Space>
                     {duplicates.length > 0 && (
-                        <Button type="primary" danger icon={<DeleteOutlined />} onClick={handleDeleteAllNewest} disabled={loading}>
-                            Xoá tất cả trùng lặp
+                        <Button type="primary" icon={<MergeCellsOutlined />} onClick={handleMergeAllDuplicates} disabled={loading} className="bg-blue-600 hover:bg-blue-500 border-none rounded-lg shadow-sm font-medium">
+                            Gộp tất cả trùng lặp
                         </Button>
                     )}
-                    <Button type="default" onClick={fetchDuplicates} loading={loading} className="border-vluRed text-vluRed hover:bg-red-50 dark:hover:bg-red-900/30">
+                    <Button type="default" onClick={fetchDuplicates} loading={loading} className="rounded-lg shadow-sm font-medium border-slate-300 dark:border-gray-600 hover:border-vluRed hover:text-vluRed">
                         Tải lại dữ liệu
                     </Button>
                 </Space>
@@ -265,14 +267,14 @@ const DuplicateDataTool = () => {
                                 </div>
                             } 
                             extra={
-                                <Tooltip title="Giữ lại bản cũ nhất, xoá tất cả các bản mới tạo sau">
+                                <Tooltip title="Gộp tất cả các bản ghi trùng lặp và giữ lại bản ghi gốc">
                                     <Button 
                                         type="primary" 
-                                        danger 
-                                        icon={<DeleteOutlined />} 
-                                        onClick={() => handleDeleteNewest(group)}
+                                        icon={<MergeCellsOutlined />} 
+                                        onClick={() => handleMergeDuplicates(group)}
+                                        className="bg-blue-600 hover:bg-blue-500 border-none text-white rounded-lg"
                                     >
-                                        Xoá mới nhất
+                                        Gộp dữ liệu
                                     </Button>
                                 </Tooltip>
                             }

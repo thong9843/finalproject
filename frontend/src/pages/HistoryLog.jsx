@@ -405,18 +405,22 @@ const HistoryLog = () => {
 
     return (
         <div>
-            <div className="flex justify-between items-center mb-6">
-                <div>
-                    <h1 className="text-2xl font-bold text-slate-800 dark:text-gray-100 m-0 flex items-center gap-2">
-                        <HistoryOutlined /> Lịch sử Hệ thống
-                    </h1>
-                    <p className="text-sm text-slate-500 m-0">Tra cứu lịch sử chỉnh sửa, xóa mềm và khôi phục dữ liệu</p>
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+                <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 bg-red-50 dark:bg-red-950/30 text-vluRed dark:text-red-400 rounded-2xl flex items-center justify-center shadow-sm flex-shrink-0">
+                        <HistoryOutlined className="text-2xl" />
+                    </div>
+                    <div>
+                        <h1 className="text-2xl font-bold text-slate-800 dark:text-gray-100 m-0">Lịch sử hệ thống</h1>
+                        <p className="text-sm text-slate-500 m-0 mt-0.5">Xem nhật ký hoạt động và lịch sử thay đổi dữ liệu</p>
+                    </div>
                 </div>
                 <Button 
                     size="large"
                     icon={<ReloadOutlined />} 
                     onClick={fetchHistory} 
                     loading={loading}
+                    className="rounded-lg shadow-sm font-medium"
                 >
                     Tải lại
                 </Button>

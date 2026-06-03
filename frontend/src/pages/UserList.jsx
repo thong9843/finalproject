@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Table, Button, Modal, Form, Input, Select, Space, message, Tag, Popconfirm, App as AntApp, Badge } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, SearchOutlined, ClearOutlined, FilterOutlined } from '@ant-design/icons';
+import { PlusOutlined, EditOutlined, DeleteOutlined, SearchOutlined, ClearOutlined, FilterOutlined, UserOutlined } from '@ant-design/icons';
 import api from '../utils/api';
 import dayjs from 'dayjs';
 
@@ -145,11 +145,14 @@ const UserList = () => {
             dataIndex: 'id',
             key: 'id',
             width: 70,
+            fixed: 'left',
         },
         {
             title: 'Họ và tên',
             dataIndex: 'full_name',
             key: 'full_name',
+            width: 180,
+            fixed: 'left',
             render: (text) => <span className="font-semibold text-gray-800 dark:text-gray-100">{text}</span>
         },
         {
@@ -211,6 +214,7 @@ const UserList = () => {
         {
             title: 'Thao tác',
             key: 'action',
+            fixed: 'right',
             render: (_, record) => (
                 <Space>
                     <Button 
@@ -240,11 +244,16 @@ const UserList = () => {
     ];
 
     return (
-        <div className="p-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm">
-            <div className="flex justify-between items-center mb-6">
-                <div>
-                    <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-2">Quản lý người dùng</h1>
-                    <p className="text-gray-500 dark:text-gray-400">Quản lý tài khoản và phân quyền người dùng trong hệ thống</p>
+        <div>
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+                <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 bg-red-50 dark:bg-red-950/30 text-vluRed dark:text-red-400 rounded-2xl flex items-center justify-center shadow-sm flex-shrink-0">
+                        <UserOutlined className="text-2xl" />
+                    </div>
+                    <div>
+                        <h1 className="text-2xl font-bold text-slate-800 dark:text-gray-100 m-0">Quản lý người dùng</h1>
+                        <p className="text-sm text-slate-500 m-0 mt-0.5">Phân quyền và quản lý tài khoản người dùng hệ thống</p>
+                    </div>
                 </div>
                 <Button 
                     type="primary" 
@@ -258,7 +267,7 @@ const UserList = () => {
             </div>
 
             {/* Search and Filters Section */}
-            <div className="bg-slate-50 dark:bg-gray-800/40 p-4 rounded-xl mb-6 border border-gray-100 dark:border-gray-700 flex flex-col md:flex-row gap-3 items-center justify-between transition-all duration-300">
+            <div className="bg-white dark:bg-gray-800 p-4 rounded-xl mb-6 border border-slate-200 dark:border-gray-700 flex flex-col md:flex-row gap-3 items-center justify-between shadow-sm transition-all duration-300">
                 <div className="flex flex-1 flex-wrap gap-2.5 items-center w-full">
                     <Input
                         placeholder="Tìm theo họ tên, email..."
@@ -336,7 +345,8 @@ const UserList = () => {
                 rowKey="id" 
                 loading={loading}
                 pagination={{ pageSize: 10 }}
-                className="overflow-x-auto border border-gray-100 dark:border-gray-700 rounded-lg"
+                className="shadow-sm border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-xl overflow-hidden"
+                scroll={{ x: 'max-content' }}
                 rowClassName="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
             />
 

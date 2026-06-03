@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Table, Tag, Form, Input, Select, Button, Modal, message, Space, Drawer, Timeline, Row, Col, DatePicker, Descriptions, Switch, Popover, Badge, Divider, App as AntApp } from 'antd';
-import { EditOutlined, DeleteOutlined, PlusOutlined, UnorderedListOutlined, UploadOutlined, DownloadOutlined, UserOutlined, HomeOutlined, FilterOutlined, SortAscendingOutlined, ClearOutlined, SearchOutlined } from '@ant-design/icons';
+import { EditOutlined, DeleteOutlined, PlusOutlined, UnorderedListOutlined, UploadOutlined, DownloadOutlined, UserOutlined, HomeOutlined, FilterOutlined, SortAscendingOutlined, ClearOutlined, SearchOutlined, BankOutlined } from '@ant-design/icons';
 import ImportModal from '../components/ImportModal';
 import api from '../utils/api';
 import dayjs from 'dayjs';
@@ -364,6 +364,7 @@ const EnterpriseList = () => {
             dataIndex: 'name',
             key: 'name',
             width: 220,
+            fixed: 'left',
             render: (text, record) => (
                 <span className="font-semibold text-slate-800 dark:text-gray-100 flex items-center gap-2">
                     {text}
@@ -401,7 +402,7 @@ const EnterpriseList = () => {
             render: (text) => <Tag color={statusColors[text]}>{text}</Tag>
         },
         {
-            title: 'Thao tác', key: 'action', width: 120,
+            title: 'Thao tác', key: 'action', width: 120, fixed: 'right',
             render: (_, record) => {
                 const isDeleted = record.is_deleted === 1;
                 if (isDeleted) {
@@ -459,10 +460,15 @@ const EnterpriseList = () => {
 
     return (
         <div>
-            <div className="flex justify-between items-center mb-4">
-                <div>
-                    <h1 className="text-2xl font-bold text-slate-800 dark:text-gray-100 m-0">Quản lý Doanh nghiệp</h1>
-                    <p className="text-sm text-slate-500 m-0">Cập nhật thông tin Doanh nghiệp & Đầu mối liên hệ Đối tác</p>
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+                <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 bg-red-50 dark:bg-red-950/30 text-vluRed dark:text-red-400 rounded-2xl flex items-center justify-center shadow-sm flex-shrink-0">
+                        <BankOutlined className="text-2xl" />
+                    </div>
+                    <div>
+                        <h1 className="text-2xl font-bold text-slate-800 dark:text-gray-100 m-0">Quản lý Doanh nghiệp</h1>
+                        <p className="text-sm text-slate-500 m-0 mt-0.5">Cập nhật thông tin Doanh nghiệp & Đầu mối liên hệ Đối tác</p>
+                    </div>
                 </div>
                 <div className="flex gap-3">
                     {!isLecturer && (

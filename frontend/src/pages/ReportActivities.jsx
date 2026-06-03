@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { Card, Row, Col, Statistic, Spin, Empty, Button, message, Segmented, DatePicker, Space } from 'antd';
-import { AppstoreOutlined, BankOutlined, CheckCircleOutlined, SyncOutlined, DownloadOutlined, CalendarOutlined } from '@ant-design/icons';
+import { AppstoreOutlined, BankOutlined, CheckCircleOutlined, SyncOutlined, DownloadOutlined, CalendarOutlined, BarChartOutlined } from '@ant-design/icons';
 import api from '../utils/api';
 import { Bar, Pie, Line } from 'react-chartjs-2';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, PointElement, LineElement, Title, Filler } from 'chart.js';
@@ -220,10 +220,15 @@ const ReportActivities = () => {
 
     return (
         <div>
-            <div className="flex justify-between items-center mb-6">
-                <div>
-                    <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100">Hoạt động hợp tác theo công ty</h1>
-                    <p className="text-gray-400 text-sm">Phân tích chi tiết các hoạt động hợp tác với doanh nghiệp liên kết</p>
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+                <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 bg-red-50 dark:bg-red-950/30 text-vluRed dark:text-red-400 rounded-2xl flex items-center justify-center shadow-sm flex-shrink-0">
+                        <BarChartOutlined className="text-2xl" />
+                    </div>
+                    <div>
+                        <h1 className="text-2xl font-bold text-slate-800 dark:text-gray-100 m-0">Thống kê hoạt động hợp tác</h1>
+                        <p className="text-sm text-slate-500 m-0 mt-0.5">Báo cáo và phân tích các hoạt động hợp tác với doanh nghiệp</p>
+                    </div>
                 </div>
                 <Button 
                     size="large"

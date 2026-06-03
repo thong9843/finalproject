@@ -6,6 +6,11 @@ const { verifyToken, verifyRole } = require('../middlewares/auth');
 router.use(verifyToken);
 
 router.get('/', enterpriseController.getAll);
+router.post('/bulk/update-status', verifyRole(['ADMIN']), enterpriseController.bulkUpdateStatus);
+router.post('/bulk/update-faculty', verifyRole(['ADMIN']), enterpriseController.bulkUpdateFaculty);
+router.post('/bulk/delete', verifyRole(['ADMIN']), enterpriseController.bulkDelete);
+router.post('/bulk/merge', verifyRole(['ADMIN']), enterpriseController.mergeDuplicates);
+
 router.get('/:id', enterpriseController.getById);
 router.post('/', verifyRole(['ADMIN', 'FACULTY_MANAGER']), enterpriseController.create);
 router.put('/:id', verifyRole(['ADMIN', 'FACULTY_MANAGER']), enterpriseController.update);

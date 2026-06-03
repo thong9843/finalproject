@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { message, Card, Select, Typography, Spin, Badge, Button, Modal, Form, Input, DatePicker, TimePicker, Tag, Tooltip, Dropdown, Menu, Row, Col , Switch, App as AntApp } from 'antd';
-import { PlusOutlined, BankOutlined, ProjectOutlined, CalendarOutlined, PushpinOutlined, MoreOutlined, DragOutlined, EditOutlined, DeleteOutlined, UserOutlined, HomeOutlined } from '@ant-design/icons';
+import { PlusOutlined, BankOutlined, ProjectOutlined, CalendarOutlined, PushpinOutlined, MoreOutlined, DragOutlined, EditOutlined, DeleteOutlined, UserOutlined, HomeOutlined, AppstoreOutlined } from '@ant-design/icons';
 import api from '../utils/api';
 import dayjs from 'dayjs';
 import Cookies from 'js-cookie';
@@ -388,14 +388,17 @@ const KanbanBoard = () => {
   const currentConfig = view === 'ENTERPRISE' ? ENTERPRISE_STATUSES : ACTIVITY_STATUSES;
 
   return (
-    <div className="flex flex-col h-[calc(100vh-8rem)] w-full min-w-0 bg-slate-50 dark:bg-gray-800/50 border border-slate-200 dark:border-gray-700 rounded-xl overflow-hidden shadow-sm">
+    <div className="flex flex-col h-[calc(100vh-8rem)] w-full min-w-0">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center px-6 py-5 bg-white dark:bg-gray-800 border-b border-slate-200 dark:border-gray-700 gap-4 shrink-0">
-        <div>
-          <Title level={4} className="!m-0 text-slate-800 dark:text-gray-100 font-bold">
-            {view === 'ENTERPRISE' ? 'Bảng Kanban Doanh Nghiệp' : 'Bảng Kanban Hoạt Động'}
-          </Title>
-          <Text type="secondary" className="text-sm">Quản lý và cập nhật tiến độ công việc một cách trực quan</Text>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4 shrink-0">
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 bg-red-50 dark:bg-red-950/30 text-vluRed dark:text-red-400 rounded-2xl flex items-center justify-center shadow-sm flex-shrink-0">
+            <AppstoreOutlined className="text-2xl" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-slate-800 dark:text-gray-100 m-0">Bảng Kanban</h1>
+            <p className="text-sm text-slate-500 m-0 mt-0.5">Quản lý và cập nhật tiến độ công việc một cách trực quan</p>
+          </div>
         </div>
         
         <div className="flex items-center gap-3">
@@ -421,7 +424,7 @@ const KanbanBoard = () => {
       </div>
 
       {/* Board Columns container */}
-      <div ref={boardRef} className="flex-1 overflow-x-auto overflow-y-hidden w-full min-h-0 bg-slate-50 dark:bg-gray-800/50 p-6 will-change-scroll custom-scroller">
+      <div ref={boardRef} className="flex-1 overflow-x-auto overflow-y-hidden w-full min-h-0 bg-slate-50 dark:bg-gray-800/50 p-6 will-change-scroll custom-scroller border border-slate-200 dark:border-gray-700 rounded-xl shadow-sm">
         {loading ? (
           <div className="w-full h-full flex justify-center items-center"><Spin size="large" /></div>
         ) : (
