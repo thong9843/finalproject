@@ -415,15 +415,17 @@ const HistoryLog = () => {
                         <p className="text-sm text-slate-500 m-0 mt-0.5">Xem nhật ký hoạt động và lịch sử thay đổi dữ liệu</p>
                     </div>
                 </div>
-                <Button 
-                    size="large"
-                    icon={<ReloadOutlined />} 
-                    onClick={fetchHistory} 
-                    loading={loading}
-                    className="rounded-lg shadow-sm font-medium"
-                >
-                    Tải lại
-                </Button>
+                <div className="flex gap-2 w-full sm:w-auto header-actions">
+                    <Button 
+                        size="large"
+                        icon={<ReloadOutlined />} 
+                        onClick={fetchHistory} 
+                        loading={loading}
+                        className="rounded-lg shadow-sm font-medium flex-1 sm:flex-initial"
+                    >
+                        Tải lại
+                    </Button>
+                </div>
             </div>
 
             {/* Filters */}

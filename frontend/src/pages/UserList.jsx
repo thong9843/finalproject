@@ -255,15 +255,17 @@ const UserList = () => {
                         <p className="text-xs sm:text-sm text-slate-500 m-0 mt-0.5">Phân quyền và quản lý tài khoản người dùng hệ thống</p>
                     </div>
                 </div>
-                <Button 
-                    type="primary" 
-                    icon={<PlusOutlined />} 
-                    onClick={handleAdd}
-                    size="large"
-                    className="bg-vluRed hover:bg-vluRedHover border-none text-white rounded-lg shadow-sm font-medium w-full sm:w-auto"
-                >
-                    Thêm người dùng
-                </Button>
+                <div className="flex gap-2 w-full sm:w-auto header-actions">
+                    <Button 
+                        type="primary" 
+                        icon={<PlusOutlined />} 
+                        onClick={handleAdd}
+                        size="large"
+                        className="bg-vluRed hover:bg-vluRedHover border-none text-white rounded-lg shadow-sm font-medium flex-1 sm:flex-initial"
+                    >
+                        Thêm người dùng
+                    </Button>
+                </div>
             </div>
 
             {/* Search and Filters Section */}

@@ -166,3 +166,30 @@ html.dark .custom-scroller::-webkit-scrollbar-thumb:hover {
     animation: fadeInUpCentered 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   }
 }
+
+/* Styling for header-actions buttons and Select selectors to keep height equal */
+.header-actions .ant-btn,
+.header-actions .ant-select .ant-select-selector {
+  height: 38px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 8px !important;
+}
+
+/* Fix text vertical alignment in Select and Button */
+.header-actions .ant-btn > span,
+.header-actions .ant-select .ant-select-selection-item {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+@media (max-width: 640px) {
+  .header-actions .ant-btn,
+  .header-actions .ant-select .ant-select-selector {
+    height: 34px !important;
+    font-size: 13px !important;
+    border-radius: 6px !important;
+  }
+}

@@ -234,13 +234,13 @@ const DuplicateDataTool = () => {
                         <p className="text-xs sm:text-sm text-slate-500 m-0 mt-0.5">Tìm kiếm và xử lý gộp các bản ghi doanh nghiệp trùng tên</p>
                     </div>
                 </div>
-                <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+                <div className="flex gap-2 w-full sm:w-auto header-actions">
                     {duplicates.length > 0 && (
-                        <Button type="primary" icon={<MergeCellsOutlined />} onClick={handleMergeAllDuplicates} disabled={loading} className="bg-blue-600 hover:bg-blue-500 border-none rounded-lg shadow-sm font-medium w-full sm:w-auto">
+                        <Button type="primary" icon={<MergeCellsOutlined />} onClick={handleMergeAllDuplicates} disabled={loading} className="bg-blue-600 hover:bg-blue-500 border-none rounded-lg shadow-sm font-medium flex-1 sm:flex-initial sm:w-auto">
                             Gộp tất cả trùng lặp
                         </Button>
                     )}
-                    <Button type="default" onClick={fetchDuplicates} loading={loading} className="rounded-lg shadow-sm font-medium border-slate-300 dark:border-gray-600 hover:border-vluRed hover:text-vluRed w-full sm:w-auto">
+                    <Button type="default" onClick={fetchDuplicates} loading={loading} className="rounded-lg shadow-sm font-medium border-slate-300 dark:border-gray-600 hover:border-vluRed hover:text-vluRed flex-1 sm:flex-initial sm:w-auto">
                         Tải lại dữ liệu
                     </Button>
                 </div>

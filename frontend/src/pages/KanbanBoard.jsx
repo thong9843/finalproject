@@ -49,9 +49,14 @@ const KanbanBoard = () => {
   const [targets, setTargets] = useState([]);
   const [loading, setLoading] = useState(false);
   
-  // Drag state
+  // Drag state (mouse)
   const [draggedItemId, setDraggedItemId] = useState(null);
   const [dragOverCol, setDragOverCol] = useState(null);
+
+  // Touch drag state
+  const touchDragRef = useRef(null); // { item, ghostEl, startX, startY }
+  const [touchDragOverCol, setTouchDragOverCol] = useState(null);
+  const [touchDraggedItemId, setTouchDraggedItemId] = useState(null);
 
   // Modal forms & CRUD state
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -331,6 +336,81 @@ const KanbanBoard = () => {
     setDraggedItemId(null);
   };
 
+  // ---- Touch Drag-and-Drop Handlers ----
+  const onTouchStart = (e, item) => {
+    // Only initiate drag on a single-finger press held for a moment
+    const touch = e.touches[0];
+    const startX = touch.clientX;
+    const startY = touch.clientY;
+
+    // Create ghost element that follows the finger
+    const sourceEl = e.currentTarget;
+    const rect = sourceEl.getBoundingClientRect();
+    const ghost = sourceEl.cloneNode(true);
+    ghost.style.cssText = `
+      position: fixed;
+      top: ${rect.top}px;
+      left: ${rect.left}px;
+      width: ${rect.width}px;
+      opacity: 0.85;
+      pointer-events: none;
+      z-index: 9999;
+      border-radius: 12px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      transform: rotate(2deg) scale(1.03);
+      transition: transform 0.1s ease;
+    `;
+    document.body.appendChild(ghost);
+
+    touchDragRef.current = { item, ghostEl: ghost, startX, startY, moved: false };
+    setTouchDraggedItemId(item.id);
+  };
+
+  const onTouchMove = (e) => {
+    if (!touchDragRef.current) return;
+    const { ghostEl } = touchDragRef.current;
+    const touch = e.touches[0];
+
+    // Move ghost with finger
+    const dx = touch.clientX - touchDragRef.current.startX;
+    const dy = touch.clientY - touchDragRef.current.startY;
+    if (!touchDragRef.current.moved && Math.abs(dx) < 5 && Math.abs(dy) < 5) return;
+    touchDragRef.current.moved = true;
+    e.preventDefault(); // Prevent scroll while dragging
+
+    const rect = ghostEl.getBoundingClientRect();
+    ghostEl.style.transform = `translate(${dx}px, ${dy}px) rotate(2deg) scale(1.03)`;
+
+    // Detect drop target under finger
+    ghostEl.style.display = 'none';
+    const elUnder = document.elementFromPoint(touch.clientX, touch.clientY);
+    ghostEl.style.display = '';
+
+    const dropTarget = elUnder?.closest('[data-drop-status]');
+    const newOverCol = dropTarget ? dropTarget.getAttribute('data-drop-status') : null;
+    if (newOverCol !== touchDragRef.current.overCol) {
+      touchDragRef.current.overCol = newOverCol;
+      setTouchDragOverCol(newOverCol);
+    }
+  };
+
+  const onTouchEnd = (e) => {
+    if (!touchDragRef.current) return;
+    const { item, ghostEl, moved, overCol } = touchDragRef.current;
+
+    // Remove ghost
+    if (ghostEl && ghostEl.parentNode) ghostEl.parentNode.removeChild(ghostEl);
+
+    if (moved && overCol) {
+      handleStatusChange(item, overCol);
+    }
+
+    // Cleanup
+    touchDragRef.current = null;
+    setTouchDraggedItemId(null);
+    setTouchDragOverCol(null);
+  };
+
   const removeAccents = (str) => {
     if (!str) return '';
     return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
@@ -401,27 +481,74 @@ const KanbanBoard = () => {
           </div>
         </div>
         
-        <div className="flex items-center gap-3">
-          <Select 
-            value={view} 
-            onChange={setView} 
-            className="w-[180px]"
-            size="large"
-          >
-            <Option value="ENTERPRISE">Doanh nghiệp</Option>
-            <Option value="ACTIVITY">Hoạt động</Option>
-          </Select>
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto header-actions">
+          {/* Custom Tabs / Segmented Control */}
+          <div className="flex bg-slate-100 dark:bg-gray-800/80 p-1 rounded-xl w-full sm:w-auto border border-slate-200/50 dark:border-gray-700/50">
+            <button
+              onClick={() => setView('ENTERPRISE')}
+              className={`flex-1 sm:flex-none px-5 py-1.5 rounded-lg text-sm font-semibold transition-all ${
+                view === 'ENTERPRISE'
+                  ? 'bg-white dark:bg-gray-700 text-slate-800 dark:text-gray-100 shadow-sm'
+                  : 'text-slate-500 hover:text-slate-700 dark:text-gray-400 dark:hover:text-gray-200'
+              }`}
+            >
+              Doanh nghiệp
+            </button>
+            <button
+              onClick={() => setView('ACTIVITY')}
+              className={`flex-1 sm:flex-none px-5 py-1.5 rounded-lg text-sm font-semibold transition-all ${
+                view === 'ACTIVITY'
+                  ? 'bg-white dark:bg-gray-700 text-slate-800 dark:text-gray-100 shadow-sm'
+                  : 'text-slate-500 hover:text-slate-700 dark:text-gray-400 dark:hover:text-gray-200'
+              }`}
+            >
+              Hoạt động
+            </button>
+          </div>
           <Button 
             type="primary" 
             icon={<PlusOutlined />} 
             size="large"
             onClick={openAddModal}
-            className="bg-vluRed hover:bg-vluRedHover border-none text-white rounded-lg shadow-sm font-medium"
+            className="bg-vluRed hover:bg-vluRedHover border-none text-white rounded-lg shadow-sm font-medium w-full sm:w-auto"
           >
             Thêm Mới
           </Button>
         </div>
       </div>
+
+      {/* Quick Drop Targets for Dragging (shown during both mouse & touch drag) */}
+      {(draggedItemId || touchDraggedItemId) && (
+        <div className="fixed top-24 left-1/2 -translate-x-1/2 z-40 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md border border-slate-200 dark:border-gray-700 shadow-xl rounded-2xl p-4 w-[600px] max-w-[90vw] animate-fade-in-up">
+          <div className="text-xs font-bold text-slate-400 dark:text-gray-400 uppercase tracking-wider mb-2 text-center flex items-center justify-center gap-1.5">
+            <DragOutlined className="animate-pulse text-blue-500" /> Kéo thả vào đây để chuyển trạng thái nhanh
+          </div>
+          <div className="flex flex-wrap gap-2 justify-center">
+            {currentConfig.map(col => {
+              const isMouseOver = dragOverCol === col.name;
+              const isTouchOver = touchDragOverCol === col.name;
+              const isActive = isMouseOver || isTouchOver;
+              return (
+                <div
+                  key={col.name}
+                  data-drop-status={col.name}
+                  onDragOver={(e) => onDragOver(e, col.name)}
+                  onDragLeave={onDragLeave}
+                  onDrop={(e) => onDrop(e, col.name)}
+                  className={`px-4 py-2 rounded-xl border text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
+                    isActive
+                      ? 'bg-blue-600 text-white border-blue-600 scale-105 shadow-md'
+                      : 'bg-slate-50 dark:bg-gray-800 border-slate-200 dark:border-gray-700 text-slate-700 dark:text-gray-300 hover:border-blue-400 hover:text-blue-500'
+                  }`}
+                >
+                  <div className={`w-2.5 h-2.5 rounded-full ${col.color} shadow-sm`}></div>
+                  {col.name}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Board Columns container */}
       <div ref={boardRef} className="flex-1 overflow-x-auto overflow-y-hidden w-full min-h-0 bg-slate-50 dark:bg-gray-800/50 p-6 will-change-scroll custom-scroller border border-slate-200 dark:border-gray-700 rounded-xl shadow-sm">
@@ -436,8 +563,11 @@ const KanbanBoard = () => {
               
               return (
                 <div 
-                  key={status} 
-                  className={`bg-slate-100/70 dark:bg-gray-800/40 rounded-2xl w-[320px] flex flex-col h-full border border-slate-200 dark:border-gray-700/60 shadow-sm dark:shadow-none transition-all duration-200 ${isDragOver ? 'ring-2 ring-blue-400 bg-blue-50/50 dark:bg-blue-900/20 scale-[1.02]' : ''}`}
+                  key={status}
+                  data-drop-status={status}
+                  className={`bg-slate-100/70 dark:bg-gray-800/40 rounded-2xl w-[320px] flex flex-col h-full border border-slate-200 dark:border-gray-700/60 shadow-sm dark:shadow-none transition-all duration-200 ${
+                    isDragOver || touchDragOverCol === status ? 'ring-2 ring-blue-400 bg-blue-50/50 dark:bg-blue-900/20 scale-[1.02]' : ''
+                  }`}
                   onDragOver={(e) => onDragOver(e, status)}
                   onDragLeave={onDragLeave}
                   onDrop={(e) => onDrop(e, status)}
@@ -458,6 +588,7 @@ const KanbanBoard = () => {
                   {/* Column Items Scroll Area */}
                   <div className="flex-1 overflow-y-auto px-3 pb-4 space-y-3 custom-scrollbar">
                     {columnItems.map(item => {
+                      const isTouchDragged = touchDraggedItemId === item.id;
                       const isDragged = draggedItemId === item.id;
                       const itemName = view === 'ENTERPRISE' ? item.name : item.title;
                       const itemIndustry = view === 'ENTERPRISE' ? item.industry : item.activity_type || item.type; // Fallback to 'type' field
@@ -500,10 +631,15 @@ const KanbanBoard = () => {
                           trigger={['contextMenu']} 
                         >
                           <div
-                            className={`group bg-white dark:bg-gray-800 rounded-xl p-4 border border-slate-200 dark:border-gray-700 shadow-sm dark:shadow-none hover:shadow dark:hover:shadow-none hover:border-blue-300 dark:hover:border-blue-500 transition-all cursor-grab active:cursor-grabbing ${isDragged ? 'opacity-40 rotate-2 scale-95 ring-2 ring-blue-400 border-none' : ''}`}
+                            className={`group bg-white dark:bg-gray-800 rounded-xl p-4 border border-slate-200 dark:border-gray-700 shadow-sm dark:shadow-none hover:shadow dark:hover:shadow-none hover:border-blue-300 dark:hover:border-blue-500 transition-all cursor-grab active:cursor-grabbing ${
+                              isDragged || isTouchDragged ? 'opacity-40 rotate-2 scale-95 ring-2 ring-blue-400 border-none' : ''
+                            }`}
                             draggable
                             onDragStart={(e) => onDragStart(e, item)}
                             onDragEnd={onDragEnd}
+                            onTouchStart={(e) => onTouchStart(e, item)}
+                            onTouchMove={onTouchMove}
+                            onTouchEnd={onTouchEnd}
                           >
                             <div className="flex flex-col gap-3 relative">
                               {/* Drag handle icon - visible on hover */}

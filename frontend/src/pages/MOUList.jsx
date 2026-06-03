@@ -601,14 +601,14 @@ const MOUList = () => {
                         <p className="text-xs sm:text-sm text-slate-500 m-0 mt-0.5">Danh sách thống kê các MOU đã ký với Đối tác/Doanh nghiệp</p>
                     </div>
                 </div>
-                <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+                <div className="flex gap-2 w-full sm:w-auto header-actions">
                     {!isLecturer && (
                         <>
                             <Button
                                 size="middle"
                                 icon={<InboxOutlined />}
                                 onClick={() => { setScanResult(null); setScanError(null); setUploadedFile(null); setIsScanModalOpen(true); }}
-                                className="border-purple-600 text-purple-600 dark:border-purple-400 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-950/20 rounded-lg shadow-sm font-medium hover:border-purple-700"
+                                className="border-purple-600 text-purple-600 dark:border-purple-400 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-950/20 rounded-lg shadow-sm font-medium hover:border-purple-700 flex-1 sm:flex-initial"
                             >
                                 Import MOU bằng AI
                             </Button>
@@ -617,7 +617,7 @@ const MOUList = () => {
                                 type="primary"
                                 icon={<PlusOutlined />}
                                 onClick={() => { setEditingId(null); form.resetFields(); setIsModalOpen(true); }}
-                                className="bg-vluRed hover:bg-vluRedHover border-none text-white rounded-lg shadow-sm font-medium"
+                                className="bg-vluRed hover:bg-vluRedHover border-none text-white rounded-lg shadow-sm font-medium flex-1 sm:flex-initial"
                             >
                                 Thêm Biên bản
                             </Button>

@@ -470,13 +470,13 @@ const EnterpriseList = () => {
                         <p className="text-xs sm:text-sm text-slate-500 m-0 mt-0.5">Cập nhật thông tin Doanh nghiệp & Đầu mối liên hệ Đối tác</p>
                     </div>
                 </div>
-                <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+                <div className="flex gap-2 w-full sm:w-auto header-actions">
                     {!isLecturer && (
                         <Button
                             size="middle"
                             icon={<UploadOutlined />}
                             onClick={() => setShowImport(true)}
-                            className="border-purple-600 text-purple-600 dark:border-purple-400 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-950/20 rounded-lg shadow-sm font-medium hover:border-purple-700"
+                            className="border-purple-600 text-purple-600 dark:border-purple-400 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-950/20 rounded-lg shadow-sm font-medium hover:border-purple-700 flex-1 sm:flex-initial"
                         >
                             Import
                         </Button>
@@ -485,7 +485,7 @@ const EnterpriseList = () => {
                         size="middle"
                         icon={<DownloadOutlined />}
                         onClick={handleExport}
-                        className="border-emerald-600 text-emerald-600 dark:border-emerald-400 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 rounded-lg shadow-sm font-medium hover:border-emerald-700"
+                        className="border-emerald-600 text-emerald-600 dark:border-emerald-400 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 rounded-lg shadow-sm font-medium hover:border-emerald-700 flex-1 sm:flex-initial"
                     >
                         Xuất Excel
                     </Button>
@@ -493,7 +493,7 @@ const EnterpriseList = () => {
                         <Button
                             size="middle"
                             type="primary"
-                            className="bg-vluRed hover:bg-vluRedHover border-none text-white rounded-lg shadow-sm font-medium"
+                            className="bg-vluRed hover:bg-vluRedHover border-none text-white rounded-lg shadow-sm font-medium flex-1 sm:flex-initial"
                             icon={<PlusOutlined />}
                             onClick={() => {
                                 setEditingId(null);

@@ -144,15 +144,17 @@ const Departments = () => {
                     </div>
                 </div>
                 {!isLecturer && (
-                    <Button 
-                        size="large"
-                        type="primary" 
-                        icon={<PlusOutlined />} 
-                        onClick={() => { setEditingId(null); form.resetFields(); setIsModalOpen(true); }}
-                        className="bg-vluRed hover:bg-vluRedHover border-none text-white rounded-lg shadow-sm font-medium w-full sm:w-auto"
-                    >
-                        Thêm mới
-                    </Button>
+                    <div className="flex gap-2 w-full sm:w-auto header-actions">
+                        <Button 
+                            size="large"
+                            type="primary" 
+                            icon={<PlusOutlined />} 
+                            onClick={() => { setEditingId(null); form.resetFields(); setIsModalOpen(true); }}
+                            className="bg-vluRed hover:bg-vluRedHover border-none text-white rounded-lg shadow-sm font-medium flex-1 sm:flex-initial"
+                        >
+                            Thêm mới
+                        </Button>
+                    </div>
                 )}
             </div>
 

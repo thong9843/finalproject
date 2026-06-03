@@ -429,13 +429,13 @@ const ActivityList = () => {
                         <p className="text-xs sm:text-sm text-slate-500 m-0 mt-0.5">{data.length} hoạt động · {stats?.active || 0} đang diễn ra</p>
                     </div>
                 </div>
-                <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+                <div className="flex gap-2 w-full sm:w-auto header-actions">
                     {!isLecturer && (
                         <Button
                             size="middle"
                             icon={<UploadOutlined />}
                             onClick={() => setShowImport(true)}
-                            className="border-purple-600 text-purple-600 dark:border-purple-400 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-950/20 rounded-lg shadow-sm font-medium hover:border-purple-700"
+                            className="border-purple-600 text-purple-600 dark:border-purple-400 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-950/20 rounded-lg shadow-sm font-medium hover:border-purple-700 flex-1 sm:flex-initial"
                         >
                             Import
                         </Button>
@@ -444,7 +444,7 @@ const ActivityList = () => {
                         size="middle"
                         icon={<DownloadOutlined />}
                         onClick={handleExport}
-                        className="border-emerald-600 text-emerald-600 dark:border-emerald-400 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 rounded-lg shadow-sm font-medium hover:border-emerald-700"
+                        className="border-emerald-600 text-emerald-600 dark:border-emerald-400 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 rounded-lg shadow-sm font-medium hover:border-emerald-700 flex-1 sm:flex-initial"
                     >
                         Xuất Excel
                     </Button>
@@ -452,7 +452,7 @@ const ActivityList = () => {
                         <Button
                             size="middle"
                             type="primary"
-                            className="bg-vluRed hover:bg-vluRedHover border-none text-white rounded-lg shadow-sm font-medium"
+                            className="bg-vluRed hover:bg-vluRedHover border-none text-white rounded-lg shadow-sm font-medium flex-1 sm:flex-initial"
                             icon={<PlusOutlined />}
                             onClick={() => {
                                 setEditingId(null);
@@ -633,7 +633,7 @@ const ActivityList = () => {
                     </Button>
                 </Popover>
 
-                <div className="flex border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden transition-colors h-10">
+                <div className="hidden md:flex border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden transition-colors h-10">
                     <button onClick={() => setViewMode('grid')} className={`p-2 px-3 transition-colors ${viewMode === 'grid' ? 'bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100' : 'text-gray-400 hover:text-gray-600'}`}>
                         <AppstoreOutlined />
                     </button>

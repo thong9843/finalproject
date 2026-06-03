@@ -199,14 +199,16 @@ const ReportStudents = () => {
                         <p className="text-sm text-slate-500 m-0 mt-0.5">Biểu đồ thống kê phân bổ sinh viên tại các doanh nghiệp liên kết</p>
                     </div>
                 </div>
-                <Button 
-                    size="large"
-                    icon={<DownloadOutlined />} 
-                    onClick={handleExport} 
-                    className="border-emerald-600 text-emerald-600 dark:border-emerald-400 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 rounded-lg shadow-sm font-medium hover:border-emerald-700"
-                >
-                    Xuất Báo Cáo
-                </Button>
+                <div className="flex gap-2 w-full sm:w-auto header-actions">
+                    <Button 
+                        size="large"
+                        icon={<DownloadOutlined />} 
+                        onClick={handleExport} 
+                        className="border-emerald-600 text-emerald-600 dark:border-emerald-400 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 rounded-lg shadow-sm font-medium hover:border-emerald-700 flex-1 sm:flex-initial"
+                    >
+                        Xuất Báo Cáo
+                    </Button>
+                </div>
             </div>
 
             {/* Period Selector */}

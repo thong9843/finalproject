@@ -225,9 +225,11 @@ const BulkDataTool = () => {
                         <p className="text-xs sm:text-sm text-slate-500 m-0 mt-0.5">Thực hiện cập nhật trạng thái, chuyển khoa hoặc xóa nhiều doanh nghiệp cùng lúc</p>
                     </div>
                 </div>
-                <Button type="default" onClick={fetchEnterprises} loading={loading} className="rounded-lg shadow-sm font-medium border-slate-300 dark:border-gray-600 hover:border-vluRed hover:text-vluRed w-full sm:w-auto">
-                    Tải lại dữ liệu
-                </Button>
+                <div className="flex gap-2 w-full sm:w-auto header-actions">
+                    <Button type="default" onClick={fetchEnterprises} loading={loading} className="rounded-lg shadow-sm font-medium border-slate-300 dark:border-gray-600 hover:border-vluRed hover:text-vluRed flex-1 sm:flex-initial">
+                        Tải lại dữ liệu
+                    </Button>
+                </div>
             </div>
 
             {/* Filters Card */}
