@@ -714,10 +714,15 @@ const ActivityList = () => {
                         const sc = statusConfig[item.status] || { colorClass: 'text-gray-500 bg-gray-50', icon: <ClockCircleOutlined /> };
                         const firstType = item.type ? item.type.split(',')[0].trim() : 'Khác';
                         const tc = typeConfig[firstType] || typeConfig['Khác'];
+                        const isChecked = selectedActivities.includes(item.id);
 
                         return (
                             <Col xs={24} sm={viewMode === 'list' ? 24 : 12} lg={viewMode === 'list' ? 24 : 8} key={item.id}>
-                                <div className={`bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md dark:shadow-none dark:hover:border-gray-500 transition-all h-full flex flex-col overflow-hidden group cursor-pointer relative ${item.is_deleted === 1 ? 'opacity-65 border-red-200 dark:border-red-950/30' : ''}`}
+                                <div className={`bg-white dark:bg-gray-800 rounded-2xl border shadow-sm hover:shadow-md dark:shadow-none transition-all h-full flex flex-col overflow-hidden group cursor-pointer relative ${
+                                    isChecked 
+                                        ? 'border-blue-400 dark:border-blue-500 bg-blue-50/5 dark:bg-blue-955/5' 
+                                        : 'border-gray-100 dark:border-gray-700 dark:hover:border-gray-500'
+                                } ${item.is_deleted === 1 ? 'opacity-65 border-red-200 dark:border-red-950/30' : ''}`}
                                     onClick={(e) => {
                                         if (e.target.closest('.action-buttons') || e.target.closest('.ant-checkbox-wrapper')) return;
                                         setSelectedActivity(item);

@@ -397,7 +397,10 @@ const BulkDataTool = () => {
                                         : 'border-slate-200 dark:border-gray-700'
                                 }`}
                                 title={
-                                    <div className="flex items-center gap-3 w-full">
+                                    <div className="flex items-center justify-between gap-3 w-full">
+                                        <span className="font-semibold text-slate-800 dark:text-gray-100 truncate">
+                                            {record.name}
+                                        </span>
                                         <Checkbox
                                             checked={isChecked}
                                             onChange={(e) => {
@@ -408,9 +411,6 @@ const BulkDataTool = () => {
                                                 }
                                             }}
                                         />
-                                        <span className="font-semibold text-slate-800 dark:text-gray-100 truncate flex-1">
-                                            {record.name}
-                                        </span>
                                     </div>
                                 }
                             >

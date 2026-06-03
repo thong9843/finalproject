@@ -637,24 +637,26 @@ const EnterpriseList = () => {
                                         : 'border-slate-200 dark:border-gray-700'
                                 } ${record.is_deleted === 1 ? 'opacity-65 bg-red-50/10' : ''}`}
                                 title={
-                                    <div className="flex items-center gap-3 w-full">
-                                        {!isLecturer && record.is_deleted !== 1 && (
-                                            <Checkbox
-                                                checked={isChecked}
-                                                onChange={(e) => {
-                                                    if (e.target.checked) {
-                                                        setSelectedRowKeys([...selectedRowKeys, record.id]);
-                                                    } else {
-                                                        setSelectedRowKeys(selectedRowKeys.filter(key => key !== record.id));
-                                                    }
-                                                }}
-                                            />
-                                        )}
-                                        <span className="font-semibold text-slate-800 dark:text-gray-100 truncate flex-1">
+                                    <div className="flex items-center justify-between gap-3 w-full">
+                                        <span className="font-semibold text-slate-800 dark:text-gray-100 truncate">
                                             {record.name}
                                         </span>
-                                        <div>
-                                            {record.is_deleted === 1 ? <Tag color="red">Đã xóa</Tag> : <Tag color={statusColors[record.status]}>{record.status}</Tag>}
+                                        <div className="flex items-center gap-2.5 flex-shrink-0">
+                                            <div>
+                                                {record.is_deleted === 1 ? <Tag color="red" className="m-0">Đã xóa</Tag> : <Tag color={statusColors[record.status]} className="m-0">{record.status}</Tag>}
+                                            </div>
+                                            {!isLecturer && record.is_deleted !== 1 && (
+                                                <Checkbox
+                                                    checked={isChecked}
+                                                    onChange={(e) => {
+                                                        if (e.target.checked) {
+                                                            setSelectedRowKeys([...selectedRowKeys, record.id]);
+                                                        } else {
+                                                            setSelectedRowKeys(selectedRowKeys.filter(key => key !== record.id));
+                                                        }
+                                                    }}
+                                                />
+                                            )}
                                         </div>
                                     </div>
                                 }

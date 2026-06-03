@@ -706,23 +706,25 @@ const StudentList = () => {
                                         : 'border-slate-200 dark:border-gray-700'
                                 } ${record.is_deleted === 1 ? 'opacity-65 bg-red-50/10' : ''}`}
                                 title={
-                                    <div className="flex items-center gap-3 w-full">
-                                        {record.is_deleted !== 1 && (
-                                            <Checkbox
-                                                checked={isChecked}
-                                                onChange={(e) => {
-                                                    if (e.target.checked) {
-                                                        setSelectedRowKeys([...selectedRowKeys, record.id]);
-                                                    } else {
-                                                        setSelectedRowKeys(selectedRowKeys.filter(key => key !== record.id));
-                                                    }
-                                                }}
-                                            />
-                                        )}
-                                        <span className="font-semibold text-slate-800 dark:text-gray-100 truncate flex-1">
+                                    <div className="flex items-center justify-between gap-3 w-full">
+                                        <span className="font-semibold text-slate-800 dark:text-gray-100 truncate">
                                             {record.name}
                                         </span>
-                                        <span className="text-xs text-gray-400">{record.student_code}</span>
+                                        <div className="flex items-center gap-3 flex-shrink-0">
+                                            <span className="text-xs text-gray-400">{record.student_code}</span>
+                                            {record.is_deleted !== 1 && (
+                                                <Checkbox
+                                                    checked={isChecked}
+                                                    onChange={(e) => {
+                                                        if (e.target.checked) {
+                                                            setSelectedRowKeys([...selectedRowKeys, record.id]);
+                                                        } else {
+                                                            setSelectedRowKeys(selectedRowKeys.filter(key => key !== record.id));
+                                                        }
+                                                    }}
+                                                />
+                                            )}
+                                        </div>
                                     </div>
                                 }
                             >
