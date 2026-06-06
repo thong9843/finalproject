@@ -31,13 +31,15 @@ const KanbanBoard = () => {
   } catch (e) {
     console.error("Failed to parse user cookie", e);
   }
-  const isAdmin = user?.role === 'ADMIN';
 
   const [activeTab, setActiveTab] = useState('TASKS'); // 'TASKS' or 'NOTES'
   const [loading, setLoading] = useState(false);
   const [tasks, setTasks] = useState([]);
   const [notes, setNotes] = useState([]);
   const [assignees, setAssignees] = useState([]);
+
+  // Mobile column switcher state
+  const [activeMobileColumn, setActiveMobileColumn] = useState('Cần làm');
 
   // Mentions database
   const [allEnterprises, setAllEnterprises] = useState([]);
@@ -49,8 +51,9 @@ const KanbanBoard = () => {
   const [draggedItemId, setDraggedItemId] = useState(null);
   const [dragOverCol, setDragOverCol] = useState(null);
 
-  // Touch drag states for Tasks
+  // Touch drag states for Tasks (with Long Press support)
   const touchDragRef = useRef(null);
+  const touchTimeoutRef = useRef(null);
   const [touchDragOverCol, setTouchDragOverCol] = useState(null);
   const [touchDraggedItemId, setTouchDraggedItemId] = useState(null);
 
@@ -188,7 +191,6 @@ const KanbanBoard = () => {
   // Regex parser for @mentions
   const renderTextWithMentions = (text) => {
     if (!text) return null;
-    // Match @[Name](entity:type:id)
     const parts = text.split(/(\@\[.*?\]\(entity:\w+:\d+\))/g);
     return parts.map((part, index) => {
       const match = part.match(/^\@\[(.*?)\]\(entity:(\w+):(\d+)\)$/);
@@ -249,7 +251,6 @@ const KanbanBoard = () => {
   const handleTaskStatusChange = async (task, newStatus) => {
     if (task.status === newStatus) return;
     const previousTasks = [...tasks];
-    // Optimistic update
     setTasks(tasks.map(t => t.id === task.id ? { ...t, status: newStatus } : t));
 
     try {
@@ -294,47 +295,79 @@ const KanbanBoard = () => {
     setDraggedItemId(null);
   };
 
-  // Touch drag handlers
+  // Touch drag handlers with "Long Press" to prevent scroll conflicts
   const onTouchStart = (e, item) => {
+    if (touchTimeoutRef.current) clearTimeout(touchTimeoutRef.current);
+
     const touch = e.touches[0];
     const startX = touch.clientX;
     const startY = touch.clientY;
 
-    const sourceEl = e.currentTarget;
-    const rect = sourceEl.getBoundingClientRect();
-    const ghost = sourceEl.cloneNode(true);
-    ghost.style.cssText = `
-      position: fixed;
-      top: ${rect.top}px;
-      left: ${rect.left}px;
-      width: ${rect.width}px;
-      opacity: 0.85;
-      pointer-events: none;
-      z-index: 9999;
-      border-radius: 12px;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-      transform: rotate(2deg) scale(1.03);
-      transition: transform 0.1s ease;
-    `;
-    document.body.appendChild(ghost);
+    // Save initial coordinates to verify movement
+    touchDragRef.current = { item, startX, startY, moved: false };
 
-    touchDragRef.current = { item, ghostEl: ghost, startX, startY, moved: false };
-    setTouchDraggedItemId(item.id);
+    // Start 250ms long press timer
+    touchTimeoutRef.current = setTimeout(() => {
+      const sourceEl = e.currentTarget;
+      const rect = sourceEl.getBoundingClientRect();
+      const ghost = sourceEl.cloneNode(true);
+      ghost.id = 'touch-drag-ghost';
+      ghost.style.cssText = `
+        position: fixed;
+        top: ${rect.top}px;
+        left: ${rect.left}px;
+        width: ${rect.width}px;
+        opacity: 0.9;
+        pointer-events: none;
+        z-index: 10000;
+        border-radius: 12px;
+        box-shadow: 0 20px 50px rgba(0,0,0,0.35);
+        transform: rotate(2deg) scale(1.04);
+        transition: transform 0.08s ease;
+      `;
+      document.body.appendChild(ghost);
+
+      // Try to trigger subtle vibration haptic feedback
+      if (navigator.vibrate) {
+        navigator.vibrate(40);
+      }
+
+      touchDragRef.current.ghostEl = ghost;
+      setTouchDraggedItemId(item.id);
+    }, 250);
   };
 
   const onTouchMove = (e) => {
-    if (!touchDragRef.current) return;
-    const { ghostEl } = touchDragRef.current;
     const touch = e.touches[0];
+
+    // If drag hasn't started yet, cancel timer if they scroll/move finger too far
+    if (!touchDraggedItemId) {
+      if (touchDragRef.current) {
+        const dx = touch.clientX - touchDragRef.current.startX;
+        const dy = touch.clientY - touchDragRef.current.startY;
+        if (Math.abs(dx) > 10 || Math.abs(dy) > 10) {
+          if (touchTimeoutRef.current) {
+            clearTimeout(touchTimeoutRef.current);
+            touchTimeoutRef.current = null;
+          }
+        }
+      }
+      return;
+    }
+
+    if (!touchDragRef.current || !touchDragRef.current.ghostEl) return;
+    const { ghostEl } = touchDragRef.current;
 
     const dx = touch.clientX - touchDragRef.current.startX;
     const dy = touch.clientY - touchDragRef.current.startY;
-    if (!touchDragRef.current.moved && Math.abs(dx) < 5 && Math.abs(dy) < 5) return;
     touchDragRef.current.moved = true;
+
+    // Prevent screen vertical scroll while actively dragging
     e.preventDefault();
 
-    ghostEl.style.transform = `translate(${dx}px, ${dy}px) rotate(2deg) scale(1.03)`;
+    ghostEl.style.transform = `translate(${dx}px, ${dy}px) rotate(2deg) scale(1.04)`;
 
+    // Detect drop targets under the touch point
     ghostEl.style.display = 'none';
     const elUnder = document.elementFromPoint(touch.clientX, touch.clientY);
     ghostEl.style.display = '';
@@ -348,13 +381,24 @@ const KanbanBoard = () => {
   };
 
   const onTouchEnd = () => {
+    if (touchTimeoutRef.current) {
+      clearTimeout(touchTimeoutRef.current);
+      touchTimeoutRef.current = null;
+    }
+
     if (!touchDragRef.current) return;
     const { item, ghostEl, moved, overCol } = touchDragRef.current;
 
-    if (ghostEl && ghostEl.parentNode) ghostEl.parentNode.removeChild(ghostEl);
+    if (ghostEl && ghostEl.parentNode) {
+      ghostEl.parentNode.removeChild(ghostEl);
+    }
 
-    if (moved && overCol) {
+    if (moved && overCol && item) {
       handleTaskStatusChange(item, overCol);
+      // Auto switch column on mobile to the column where it was dropped
+      if (window.innerWidth < 768) {
+        setActiveMobileColumn(overCol);
+      }
     }
 
     touchDragRef.current = null;
@@ -432,7 +476,7 @@ const KanbanBoard = () => {
   const openAddNoteModal = () => {
     setEditingNoteId(null);
     noteForm.resetFields();
-    noteForm.setFieldsValue({ color: '#fef08a' }); // yellow default
+    noteForm.setFieldsValue({ color: '#fef08a' });
     setIsNoteModalOpen(true);
   };
 
@@ -489,7 +533,7 @@ const KanbanBoard = () => {
   const handleUpdateNoteColor = async (note, hexColor) => {
     try {
       const updatedNotes = notes.map(n => n.id === note.id ? { ...n, color: hexColor } : n);
-      setNotes(updatedNotes); // Optimistic UI
+      setNotes(updatedNotes);
       await api.put(`/notes/${note.id}`, {
         title: note.title,
         content: note.content,
@@ -501,7 +545,7 @@ const KanbanBoard = () => {
     }
   };
 
-  // Helper trigger for "@ mentions" inside Task and Note textareas
+  // Helper trigger for "@ mentions"
   const openMentionModal = (type, formType, fieldName) => {
     setMentionType(type);
     setActiveFormType(formType);
@@ -530,7 +574,6 @@ const KanbanBoard = () => {
 
     const mentionMarkup = ` @[${selectedName}](entity:${mentionType}:${selectedId}) `;
     
-    // Insert into the active form field
     const activeForm = activeFormType === 'TASK' ? taskForm : noteForm;
     const currentText = activeForm.getFieldValue(activeField) || '';
     activeForm.setFieldsValue({
@@ -610,7 +653,7 @@ const KanbanBoard = () => {
               className="rounded-lg"
             />
           </div>
-          <div className="w-[180px]">
+          <div className="w-[180px] xs:w-full">
             <Select
               placeholder="Độ ưu tiên"
               allowClear
@@ -623,7 +666,7 @@ const KanbanBoard = () => {
               <Option value="Thấp">Thấp</Option>
             </Select>
           </div>
-          <div className="w-[200px]">
+          <div className="w-[200px] xs:w-full">
             <Select
               placeholder="Người thực hiện"
               allowClear
@@ -641,25 +684,84 @@ const KanbanBoard = () => {
         </div>
       )}
 
+      {/* Mobile Column Tabs Switcher (Visible on mobile only, < 768px) */}
+      {activeTab === 'TASKS' && (
+        <div className="flex md:hidden bg-slate-100 dark:bg-gray-800/80 p-1 rounded-xl mb-4 border border-slate-200/50 dark:border-gray-700/50 shrink-0">
+          {TASK_STATUSES.map(col => {
+            const count = tasks.filter(t => t.status === col.name).length;
+            const isActive = activeMobileColumn === col.name;
+            return (
+              <button
+                key={col.name}
+                onClick={() => setActiveMobileColumn(col.name)}
+                className={`flex-1 text-center py-1.5 rounded-lg text-xs font-bold transition-all truncate px-1 ${
+                  isActive
+                    ? 'bg-white dark:bg-gray-700 text-slate-800 dark:text-gray-100 shadow-sm'
+                    : 'text-slate-500 hover:text-slate-700 dark:text-gray-400'
+                }`}
+              >
+                {col.name} ({count})
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Floating Quick Drop Targets Shelf for Dragging (Crucial for mobile and touch drag) */}
+      {(draggedItemId || touchDraggedItemId) && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[10000] bg-white/95 dark:bg-gray-900/95 backdrop-blur-md border border-slate-200 dark:border-gray-700 shadow-2xl rounded-2xl p-4 w-[600px] max-w-[92vw] animate-fade-in-up">
+          <div className="text-[10px] font-bold text-slate-400 dark:text-gray-400 uppercase tracking-wider mb-2.5 text-center flex items-center justify-center gap-1.5">
+            <DragOutlined className="animate-pulse text-blue-500" /> Thả vào đây để thay đổi trạng thái
+          </div>
+          <div className="flex flex-wrap gap-2 justify-center">
+            {TASK_STATUSES.map(col => {
+              const isMouseOver = dragOverCol === col.name;
+              const isTouchOver = touchDragOverCol === col.name;
+              const isActive = isMouseOver || isTouchOver;
+              return (
+                <div
+                  key={col.name}
+                  data-drop-status={col.name}
+                  onDragOver={(e) => onDragOver(e, col.name)}
+                  onDragLeave={onDragLeave}
+                  onDrop={(e) => onDrop(e, col.name)}
+                  className={`px-3.5 py-2 rounded-xl border text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
+                    isActive
+                      ? 'bg-blue-600 text-white border-blue-600 scale-105 shadow-md'
+                      : 'bg-slate-50 dark:bg-gray-800 border-slate-200 dark:border-gray-700 text-slate-700 dark:text-gray-300'
+                  }`}
+                >
+                  <div className={`w-2.5 h-2.5 rounded-full ${col.color} shadow-sm`}></div>
+                  {col.name}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Main workspace */}
       <div className="flex-1 min-h-0 min-w-0">
         {loading ? (
           <div className="w-full h-full flex justify-center items-center"><Spin size="large" /></div>
         ) : activeTab === 'TASKS' ? (
           // ==================== KANBAN BOARD FOR TASKS ====================
-          <div ref={boardRef} className="flex-1 overflow-x-auto overflow-y-hidden w-full h-full bg-slate-50 dark:bg-gray-800/50 p-6 will-change-scroll custom-scroller border border-slate-200 dark:border-gray-700 rounded-xl shadow-sm">
-            <div className="flex gap-6 h-full items-start w-max pb-2">
+          <div ref={boardRef} className="flex-1 overflow-x-auto md:overflow-x-auto overflow-y-auto md:overflow-y-hidden w-full h-full bg-slate-50 dark:bg-gray-800/50 p-4 md:p-6 will-change-scroll custom-scroller border border-slate-200 dark:border-gray-700 rounded-xl shadow-sm">
+            <div className="flex flex-col md:flex-row gap-6 h-full items-stretch md:items-start md:w-max pb-2">
               {TASK_STATUSES.map(colConfig => {
                 const status = colConfig.name;
                 const columnItems = tasks.filter(t => t.status === status);
                 const isDragOver = dragOverCol === status;
+                const isCurrentMobileCol = activeMobileColumn === status;
 
                 return (
                   <div
                     key={status}
                     data-drop-status={status}
-                    className={`bg-slate-100/70 dark:bg-gray-800/40 rounded-2xl w-[320px] flex flex-col h-full border border-slate-200 dark:border-gray-700/60 shadow-sm dark:shadow-none transition-all duration-200 ${
+                    className={`bg-slate-100/70 dark:bg-gray-800/40 rounded-2xl w-full md:w-[320px] flex flex-col h-full border border-slate-200 dark:border-gray-700/60 shadow-sm dark:shadow-none transition-all duration-200 ${
                       isDragOver || touchDragOverCol === status ? 'ring-2 ring-blue-400 bg-blue-50/50 dark:bg-blue-900/20 scale-[1.01]' : ''
+                    } ${
+                      isCurrentMobileCol ? 'flex' : 'hidden md:flex'
                     }`}
                     onDragOver={(e) => onDragOver(e, status)}
                     onDragLeave={onDragLeave}
@@ -727,21 +829,23 @@ const KanbanBoard = () => {
                               onTouchStart={(e) => onTouchStart(e, item)}
                               onTouchMove={onTouchMove}
                               onTouchEnd={onTouchEnd}
-                              className={`group bg-white dark:bg-gray-800 rounded-xl p-4 border border-slate-200 dark:border-gray-700 shadow-sm dark:shadow-none hover:shadow dark:hover:shadow-none hover:border-blue-300 dark:hover:border-blue-500 transition-all cursor-grab active:cursor-grabbing ${
-                                isDragged || isTouchDragged ? 'opacity-40 rotate-1 scale-95 ring-2 ring-blue-400 border-none' : ''
+                              className={`group bg-white dark:bg-gray-800 rounded-xl p-4 border border-slate-200 dark:border-gray-700 shadow-sm dark:shadow-none hover:shadow dark:hover:shadow-none hover:border-blue-300 dark:hover:border-blue-500 transition-all cursor-grab active:cursor-grabbing select-none touch-none ${
+                                isDragged || isTouchDragged ? 'opacity-30 rotate-1 scale-95 ring-2 ring-blue-400 border-none' : ''
                               }`}
                             >
                               <div className="flex flex-col gap-2 relative">
-                                <div className="absolute top-0 right-0 opacity-0 group-hover:opacity-100 transition-opacity text-slate-300">
+                                {/* Long press drag indicator on mobile */}
+                                <div className="absolute top-0 right-0 flex items-center gap-1.5 opacity-40 md:opacity-0 group-hover:opacity-100 transition-opacity text-slate-400">
+                                  <span className="text-[10px] hidden md:inline font-medium text-slate-300">Giữ để kéo</span>
                                   <DragOutlined />
                                 </div>
 
                                 {/* Title */}
-                                <div className="font-semibold text-slate-800 dark:text-gray-100 text-sm leading-snug w-[90%]">
+                                <div className="font-semibold text-slate-800 dark:text-gray-100 text-sm leading-snug w-[85%]">
                                   {item.title}
                                 </div>
 
-                                {/* Description (with parsed Mentions) */}
+                                {/* Description */}
                                 {item.description && (
                                   <div className="text-xs text-slate-500 dark:text-gray-400 line-clamp-3 leading-relaxed whitespace-pre-wrap">
                                     {renderTextWithMentions(item.description)}
@@ -758,7 +862,7 @@ const KanbanBoard = () => {
                                   
                                   {item.due_date && (
                                     <Tag color={isOverdue ? 'error' : 'default'} className="text-[10px] font-medium inline-flex items-center gap-1">
-                                      <CalendarOutlined /> {dayjs(item.due_date).format('DD/MM/YYYY')}
+                                      <CalendarOutlined style={{ fontSize: '10px' }} /> {dayjs(item.due_date).format('DD/MM/YYYY')}
                                     </Tag>
                                   )}
                                 </div>
@@ -766,13 +870,13 @@ const KanbanBoard = () => {
                                 {/* Footer & Assignee */}
                                 <div className="pt-2.5 mt-2 border-t border-slate-100 dark:border-gray-700/60 flex justify-between items-center shrink-0">
                                   <div className="text-[10px] text-slate-400 font-medium">
-                                    ID: {item.id} • {item.faculty_name || 'Hệ thống'}
+                                    ID: {item.id} • {item.creator_name || 'Hệ thống'}
                                   </div>
 
                                   <div className="flex items-center gap-2">
                                     {item.assignee_name && (
                                       <Tooltip title={`Người gán: ${item.assignee_name}`}>
-                                        <Avatar size="small" className="bg-slate-200 text-slate-700 text-[10px] font-bold">
+                                        <Avatar size="small" className="bg-slate-200 text-slate-700 text-[9px] font-bold">
                                           {item.assignee_name.split(' ').pop().substring(0, 2).toUpperCase()}
                                         </Avatar>
                                       </Tooltip>
@@ -812,7 +916,7 @@ const KanbanBoard = () => {
           </div>
         ) : (
           // ==================== STICKY NOTES WORKSPACE ====================
-          <div className="w-full h-full overflow-y-auto bg-slate-50 dark:bg-gray-800/40 p-6 border border-slate-200 dark:border-gray-700 rounded-xl shadow-sm">
+          <div className="w-full h-full overflow-y-auto bg-slate-50 dark:bg-gray-800/40 p-4 md:p-6 border border-slate-200 dark:border-gray-700 rounded-xl shadow-sm">
             {notes.length === 0 ? (
               <div className="h-[250px] flex flex-col items-center justify-center text-slate-400">
                 <Paragraph className="text-lg mb-2">Chưa có ghi chú nào được tạo</Paragraph>
@@ -902,14 +1006,14 @@ const KanbanBoard = () => {
           </Form.Item>
 
           <Row gutter={16}>
-            <Col span={8}>
+            <Col xs={24} sm={8}>
               <Form.Item name="status" label="Trạng thái">
                 <Select className="w-full">
                   {TASK_STATUSES.map(s => <Option key={s.name} value={s.name}>{s.name}</Option>)}
                 </Select>
               </Form.Item>
             </Col>
-            <Col span={8}>
+            <Col xs={12} sm={8}>
               <Form.Item name="priority" label="Độ ưu tiên">
                 <Select className="w-full">
                   <Option value="Cao">Cao</Option>
@@ -918,7 +1022,7 @@ const KanbanBoard = () => {
                 </Select>
               </Form.Item>
             </Col>
-            <Col span={8}>
+            <Col xs={12} sm={8}>
               <Form.Item name="due_date" label="Ngày hết hạn">
                 <DatePicker className="w-full rounded-lg" format="DD/MM/YYYY" />
               </Form.Item>
@@ -940,7 +1044,7 @@ const KanbanBoard = () => {
           {/* Mentions tool shelf */}
           <div className="bg-slate-50 dark:bg-gray-800/80 p-3 rounded-lg border border-slate-200/60 dark:border-gray-700/60 mb-6">
             <div className="text-xs font-bold text-slate-500 mb-2 flex items-center gap-1.5">
-              <LinkOutlined className="text-blue-500" /> Chèn liên kết thực thể hệ thống (nhấn @)
+              <LinkOutlined className="text-blue-500" /> Chèn liên kết thực thể hệ thống
             </div>
             <Space size="small" wrap>
               <Button size="small" icon={<BankOutlined />} onClick={() => openMentionModal('enterprise', 'TASK', 'description')}>@ Doanh nghiệp</Button>
@@ -991,7 +1095,7 @@ const KanbanBoard = () => {
           {/* Mentions tool shelf */}
           <div className="bg-slate-50 dark:bg-gray-800/80 p-3 rounded-lg border border-slate-200/60 dark:border-gray-700/60 mb-6">
             <div className="text-xs font-bold text-slate-500 mb-2 flex items-center gap-1.5">
-              <LinkOutlined className="text-blue-500" /> Chèn liên kết thực thể hệ thống (nhấn @)
+              <LinkOutlined className="text-blue-500" /> Chèn liên kết thực thể hệ thống
             </div>
             <Space size="small" wrap>
               <Button size="small" icon={<BankOutlined />} onClick={() => openMentionModal('enterprise', 'NOTE', 'content')}>@ Doanh nghiệp</Button>
