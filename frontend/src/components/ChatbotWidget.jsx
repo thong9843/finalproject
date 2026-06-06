@@ -239,7 +239,7 @@ const ChatbotWidget = ({ isOpen, onClose }) => {
             <span key={lineIdx}>
                 {lineIdx > 0 && <br />}
                 {line.split('**').map((part, i) =>
-                    i % 2 === 1 ? <strong key={i}>{part}</strong> : part
+                    i % 2 === 1 ? <strong key={i} className="font-bold text-slate-900 dark:text-white">{part}</strong> : part
                 )}
             </span>
         ));

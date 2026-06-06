@@ -1,9 +1,10 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Table, Button, Modal, Form, Input, Select, DatePicker, message, Space, Tooltip, Row, Col, Upload, Spin, Tag, Alert, Switch, Popover, Badge, Divider, App as AntApp, Card, Checkbox, Drawer, Descriptions } from 'antd';
+import { Table, Button, Modal, Form, Input, Select, DatePicker, message, Space, Tooltip, Row, Col, Upload, Spin, Tag, Alert, Switch, Popover, Badge, Divider, App as AntApp, Card, Checkbox, Drawer, Descriptions, Progress } from 'antd';
 import {
     PlusOutlined, EditOutlined, DeleteOutlined, LinkOutlined, SearchOutlined,
     FilePdfOutlined, ScanOutlined, InboxOutlined, CheckCircleOutlined, RobotOutlined, DownloadOutlined,
-    FilterOutlined, ClearOutlined, SortAscendingOutlined, AuditOutlined, EyeOutlined, UnorderedListOutlined
+    FilterOutlined, ClearOutlined, SortAscendingOutlined, AuditOutlined, EyeOutlined, UnorderedListOutlined,
+    UploadOutlined, CloudUploadOutlined, ExclamationCircleOutlined, ReloadOutlined
 } from '@ant-design/icons';
 import api from '../utils/api';
 import dayjs from 'dayjs';
@@ -56,8 +57,19 @@ const MOUList = () => {
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
     const [selectedMOU, setSelectedMOU] = useState(null);
 
+    // File upload states (for drawer and edit form)
+    const [drawerUploadFile, setDrawerUploadFile] = useState(null);
+    const [drawerUploading, setDrawerUploading] = useState(false);
+    const [generatingPdf, setGeneratingPdf] = useState(false);
+    const drawerUploadRef = useRef(null);
+    const formUploadRef = useRef(null);
+    const [formUploadFile, setFormUploadFile] = useState(null);
+    const [formUploading, setFormUploading] = useState(false);
+    const [scanUploadingToCloud, setScanUploadingToCloud] = useState(false);
+
     const handleViewDetail = (record) => {
         setSelectedMOU(record);
+        setDrawerUploadFile(null);
         setIsDrawerOpen(true);
     };
 
@@ -118,15 +130,42 @@ const MOUList = () => {
                 await api.put(`/mous/${editingId}`, payload);
                 message.success('Cập nhật thành công!');
             } else {
-                await api.post('/mous', payload);
+                const res = await api.post('/mous', payload);
+                const newId = res.data.id;
+                // If user chose a file in form, upload it now
+                if (formUploadFile && newId) {
+                    await doFormFileUpload(newId);
+                }
                 message.success('Thêm mới thành công!');
+            }
+            // If editing and user chose a new file
+            if (editingId && formUploadFile) {
+                await doFormFileUpload(editingId);
             }
             setIsModalOpen(false);
             setEditingId(null);
             form.resetFields();
+            setFormUploadFile(null);
             fetchMOUs();
         } catch (error) {
-            message.error('Lỗi khi lưu dữ liệu!');
+            message.error('Lỗi khi lưu dữ liệu: ' + (error.response?.data?.message || error.message));
+        }
+    };
+
+    const doFormFileUpload = async (mouId) => {
+        if (!formUploadFile) return;
+        setFormUploading(true);
+        try {
+            const fd = new FormData();
+            fd.append('file', formUploadFile);
+            await api.post(`/mous/${mouId}/upload-file`, fd, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
+            setFormUploadFile(null);
+        } catch (err) {
+            message.warning('Không thể upload file đính kèm: ' + (err.response?.data?.message || err.message));
+        } finally {
+            setFormUploading(false);
         }
     };
 
@@ -181,6 +220,7 @@ const MOUList = () => {
 
     const openEditModal = (record) => {
         setEditingId(record.id);
+        setFormUploadFile(null);
         form.setFieldsValue({
             ...record,
             signing_date: record.signing_date ? dayjs(record.signing_date) : null,
@@ -210,12 +250,43 @@ const MOUList = () => {
             link.remove();
             window.URL.revokeObjectURL(url);
             message.success(`Đã xuất PDF: ${record.mou_code}`);
+
+            // If MOU has no cloud file yet, offer to upload this PDF to Firebase
+            if (!record.file_url) {
+                modal.confirm({
+                    title: 'Lưu PDF lên Cloud?',
+                    icon: <CloudUploadOutlined className="text-indigo-500" />,
+                    content: (
+                        <div>
+                            <p>PDF đã tải xuống thành công. Bạn có muốn <strong>lưu PDF này lên Firebase Cloud</strong> để đính kèm vào biên bản không?</p>
+                            <p className="text-slate-400 text-xs mt-1">Sau khi lưu, bạn có thể xem lại bất kỳ lúc nào từ trang chi tiết MOU.</p>
+                        </div>
+                    ),
+                    okText: 'Lưu lên Cloud',
+                    cancelText: 'Không cần',
+                    okButtonProps: { className: '!bg-indigo-600 hover:!bg-indigo-500 text-white border-none' },
+                    onOk: async () => {
+                        try {
+                            const res = await api.post(`/mous/${record.id}/generate-pdf-upload`);
+                            message.success('Đã lưu PDF lên Firebase Cloud!');
+                            // Refresh local state if it's the currently selected drawer MOU
+                            if (selectedMOU?.id === record.id) {
+                                setSelectedMOU(prev => ({ ...prev, file_url: res.data.file_url }));
+                            }
+                            fetchMOUs();
+                        } catch (err) {
+                            message.error('Lỗi khi lưu lên Cloud: ' + (err.response?.data?.message || err.message));
+                        }
+                    }
+                });
+            }
         } catch (error) {
             message.error('Lỗi khi xuất PDF. Vui lòng thử lại!');
         } finally {
             setExportingId(null);
         }
     };
+
 
     // ==================== AI SCAN ====================
     const handleScanDocument = async () => {
@@ -233,7 +304,7 @@ const MOUList = () => {
                 headers: { 'Content-Type': 'multipart/form-data' },
                 timeout: 60000,
             });
-            setScanResult(response.data.extracted);
+            setScanResult({ ...response.data.extracted, _originalFile: uploadedFile });
             message.success('AI đã phân tích xong tài liệu!');
         } catch (error) {
             const msg = error.response?.data?.message || 'Lỗi kết nối AI. Vui lòng thử lại!';
@@ -249,8 +320,47 @@ const MOUList = () => {
 
         let finalEnterpriseId = scanResult.enterprise_id;
         let finalActivityId = scanResult.activity_id;
+        let cloudFileUrl = null;
 
-        // 1. Tự động hỏi tạo Doanh nghiệp nếu chưa có
+        // 1. Ask if user wants to upload the scanned file to Firebase
+        if (scanResult._originalFile) {
+            const wantsUpload = await new Promise((resolve) => {
+                modal.confirm({
+                    title: 'Lưu tài liệu gốc lên Cloud?',
+                    icon: <CloudUploadOutlined className="text-purple-600" />,
+                    content: (
+                        <div>
+                            <p>Bạn có muốn tải file <strong>{scanResult._originalFile.name}</strong> lên Firebase Storage để lưu trữ lâu dài không?</p>
+                            <p className="text-slate-400 text-xs mt-1">Nếu không, bạn vẫn có thể upload thủ công sau từ trang chi tiết MOU.</p>
+                        </div>
+                    ),
+                    okText: 'Có, tải lên Firebase',
+                    cancelText: 'Bỏ qua, chỉ điền form',
+                    okButtonProps: { className: '!bg-purple-600 hover:!bg-purple-500 text-white border-none' },
+                    onOk: () => resolve(true),
+                    onCancel: () => resolve(false)
+                });
+            });
+
+            if (wantsUpload) {
+                setScanUploadingToCloud(true);
+                try {
+                    const fd = new FormData();
+                    fd.append('file', scanResult._originalFile);
+                    const uploadRes = await api.post('/mous/upload-scan-file', fd, {
+                        headers: { 'Content-Type': 'multipart/form-data' }
+                    });
+                    cloudFileUrl = uploadRes.data.file_url;
+                    message.success('Đã tải tài liệu lên Firebase!');
+                } catch (uploadErr) {
+                    message.warning('Không thể tải lên Firebase: ' + (uploadErr.response?.data?.message || uploadErr.message));
+                } finally {
+                    setScanUploadingToCloud(false);
+                }
+            }
+        }
+
+        // 2. Tự động hỏi tạo Doanh nghiệp nếu chưa có
         if (scanResult.enterprise_name && !finalEnterpriseId) {
             const confirmed = await new Promise((resolve) => {
                 modal.confirm({
@@ -273,7 +383,7 @@ const MOUList = () => {
                         faculty_id: filterFaculty || null
                     });
                     finalEnterpriseId = res.data.id;
-                    await fetchOptions(); // Cập nhật lại danh sách doanh nghiệp
+                    await fetchOptions();
                     message.success('Tạo doanh nghiệp thành công!');
                 } catch (error) {
                     message.error('Lỗi khi tạo doanh nghiệp!');
@@ -281,7 +391,7 @@ const MOUList = () => {
             }
         }
 
-        // 2. Tự động hỏi tạo Hoạt động nếu chưa có
+        // 3. Tự động hỏi tạo Hoạt động nếu chưa có
         if (scanResult.activity_name && !finalActivityId && finalEnterpriseId) {
             const confirmed = await new Promise((resolve) => {
                 modal.confirm({
@@ -304,7 +414,7 @@ const MOUList = () => {
                         detail: scanResult.collaboration_scope || ''
                     });
                     finalActivityId = res.data.id;
-                    await fetchOptions(); // Cập nhật lại danh sách hoạt động
+                    await fetchOptions();
                     message.success('Tạo hoạt động thành công!');
                 } catch (error) {
                     message.error('Lỗi khi tạo hoạt động!');
@@ -316,7 +426,7 @@ const MOUList = () => {
             mou_code: scanResult.mou_code,
             enterprise_id: finalEnterpriseId || undefined,
             activity_id: finalActivityId || undefined,
-            file_url: scanResult.file_url || undefined,
+            file_url: cloudFileUrl || undefined,
             signing_date: scanResult.signing_date ? dayjs(scanResult.signing_date) : null,
             partner_contact: scanResult.partner_contact,
             org_type: scanResult.org_type,
@@ -328,13 +438,51 @@ const MOUList = () => {
             past_activities: scanResult.past_activities,
             related_data: scanResult.related_data,
         };
-        // Remove nulls
         Object.keys(fields).forEach(k => fields[k] == null && delete fields[k]);
         form.setFieldsValue(fields);
         setEditingId(null);
+        setFormUploadFile(null);
         setIsScanModalOpen(false);
         setIsModalOpen(true);
         message.success('Đã điền thông tin vào form. Vui lòng kiểm tra và lưu!');
+    };
+
+    // Upload file manually from Drawer (for existing MOU)
+    const handleUploadFileToMOU = async () => {
+        if (!drawerUploadFile || !selectedMOU) return;
+        setDrawerUploading(true);
+        try {
+            const fd = new FormData();
+            fd.append('file', drawerUploadFile);
+            const res = await api.post(`/mous/${selectedMOU.id}/upload-file`, fd, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
+            message.success('Đã tải lên tài liệu thành công!');
+            const newFileUrl = res.data.file_url;
+            setSelectedMOU(prev => ({ ...prev, file_url: newFileUrl }));
+            setDrawerUploadFile(null);
+            fetchMOUs();
+        } catch (err) {
+            message.error('Lỗi khi tải lên: ' + (err.response?.data?.message || err.message));
+        } finally {
+            setDrawerUploading(false);
+        }
+    };
+
+    // Generate PDF and upload to Firebase from Drawer
+    const handleGeneratePdfAndUpload = async (mou) => {
+        setGeneratingPdf(true);
+        try {
+            const res = await api.post(`/mous/${mou.id}/generate-pdf-upload`);
+            message.success('Đã tạo và lưu PDF lên Firebase!');
+            const newFileUrl = res.data.file_url;
+            setSelectedMOU(prev => ({ ...prev, file_url: newFileUrl }));
+            fetchMOUs();
+        } catch (err) {
+            message.error('Lỗi: ' + (err.response?.data?.message || err.message));
+        } finally {
+            setGeneratingPdf(false);
+        }
     };
 
     const handleSmartPdfAction = (record) => {
@@ -811,7 +959,7 @@ const MOUList = () => {
             <Modal
                 title={editingId ? "Cập nhật Biên bản ghi nhớ (MOU)" : "Thêm mới Biên bản ghi nhớ (MOU)"}
                 open={isModalOpen}
-                onCancel={() => setIsModalOpen(false)}
+                onCancel={() => { setIsModalOpen(false); setFormUploadFile(null); }}
                 footer={null}
                 width={850}
                 destroyOnClose
@@ -917,9 +1065,61 @@ const MOUList = () => {
                             </Form.Item>
                         </Col>
                     </Row>
+
+                    {/* File Upload Section */}
+                    <div className="border border-dashed border-slate-300 dark:border-gray-600 rounded-xl p-4 mb-4 bg-slate-50 dark:bg-gray-800/30">
+                        <div className="flex items-center gap-2 mb-3">
+                            <CloudUploadOutlined className="text-blue-500 text-lg" />
+                            <span className="font-semibold text-slate-700 dark:text-gray-200 text-sm">Tài liệu đính kèm (tùy chọn)</span>
+                        </div>
+                        <Form.Item noStyle dependencies={['file_url']}>
+                            {({ getFieldValue }) => {
+                                const existingUrl = getFieldValue('file_url');
+                                return existingUrl ? (
+                                    <div className="flex items-center gap-3 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-lg px-3 py-2 mb-2">
+                                        <CheckCircleOutlined className="text-green-500" />
+                                        <span className="text-sm text-green-700 dark:text-green-300 flex-1">Đã có tài liệu trên Cloud</span>
+                                        <Button size="small" type="link" href={existingUrl} target="_blank" className="text-green-600">Xem</Button>
+                                        <Button size="small" danger type="text" onClick={() => form.setFieldsValue({ file_url: null })}>Gỡ bỏ</Button>
+                                    </div>
+                                ) : null;
+                            }}
+                        </Form.Item>
+                        {formUploadFile ? (
+                            <div className="flex items-center gap-3 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg px-3 py-2">
+                                <FilePdfOutlined className="text-blue-500" />
+                                <span className="text-sm text-blue-700 dark:text-blue-300 flex-1 truncate">{formUploadFile.name}</span>
+                                <span className="text-xs text-slate-400">{(formUploadFile.size / 1024).toFixed(1)} KB</span>
+                                <Button size="small" danger type="text" onClick={() => setFormUploadFile(null)}>Xóa</Button>
+                            </div>
+                        ) : (
+                            <>
+                                <input
+                                    ref={formUploadRef}
+                                    type="file"
+                                    accept=".jpg,.jpeg,.png,.gif,.webp,.pdf"
+                                    style={{ display: 'none' }}
+                                    onChange={(e) => {
+                                        const f = e.target.files?.[0];
+                                        if (f) setFormUploadFile(f);
+                                        e.target.value = '';
+                                    }}
+                                />
+                                <Button
+                                    icon={<UploadOutlined />}
+                                    onClick={() => formUploadRef.current?.click()}
+                                    className="w-full rounded-lg border-dashed"
+                                >
+                                    Chọn file để đính kèm (JPG, PNG, PDF)
+                                </Button>
+                                <p className="text-xs text-slate-400 mt-1 text-center">File sẽ được tải lên Firebase sau khi lưu biên bản</p>
+                            </>
+                        )}
+                    </div>
+
                     <div className="flex justify-end gap-3 pt-4 border-t border-slate-100 dark:border-gray-700 mt-4">
-                        <Button onClick={() => setIsModalOpen(false)} size="large" className="rounded-lg">Hủy</Button>
-                        <Button type="primary" htmlType="submit" size="large" className="bg-vluRed hover:bg-vluRedHover border-none text-white rounded-lg shadow-sm font-medium">
+                        <Button onClick={() => { setIsModalOpen(false); setFormUploadFile(null); }} size="large" className="rounded-lg">Hủy</Button>
+                        <Button type="primary" htmlType="submit" size="large" loading={formUploading} className="bg-vluRed hover:bg-vluRedHover border-none text-white rounded-lg shadow-sm font-medium">
                             {editingId ? "Cập nhật" : "Lưu Biên bản"}
                         </Button>
                     </div>
@@ -1019,17 +1219,25 @@ const MOUList = () => {
 
                     {/* Apply Button */}
                     {scanResult && (
-                        <div className="mt-4 flex justify-end gap-3">
-                            <Button onClick={() => setIsScanModalOpen(false)} className="rounded-lg">Hủy</Button>
-                            <Button
-                                type="primary"
-                                icon={<CheckCircleOutlined />}
-                                onClick={handleApplyScanResult}
-                                className="rounded-lg !bg-purple-600 hover:!bg-purple-500 !border-0 !text-white"
-                                size="large"
-                            >
-                                Điền vào Form & Lưu
-                            </Button>
+                        <div className="mt-4">
+                            {scanUploadingToCloud && (
+                                <div className="mb-3 flex items-center gap-2 text-purple-600 text-sm">
+                                    <Spin size="small" /> Đang tải lên Firebase...
+                                </div>
+                            )}
+                            <div className="flex justify-end gap-3">
+                                <Button onClick={() => setIsScanModalOpen(false)} className="rounded-lg">Hủy</Button>
+                                <Button
+                                    type="primary"
+                                    icon={<CheckCircleOutlined />}
+                                    onClick={handleApplyScanResult}
+                                    disabled={scanUploadingToCloud}
+                                    className="rounded-lg !bg-purple-600 hover:!bg-purple-500 !border-0 !text-white"
+                                    size="large"
+                                >
+                                    Điền vào Form & Lưu
+                                </Button>
+                            </div>
                         </div>
                     )}
                 </div>
@@ -1111,20 +1319,163 @@ const MOUList = () => {
                         )}
 
                         <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-slate-200 dark:border-gray-700">
-                            <h3 className="text-lg font-bold text-slate-800 dark:text-gray-100 mb-3 border-b pb-2">Tài liệu đính kèm</h3>
-                            <div className="flex flex-col gap-2">
+                            <h3 className="text-lg font-bold text-slate-800 dark:text-gray-100 mb-3 border-b pb-2 flex items-center gap-2">
+                                <CloudUploadOutlined className="text-blue-500" /> Tài liệu đính kèm
+                            </h3>
+                            <div className="flex flex-col gap-3">
+                                {/* CASE 1: Already has file_url */}
                                 {selectedMOU.file_url ? (
-                                    <Button type="primary" icon={<InboxOutlined />} onClick={() => window.open(selectedMOU.file_url, '_blank')} className="bg-purple-600 hover:bg-purple-500 border-none w-full text-white flex items-center justify-center">
-                                        Xem tài liệu gốc (Cloud)
-                                    </Button>
+                                    <div className="flex flex-col gap-2">
+                                        <div className="flex items-center gap-3 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-xl px-4 py-3">
+                                            <CheckCircleOutlined className="text-green-500 text-lg" />
+                                            <div className="flex-1">
+                                                <p className="font-semibold text-green-700 dark:text-green-300 text-sm m-0">Tài liệu đã có trên Cloud</p>
+                                                <p className="text-green-600/70 text-xs m-0 truncate">{selectedMOU.file_url}</p>
+                                            </div>
+                                        </div>
+                                        <Button
+                                            type="primary"
+                                            icon={<EyeOutlined />}
+                                            onClick={() => window.open(selectedMOU.file_url, '_blank')}
+                                            className="bg-purple-600 hover:bg-purple-500 border-none w-full text-white flex items-center justify-center rounded-lg"
+                                        >
+                                            Xem tài liệu gốc (Cloud)
+                                        </Button>
+                                        <Divider className="my-1" plain><span className="text-xs text-slate-400">Hoặc thay thế bằng file khác</span></Divider>
+                                        {/* Allow replacing */}
+                                        {!isLecturer && (
+                                            <>
+                                                {drawerUploadFile ? (
+                                                    <div className="flex flex-col gap-2">
+                                                        <div className="flex items-center gap-3 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 rounded-lg px-3 py-2">
+                                                            <FilePdfOutlined className="text-blue-500" />
+                                                            <span className="text-sm text-blue-700 dark:text-blue-300 flex-1 truncate">{drawerUploadFile.name}</span>
+                                                            <span className="text-xs text-slate-400">{(drawerUploadFile.size / 1024).toFixed(1)} KB</span>
+                                                            <Button size="small" danger type="text" onClick={() => setDrawerUploadFile(null)}>Xóa</Button>
+                                                        </div>
+                                                        <Button
+                                                            type="primary"
+                                                            icon={<CloudUploadOutlined />}
+                                                            loading={drawerUploading}
+                                                            onClick={handleUploadFileToMOU}
+                                                            className="w-full rounded-lg bg-blue-600 hover:bg-blue-500 border-none text-white"
+                                                        >
+                                                            Tải lên & Cập nhật tài liệu
+                                                        </Button>
+                                                    </div>
+                                                ) : (
+                                                    <>
+                                                        <input
+                                                            ref={drawerUploadRef}
+                                                            type="file"
+                                                            accept=".jpg,.jpeg,.png,.gif,.webp,.pdf"
+                                                            style={{ display: 'none' }}
+                                                            onChange={(e) => {
+                                                                const f = e.target.files?.[0];
+                                                                if (f) setDrawerUploadFile(f);
+                                                                e.target.value = '';
+                                                            }}
+                                                        />
+                                                        <Button
+                                                            icon={<UploadOutlined />}
+                                                            onClick={() => drawerUploadRef.current?.click()}
+                                                            className="w-full rounded-lg border-dashed"
+                                                        >
+                                                            Chọn file để thay thế
+                                                        </Button>
+                                                    </>
+                                                )}
+                                            </>
+                                        )}
+                                    </div>
                                 ) : (
-                                    <div className="text-slate-400 text-center py-2 italic">Chưa đính kèm tài liệu gốc (Cloud)</div>
+                                    /* CASE 2: No file yet - show options */
+                                    <div className="flex flex-col gap-3">
+                                        <div className="flex items-center gap-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-xl px-4 py-3">
+                                            <ExclamationCircleOutlined className="text-amber-500 text-lg" />
+                                            <div>
+                                                <p className="font-semibold text-amber-700 dark:text-amber-300 text-sm m-0">Chưa có tài liệu đính kèm</p>
+                                                <p className="text-amber-600/70 text-xs m-0">Hãy tải lên file gốc hoặc tạo PDF biên bản mẫu</p>
+                                            </div>
+                                        </div>
+
+                                        {!isLecturer && (
+                                            <>
+                                                {/* Option A: Manual file upload */}
+                                                <div className="border border-dashed border-slate-300 dark:border-gray-600 rounded-xl p-3">
+                                                    <p className="text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wide mb-2 flex items-center gap-1">
+                                                        <UploadOutlined /> Tải lên tài liệu gốc
+                                                    </p>
+                                                    {drawerUploadFile ? (
+                                                        <div className="flex flex-col gap-2">
+                                                            <div className="flex items-center gap-3 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 rounded-lg px-3 py-2">
+                                                                <FilePdfOutlined className="text-blue-500" />
+                                                                <span className="text-sm text-blue-700 dark:text-blue-300 flex-1 truncate">{drawerUploadFile.name}</span>
+                                                                <span className="text-xs text-slate-400">{(drawerUploadFile.size / 1024).toFixed(1)} KB</span>
+                                                                <Button size="small" danger type="text" onClick={() => setDrawerUploadFile(null)}>Xóa</Button>
+                                                            </div>
+                                                            <Button
+                                                                type="primary"
+                                                                icon={<CloudUploadOutlined />}
+                                                                loading={drawerUploading}
+                                                                onClick={handleUploadFileToMOU}
+                                                                className="w-full rounded-lg bg-blue-600 hover:bg-blue-500 border-none text-white"
+                                                            >
+                                                                Xác nhận tải lên Firebase
+                                                            </Button>
+                                                        </div>
+                                                    ) : (
+                                                        <>
+                                                            <input
+                                                                ref={drawerUploadRef}
+                                                                type="file"
+                                                                accept=".jpg,.jpeg,.png,.gif,.webp,.pdf"
+                                                                style={{ display: 'none' }}
+                                                                onChange={(e) => {
+                                                                    const f = e.target.files?.[0];
+                                                                    if (f) setDrawerUploadFile(f);
+                                                                    e.target.value = '';
+                                                                }}
+                                                            />
+                                                            <Button
+                                                                icon={<UploadOutlined />}
+                                                                onClick={() => drawerUploadRef.current?.click()}
+                                                                className="w-full rounded-lg border-dashed"
+                                                            >
+                                                                Chọn file để tải lên (JPG, PNG, PDF)
+                                                            </Button>
+                                                        </>
+                                                    )}
+                                                </div>
+
+                                                {/* Option B: Generate PDF and upload */}
+                                                <div className="border border-dashed border-slate-300 dark:border-gray-600 rounded-xl p-3">
+                                                    <p className="text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wide mb-2 flex items-center gap-1">
+                                                        <FilePdfOutlined /> Tự tạo PDF biên bản mẫu
+                                                    </p>
+                                                    <Button
+                                                        icon={<CloudUploadOutlined />}
+                                                        loading={generatingPdf}
+                                                        onClick={() => handleGeneratePdfAndUpload(selectedMOU)}
+                                                        className="w-full rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white border-none"
+                                                    >
+                                                        {generatingPdf ? 'Đang tạo & tải lên...' : 'Tạo PDF mẫu & Upload lên Firebase'}
+                                                    </Button>
+                                                    <p className="text-xs text-slate-400 mt-1 text-center">
+                                                        Hệ thống sẽ tạo PDF biên bản từ dữ liệu hiện có rồi lưu lên Cloud
+                                                    </p>
+                                                </div>
+                                            </>
+                                        )}
+                                    </div>
                                 )}
-                                <Button icon={<FilePdfOutlined />} onClick={() => handleExportPdf(selectedMOU)} className="w-full">
-                                    Xuất PDF Biên bản mẫu
+
+                                {/* Always show download PDF template */}
+                                <Button icon={<FilePdfOutlined />} onClick={() => handleExportPdf(selectedMOU)} className="w-full rounded-lg">
+                                    Tải xuống PDF Biên bản mẫu
                                 </Button>
                                 {selectedMOU.working_dir && (
-                                    <Button icon={<LinkOutlined />} onClick={() => window.open(selectedMOU.working_dir, '_blank')} className="w-full">
+                                    <Button icon={<LinkOutlined />} onClick={() => window.open(selectedMOU.working_dir, '_blank')} className="w-full rounded-lg">
                                         Thư mục làm việc (Drive/Link)
                                     </Button>
                                 )}

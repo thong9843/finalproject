@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Header from './Header';
@@ -8,6 +8,14 @@ const Layout = () => {
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [collapsed, setCollapsed] = useState(() => localStorage.getItem('sidebar-collapsed') === 'true');
     const [chatbotOpen, setChatbotOpen] = useState(false);
+
+    useEffect(() => {
+        const handleOpenChat = () => {
+            setChatbotOpen(true);
+        };
+        window.addEventListener('open-chatbot', handleOpenChat);
+        return () => window.removeEventListener('open-chatbot', handleOpenChat);
+    }, []);
 
     const handleCollapseToggle = () => {
         setCollapsed(prev => {
@@ -27,9 +35,17 @@ const Layout = () => {
                 />
             )}
 
+            {/* Chatbot Overlay for mobile */}
+            {chatbotOpen && (
+                <div
+                    className="fixed inset-0 bg-black/50 z-[9999] lg:hidden"
+                    onClick={() => setChatbotOpen(false)}
+                />
+            )}
+
             <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} collapsed={collapsed} />
 
-            <div className={`flex-1 flex flex-col pt-16 min-w-0 transition-all duration-300 ${collapsed ? 'lg:ml-20' : 'lg:ml-64'}`}>
+            <div className={`flex-1 flex flex-col pt-16 min-w-0 transition-all duration-300 ${collapsed ? 'lg:ml-20' : 'lg:ml-64'} ${chatbotOpen ? 'lg:mr-[400px]' : 'lg:mr-0'}`}>
                 <Header 
                     onMenuToggle={() => setSidebarOpen(prev => !prev)} 
                     collapsed={collapsed}

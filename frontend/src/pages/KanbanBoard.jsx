@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { message, Card, Select, Typography, Spin, Badge, Button, Modal, Form, Input, DatePicker, Tag, Tooltip, Dropdown, Row, Col, Space, Divider, Avatar } from 'antd';
-import { PlusOutlined, BankOutlined, ProjectOutlined, CalendarOutlined, MoreOutlined, DragOutlined, EditOutlined, DeleteOutlined, UserOutlined, HomeOutlined, FileTextOutlined, LinkOutlined, InfoCircleOutlined, CheckSquareOutlined, RobotOutlined, CloudUploadOutlined, AudioOutlined, PictureOutlined } from '@ant-design/icons';
+import { message, Card, Select, Typography, Spin, Badge, Button, Modal, Form, Input, DatePicker, Tag, Tooltip, Dropdown, Row, Col, Space, Divider, Avatar, Mentions } from 'antd';
+import { PlusOutlined, BankOutlined, ProjectOutlined, CalendarOutlined, MoreOutlined, DragOutlined, EditOutlined, DeleteOutlined, UserOutlined, HomeOutlined, FileTextOutlined, LinkOutlined, InfoCircleOutlined, CheckSquareOutlined, RobotOutlined, CloudUploadOutlined, AudioOutlined, PictureOutlined, DownloadOutlined } from '@ant-design/icons';
 import api from '../utils/api';
 import dayjs from 'dayjs';
 import Cookies from 'js-cookie';
@@ -16,11 +16,11 @@ const TASK_STATUSES = [
 ];
 
 const STICKY_COLORS = [
-  { name: 'Vàng', hex: '#fef08a', textHex: '#854d0e', bgClass: 'bg-yellow-100 dark:bg-yellow-950/20 border-yellow-200 dark:border-yellow-900/50' },
-  { name: 'Xanh dương', hex: '#bfdbfe', textHex: '#1e40af', bgClass: 'bg-blue-100 dark:bg-blue-950/20 border-blue-200 dark:border-blue-900/50' },
-  { name: 'Xanh lá', hex: '#bbf7d0', textHex: '#166534', bgClass: 'bg-green-100 dark:bg-green-950/20 border-green-200 dark:border-green-900/50' },
-  { name: 'Hồng', hex: '#fbcfe8', textHex: '#9d174d', bgClass: 'bg-pink-100 dark:bg-pink-950/20 border-pink-200 dark:border-pink-900/50' },
-  { name: 'Tím', hex: '#e9d5ff', textHex: '#6b21a8', bgClass: 'bg-purple-100 dark:bg-purple-950/20 border-purple-200 dark:border-purple-900/50' },
+  { name: 'Vàng', hex: '#fef08a', textHex: '#854d0e', bgClass: 'bg-yellow-100/90 border-yellow-200 dark:bg-yellow-950/45 dark:border-yellow-800/40' },
+  { name: 'Xanh dương', hex: '#bfdbfe', textHex: '#1e40af', bgClass: 'bg-blue-100/90 border-blue-200 dark:bg-blue-950/45 dark:border-blue-800/40' },
+  { name: 'Xanh lá', hex: '#bbf7d0', textHex: '#166534', bgClass: 'bg-green-100/90 border-green-200 dark:bg-green-950/45 dark:border-green-800/40' },
+  { name: 'Hồng', hex: '#fbcfe8', textHex: '#9d174d', bgClass: 'bg-pink-100/90 border-pink-200 dark:bg-pink-950/45 dark:border-pink-800/40' },
+  { name: 'Tím', hex: '#e9d5ff', textHex: '#6b21a8', bgClass: 'bg-purple-100/90 border-purple-200 dark:bg-purple-950/45 dark:border-purple-800/40' },
 ];
 
 const KanbanBoard = () => {
@@ -77,15 +77,71 @@ const KanbanBoard = () => {
   const [priorityFilter, setPriorityFilter] = useState(null);
   const [assigneeFilter, setAssigneeFilter] = useState(null);
 
+  // Detailed preview modal for clicked badges
+  const [previewEntity, setPreviewEntity] = useState({ visible: false, type: '', data: null });
+
   // Mention Popover Helper State
   const [isMentionModalOpen, setIsMentionModalOpen] = useState(false);
   const [mentionType, setMentionType] = useState(null); // 'enterprise', 'activity', 'mou', 'student'
   const [mentionForm] = Form.useForm();
   const [activeFormType, setActiveFormType] = useState('TASK'); // 'TASK' or 'NOTE'
   const [activeField, setActiveField] = useState(''); // 'description' or 'content'
+  const [mentionSearchText, setMentionSearchText] = useState('');
 
-  // Detailed preview modal for clicked badges
-  const [previewEntity, setPreviewEntity] = useState({ visible: false, type: '', data: null });
+  // Note Search, Filter and Arrange States
+  const [noteSearchKeyword, setNoteSearchKeyword] = useState('');
+  const [noteColorFilter, setNoteColorFilter] = useState(null);
+  const [noteMentionFilter, setNoteMentionFilter] = useState(null);
+  const [noteSortOrder, setNoteSortOrder] = useState('custom');
+
+  // Drag states for Notes
+  const [draggedNoteId, setDraggedNoteId] = useState(null);
+  const [dragOverNoteId, setDragOverNoteId] = useState(null);
+
+  // Touch drag states for Notes
+  const [touchDraggedNoteId, setTouchDraggedNoteId] = useState(null);
+  const [touchDragOverNoteId, setTouchDragOverNoteId] = useState(null);
+  const touchNoteDragRef = useRef(null);
+  const touchNoteTimeoutRef = useRef(null);
+
+  const filteredAndSortedNotes = React.useMemo(() => {
+    let result = [...notes];
+    
+    // 1. Search filter
+    if (noteSearchKeyword) {
+      const kw = noteSearchKeyword.toLowerCase();
+      result = result.filter(n => 
+        (n.title && n.title.toLowerCase().includes(kw)) ||
+        (n.content && n.content.toLowerCase().includes(kw))
+      );
+    }
+    
+    // 2. Color filter
+    if (noteColorFilter) {
+      result = result.filter(n => n.color === noteColorFilter);
+    }
+    
+    // 3. Mention type filter
+    if (noteMentionFilter) {
+      const mentionRegex = new RegExp(`entity:${noteMentionFilter}:`, 'i');
+      result = result.filter(n => n.content && mentionRegex.test(n.content));
+    }
+    
+    // 4. Arrange (Sort)
+    if (noteSortOrder === 'newest') {
+      result.sort((a, b) => b.id - a.id);
+    } else if (noteSortOrder === 'oldest') {
+      result.sort((a, b) => a.id - b.id);
+    } else if (noteSortOrder === 'title-az') {
+      result.sort((a, b) => {
+        const titleA = a.title || '';
+        const titleB = b.title || '';
+        return titleA.localeCompare(titleB, 'vi', { sensitivity: 'base' });
+      });
+    }
+    
+    return result;
+  }, [notes, noteSearchKeyword, noteColorFilter, noteMentionFilter, noteSortOrder]);
 
   // Fetch functions
   const fetchTasks = async () => {
@@ -109,7 +165,28 @@ const KanbanBoard = () => {
     setLoading(true);
     try {
       const res = await api.get('/notes');
-      setNotes(res.data);
+      let data = res.data || [];
+      
+      // Load custom order from localStorage if it exists
+      const userKey = user ? `vlu_notes_order_${user.id}` : 'vlu_notes_order_default';
+      const storedOrderRaw = localStorage.getItem(userKey);
+      if (storedOrderRaw) {
+        try {
+          const storedOrder = JSON.parse(storedOrderRaw);
+          data.sort((a, b) => {
+            const indexA = storedOrder.indexOf(a.id);
+            const indexB = storedOrder.indexOf(b.id);
+            
+            if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+            if (indexA !== -1) return 1;
+            if (indexB !== -1) return -1;
+            return b.id - a.id;
+          });
+        } catch (e) {
+          console.error("Failed to parse stored notes order", e);
+        }
+      }
+      setNotes(data);
     } catch (error) {
       message.error(`Lỗi khi tải ghi chú: ${error.message}`);
     } finally {
@@ -203,12 +280,113 @@ const KanbanBoard = () => {
     return () => el.removeEventListener('wheel', onWheel);
   }, [activeTab]);
 
-  // Regex parser for @mentions and file attachments
+  // Formulate Mentions options dynamically based on the current search text (category -> entity)
+  const getDynamicMentionOptions = () => {
+    const text = mentionSearchText || '';
+    
+    // Check if the search text contains a category colon
+    const match = text.match(/^(Doanh nghiệp|Hoạt động|MOU|Sinh viên):(.*)$/i);
+    
+    if (match) {
+      const [_, category, query] = match;
+      const lowerQuery = query.trim().toLowerCase();
+      const options = [];
+      
+      if (category.toLowerCase() === 'doanh nghiệp') {
+        const filtered = allEnterprises.filter(e => e.name.toLowerCase().includes(lowerQuery));
+        filtered.forEach(e => {
+          options.push({
+            value: `@[${e.name}](entity:enterprise:${e.id}) `,
+            label: `🏢 ${e.name}`
+          });
+        });
+      } else if (category.toLowerCase() === 'hoạt động') {
+        const filtered = allActivities.filter(a => a.title.toLowerCase().includes(lowerQuery));
+        filtered.forEach(a => {
+          options.push({
+            value: `@[${a.title}](entity:activity:${a.id}) `,
+            label: `📅 ${a.title}`
+          });
+        });
+      } else if (category.toLowerCase() === 'mou') {
+        const filtered = allMous.filter(m => 
+          m.mou_code.toLowerCase().includes(lowerQuery) || 
+          (m.partner_name && m.partner_name.toLowerCase().includes(lowerQuery)) ||
+          (m.enterprise_name && m.enterprise_name.toLowerCase().includes(lowerQuery))
+        );
+        filtered.forEach(m => {
+          options.push({
+            value: `@[${m.mou_code}](entity:mou:${m.id}) `,
+            label: `🤝 ${m.mou_code} (${m.partner_name || m.enterprise_name || 'MOU'})`
+          });
+        });
+      } else if (category.toLowerCase() === 'sinh viên') {
+        const filtered = allStudents.filter(s => 
+          s.name.toLowerCase().includes(lowerQuery) || 
+          s.student_code.toLowerCase().includes(lowerQuery)
+        );
+        filtered.forEach(s => {
+          options.push({
+            value: `@[${s.name}](entity:student:${s.id}) `,
+            label: `🎓 ${s.name} - ${s.student_code}`
+          });
+        });
+      }
+      
+      return options.map(opt => ({
+        ...opt,
+        key: opt.value
+      }));
+    } else {
+      // If there is no colon, show the 4 categories
+      const categories = [
+        { value: 'Doanh nghiệp:', label: '🏢 Doanh nghiệp...' },
+        { value: 'Hoạt động:', label: '📅 Hoạt động...' },
+        { value: 'MOU:', label: '🤝 MOU...' },
+        { value: 'Sinh viên:', label: '🎓 Sinh viên...' },
+      ];
+      
+      const lowerText = text.trim().toLowerCase();
+      if (!lowerText) return categories.map(opt => ({ ...opt, key: opt.value }));
+      
+      const filteredCategories = categories.filter(c => 
+        c.label.toLowerCase().includes(lowerText) || 
+        c.value.toLowerCase().includes(lowerText)
+      );
+      return filteredCategories.map(opt => ({ ...opt, key: opt.value }));
+    }
+  };
+
+  // Helper to extract file references from text to render them nicely at the bottom
+  const extractFileAttachments = (text) => {
+    if (!text) return [];
+    const fileRegex = /\@\[(.*?)\]\(entity:file:(.*?)\)/g;
+    const attachments = [];
+    let match;
+    // Reset regex index
+    fileRegex.lastIndex = 0;
+    while ((match = fileRegex.exec(text)) !== null) {
+      attachments.push({ name: match[1], url: match[2] });
+    }
+    return attachments;
+  };
+
+  // Helper to parse and render bold markdown **abc**
+  const renderTextWithBold = (text) => {
+    if (!text) return null;
+    return text.split('\n').map((line, lineIdx) => (
+      <React.Fragment key={lineIdx}>
+        {lineIdx > 0 && <br />}
+        {line.split('**').map((part, i) =>
+          i % 2 === 1 ? <strong key={i} className="font-bold text-slate-800 dark:text-gray-100">{part}</strong> : part
+        )}
+      </React.Fragment>
+    ));
+  };
+
+  // Regex parser for rendering inline @mentions
   const renderTextWithMentions = (text) => {
     if (!text) return null;
-    // Match @[Name](entity:type:payload)
-    const parts = text.split(/(\@\[.*?\]\)entity:\w+:.*?\))/g);
-    // General parse for @[Name](entity:type:payload)
     const matches = text.split(/(\@\[.*?\]\(entity:\w+:.*?\))/g);
 
     return matches.map((part, index) => {
@@ -216,51 +394,25 @@ const KanbanBoard = () => {
       if (match) {
         const [_, name, type, payload] = match;
 
-        // Custom renderer for Uploaded Files
+        // Custom inline file pill
         if (type === 'file') {
-          const isImage = payload.match(/\.(jpeg|jpg|gif|png|webp|svg)/i) || name.toLowerCase().match(/\.(jpeg|jpg|gif|png|webp|svg)$/);
-          const isAudio = payload.match(/\.(mp3|wav|ogg|m4a|flac)/i) || name.toLowerCase().match(/\.(mp3|wav|ogg|m4a|flac)$/);
-
-          if (isImage) {
-            return (
-              <div key={index} className="my-2 p-1.5 bg-slate-50 dark:bg-gray-800/80 border border-slate-200 dark:border-gray-700 rounded-xl max-w-[240px] shadow-sm select-none" onClick={e => e.stopPropagation()}>
-                <img 
-                  src={payload} 
-                  alt={name} 
-                  className="rounded-lg object-cover max-h-[140px] w-full cursor-pointer hover:opacity-95 transition-opacity"
-                  onClick={() => window.open(payload, '_blank')}
-                />
-                <div className="text-[10px] text-slate-400 mt-1 truncate px-0.5">{name}</div>
-              </div>
-            );
-          } else if (isAudio) {
-            return (
-              <div key={index} className="my-2 p-2 bg-slate-50 dark:bg-gray-800/80 border border-slate-200 dark:border-gray-700 rounded-xl w-full max-w-[280px] shadow-sm" onClick={e => e.stopPropagation()}>
-                <div className="text-[10px] text-slate-500 font-semibold mb-1 truncate flex items-center gap-1">
-                  <AudioOutlined className="text-red-500" /> {name}
-                </div>
-                <audio src={payload} controls className="w-full h-8 scale-90 origin-left" />
-              </div>
-            );
-          } else {
-            return (
-              <Tag
-                key={index}
-                color="cyan"
-                icon={<LinkOutlined />}
-                className="cursor-pointer font-medium hover:opacity-85 transition-all inline-flex items-center gap-1 my-0.5 shadow-sm border"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  window.open(payload, '_blank');
-                }}
-              >
-                {name}
-              </Tag>
-            );
-          }
+          return (
+            <Tag
+              key={index}
+              color="cyan"
+              icon={<LinkOutlined style={{ fontSize: '10px' }} />}
+              className="cursor-pointer font-medium hover:opacity-85 inline-flex items-center gap-1.5 my-0.5 shadow-sm border border-cyan-200 max-w-full whitespace-normal break-all"
+              onClick={(e) => {
+                e.stopPropagation();
+                window.open(payload, '_blank');
+              }}
+            >
+              📎 {name}
+            </Tag>
+          );
         }
 
-        // Standard renderer for System Entities
+        // Standard System Entity Badge
         let color = 'blue';
         let icon = <BankOutlined />;
         if (type === 'activity') {
@@ -279,7 +431,7 @@ const KanbanBoard = () => {
             key={index}
             color={color}
             icon={icon}
-            className="cursor-pointer font-medium hover:opacity-85 transition-all inline-flex items-center gap-1 my-0.5 shadow-sm border"
+            className="cursor-pointer font-medium hover:opacity-85 inline-flex items-center gap-1.5 my-0.5 shadow-sm border max-w-full whitespace-normal break-words"
             onClick={(e) => {
               e.stopPropagation();
               handleShowEntityPreview(type, parseInt(payload, 10));
@@ -289,8 +441,68 @@ const KanbanBoard = () => {
           </Tag>
         );
       }
-      return part;
+      return <React.Fragment key={index}>{renderTextWithBold(part)}</React.Fragment>;
     });
+  };
+
+  // Render file attachment blocks at the bottom of the card beautifully
+  const renderFileAttachmentBlock = (name, url, index) => {
+    const isImage = url.match(/\.(jpeg|jpg|gif|png|webp|svg)/i) || name.toLowerCase().match(/\.(jpeg|jpg|gif|png|webp|svg)$/);
+    const isAudio = url.match(/\.(mp3|wav|ogg|m4a|flac)/i) || name.toLowerCase().match(/\.(mp3|wav|ogg|m4a|flac)$/);
+
+    if (isImage) {
+      return (
+        <div key={index} className="group relative rounded-xl overflow-hidden border border-slate-200 dark:border-gray-700 shadow-sm hover:shadow transition-all w-24 h-16 bg-slate-100 dark:bg-gray-800 shrink-0 select-none" onClick={e => e.stopPropagation()}>
+          <img 
+            src={url} 
+            alt={name} 
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform cursor-pointer"
+            onClick={() => window.open(url, '_blank')}
+          />
+          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+            <PictureOutlined className="text-white text-base" />
+          </div>
+        </div>
+      );
+    }
+
+    if (isAudio) {
+      return (
+        <div key={index} className="p-2 bg-slate-50 dark:bg-gray-800/80 border border-slate-200 dark:border-gray-700 rounded-xl flex items-center gap-2 shadow-sm w-full" onClick={e => e.stopPropagation()}>
+          <div className="w-8 h-8 rounded-lg bg-red-50 dark:bg-red-950/40 flex items-center justify-center text-red-500 shrink-0">
+            <AudioOutlined />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="text-[10px] text-slate-500 font-bold truncate">{name}</div>
+            <audio src={url} controls className="w-full h-6 scale-90 origin-left mt-0.5" />
+          </div>
+        </div>
+      );
+    }
+
+    // Document styling
+    let colorClass = 'text-blue-500 bg-blue-50 dark:bg-blue-950/20';
+    if (name.endsWith('.pdf')) {
+      colorClass = 'text-rose-500 bg-rose-50 dark:bg-rose-950/20';
+    } else if (name.endsWith('.xlsx') || name.endsWith('.xls')) {
+      colorClass = 'text-green-500 bg-green-50 dark:bg-green-950/20';
+    }
+
+    return (
+      <div 
+        key={index}
+        onClick={(e) => { e.stopPropagation(); window.open(url, '_blank'); }}
+        className="flex items-center gap-2 p-1.5 rounded-xl border border-slate-200/60 dark:border-gray-700/60 bg-white dark:bg-gray-800 hover:bg-slate-50 dark:hover:bg-gray-700 hover:border-blue-400 dark:hover:border-blue-500 transition-all cursor-pointer w-full"
+      >
+        <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-[10px] shrink-0 ${colorClass}`}>
+          {name.split('.').pop().toUpperCase()}
+        </div>
+        <div className="flex-1 min-w-0 text-left">
+          <div className="text-[11px] font-semibold text-slate-700 dark:text-gray-200 truncate">{name}</div>
+          <div className="text-[9px] text-slate-400 flex items-center gap-0.5"><DownloadOutlined /> Tải xuống</div>
+        </div>
+      </div>
+    );
   };
 
   const handleShowEntityPreview = (type, id) => {
@@ -464,11 +676,132 @@ const KanbanBoard = () => {
     setTouchDragOverCol(null);
   };
 
+  // Drag and drop notes reorder handler
+  const handleReorderNotes = (draggedId, targetId) => {
+    const currentNotes = [...notes];
+    const draggedIndex = currentNotes.findIndex(n => n.id === draggedId);
+    const targetIndex = currentNotes.findIndex(n => n.id === targetId);
+    
+    if (draggedIndex !== -1 && targetIndex !== -1) {
+      const [draggedItem] = currentNotes.splice(draggedIndex, 1);
+      currentNotes.splice(targetIndex, 0, draggedItem);
+      
+      setNotes(currentNotes);
+      setNoteSortOrder('custom');
+      
+      const orderIds = currentNotes.map(n => n.id);
+      const userKey = user ? `vlu_notes_order_${user.id}` : 'vlu_notes_order_default';
+      localStorage.setItem(userKey, JSON.stringify(orderIds));
+    }
+  };
+
+  // Touch drag handlers for Notes
+  const onNoteTouchStart = (e, item) => {
+    if (touchNoteTimeoutRef.current) clearTimeout(touchNoteTimeoutRef.current);
+    
+    const touch = e.touches[0];
+    const startX = touch.clientX;
+    const startY = touch.clientY;
+    
+    touchNoteDragRef.current = { item, startX, startY, moved: false };
+    
+    touchNoteTimeoutRef.current = setTimeout(() => {
+      const sourceEl = e.currentTarget;
+      const rect = sourceEl.getBoundingClientRect();
+      const ghost = sourceEl.cloneNode(true);
+      ghost.id = 'touch-note-ghost';
+      ghost.style.cssText = `
+        position: fixed;
+        top: ${rect.top}px;
+        left: ${rect.left}px;
+        width: ${rect.width}px;
+        opacity: 0.9;
+        pointer-events: none;
+        z-index: 10000;
+        border-radius: 12px;
+        box-shadow: 0 20px 50px rgba(0,0,0,0.35);
+        transform: scale(1.04);
+        transition: transform 0.08s ease;
+      `;
+      document.body.appendChild(ghost);
+      
+      if (navigator.vibrate) {
+        navigator.vibrate(40);
+      }
+      
+      touchNoteDragRef.current.ghostEl = ghost;
+      setTouchDraggedNoteId(item.id);
+    }, 250);
+  };
+
+  const onNoteTouchMove = (e) => {
+    const touch = e.touches[0];
+    
+    if (!touchDraggedNoteId) {
+      if (touchNoteDragRef.current) {
+        const dx = touch.clientX - touchNoteDragRef.current.startX;
+        const dy = touch.clientY - touchNoteDragRef.current.startY;
+        if (Math.abs(dx) > 10 || Math.abs(dy) > 10) {
+          if (touchNoteTimeoutRef.current) {
+            clearTimeout(touchNoteTimeoutRef.current);
+            touchNoteTimeoutRef.current = null;
+          }
+        }
+      }
+      return;
+    }
+    
+    if (!touchNoteDragRef.current || !touchNoteDragRef.current.ghostEl) return;
+    const { ghostEl } = touchNoteDragRef.current;
+    
+    const dx = touch.clientX - touchNoteDragRef.current.startX;
+    const dy = touch.clientY - touchNoteDragRef.current.startY;
+    touchNoteDragRef.current.moved = true;
+    
+    e.preventDefault();
+    
+    ghostEl.style.transform = `translate(${dx}px, ${dy}px) scale(1.04)`;
+    
+    ghostEl.style.display = 'none';
+    const elUnder = document.elementFromPoint(touch.clientX, touch.clientY);
+    ghostEl.style.display = '';
+    
+    const dropTarget = elUnder?.closest('[data-note-id]');
+    const overId = dropTarget ? parseInt(dropTarget.getAttribute('data-note-id'), 10) : null;
+    if (overId !== touchNoteDragRef.current.overId) {
+      touchNoteDragRef.current.overId = overId;
+      setTouchDragOverNoteId(overId);
+    }
+  };
+
+  const onNoteTouchEnd = () => {
+    if (touchNoteTimeoutRef.current) {
+      clearTimeout(touchNoteTimeoutRef.current);
+      touchNoteTimeoutRef.current = null;
+    }
+    
+    if (!touchNoteDragRef.current) return;
+    const { item, ghostEl, moved, overId } = touchNoteDragRef.current;
+    
+    if (ghostEl && ghostEl.parentNode) {
+      ghostEl.parentNode.removeChild(ghostEl);
+    }
+    
+    if (moved && overId && item && item.id !== overId) {
+      handleReorderNotes(item.id, overId);
+    }
+    
+    touchNoteDragRef.current = null;
+    setTouchDraggedNoteId(null);
+    setTouchDragOverNoteId(null);
+  };
+
   // CRUD Operations - Task
   const openAddTaskModal = () => {
     setEditingTaskId(null);
     taskForm.resetFields();
     taskForm.setFieldsValue({ status: 'Cần làm', priority: 'Trung bình' });
+    setMentionSearchText('');
     setIsTaskModalOpen(true);
   };
 
@@ -482,6 +815,7 @@ const KanbanBoard = () => {
       due_date: task.due_date ? dayjs(task.due_date) : null,
       assigned_to: task.assigned_to,
     });
+    setMentionSearchText('');
     setIsTaskModalOpen(true);
   };
 
@@ -535,6 +869,7 @@ const KanbanBoard = () => {
     setEditingNoteId(null);
     noteForm.resetFields();
     noteForm.setFieldsValue({ color: '#fef08a' });
+    setMentionSearchText('');
     setIsNoteModalOpen(true);
   };
 
@@ -545,6 +880,7 @@ const KanbanBoard = () => {
       content: note.content,
       color: note.color,
     });
+    setMentionSearchText('');
     setIsNoteModalOpen(true);
   };
 
@@ -603,7 +939,7 @@ const KanbanBoard = () => {
     }
   };
 
-  // Helper trigger for "@ mentions"
+  // Helper trigger for "@ mentions" (manual buttons fallback)
   const openMentionModal = (type, formType, fieldName) => {
     setMentionType(type);
     setActiveFormType(formType);
@@ -688,7 +1024,6 @@ const KanbanBoard = () => {
     const content = type === 'TASK' ? item.description : item.content;
     const prompt = `Tôi có một ${type === 'TASK' ? 'nhiệm vụ' : 'ghi chú'} với tiêu đề: "${title}". Nội dung chi tiết: "${content || ''}". Hãy phân tích nội dung này và gợi ý cho tôi các bước tiếp theo cần triển khai.`;
     
-    // Open chatbot widget with predefined prompt
     window.dispatchEvent(new CustomEvent('open-chatbot', { detail: { prompt } }));
   };
 
@@ -801,6 +1136,67 @@ const KanbanBoard = () => {
         </div>
       )}
 
+      {/* Filter panel (Notes only) */}
+      {activeTab === 'NOTES' && (
+        <div className="bg-white dark:bg-gray-800 border border-slate-200 dark:border-gray-700 rounded-xl p-4 mb-4 flex flex-wrap gap-4 items-center shrink-0 shadow-sm">
+          <div className="flex-1 min-w-[200px]">
+            <Input
+              placeholder="Tìm kiếm tiêu đề, nội dung ghi chú..."
+              allowClear
+              value={noteSearchKeyword}
+              onChange={(e) => setNoteSearchKeyword(e.target.value)}
+              className="rounded-lg"
+            />
+          </div>
+          <div className="w-[180px] xs:w-full">
+            <Select
+              placeholder="Lọc theo màu"
+              allowClear
+              value={noteColorFilter}
+              onChange={setNoteColorFilter}
+              className="w-full rounded-lg"
+            >
+              {STICKY_COLORS.map(c => (
+                <Option key={c.hex} value={c.hex}>
+                  <div className="flex items-center gap-2">
+                    <div className="w-3.5 h-3.5 rounded-full border border-black/15" style={{ backgroundColor: c.hex }} />
+                    {c.name}
+                  </div>
+                </Option>
+              ))}
+            </Select>
+          </div>
+          <div className="w-[180px] xs:w-full">
+            <Select
+              placeholder="Lọc theo liên kết"
+              allowClear
+              value={noteMentionFilter}
+              onChange={setNoteMentionFilter}
+              className="w-full rounded-lg"
+            >
+              <Option value="enterprise">🏢 Doanh nghiệp</Option>
+              <Option value="activity">📅 Hoạt động</Option>
+              <Option value="mou">🤝 MOU</Option>
+              <Option value="student">🎓 Sinh viên</Option>
+              <Option value="file">📎 Tệp đính kèm</Option>
+            </Select>
+          </div>
+          <div className="w-[180px] xs:w-full">
+            <Select
+              placeholder="Sắp xếp"
+              value={noteSortOrder}
+              onChange={setNoteSortOrder}
+              className="w-full rounded-lg"
+            >
+              <Option value="custom">Thứ tự kéo thả</Option>
+              <Option value="newest">Mới nhất</Option>
+              <Option value="oldest">Cũ nhất</Option>
+              <Option value="title-az">Tiêu đề (A-Z)</Option>
+            </Select>
+          </div>
+        </div>
+      )}
+
       {/* Mobile Column Tabs Switcher (Visible on mobile only, < 768px) */}
       {activeTab === 'TASKS' && (
         <div className="flex md:hidden bg-slate-100 dark:bg-gray-800/80 p-1 rounded-xl mb-4 border border-slate-200/50 dark:border-gray-700/50 shrink-0">
@@ -824,7 +1220,7 @@ const KanbanBoard = () => {
         </div>
       )}
 
-      {/* Floating Quick Drop Targets Shelf for Dragging (Crucial for mobile and touch drag) */}
+      {/* Floating Quick Drop Targets Shelf for Dragging */}
       {(draggedItemId || touchDraggedItemId) && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[10000] bg-white/95 dark:bg-gray-900/95 backdrop-blur-md border border-slate-200 dark:border-gray-700 shadow-2xl rounded-2xl p-4 w-[600px] max-w-[92vw] animate-fade-in-up">
           <div className="text-[10px] font-bold text-slate-400 dark:text-gray-400 uppercase tracking-wider mb-2.5 text-center flex items-center justify-center gap-1.5">
@@ -901,6 +1297,7 @@ const KanbanBoard = () => {
                         const isTouchDragged = touchDraggedItemId === item.id;
                         const isDragged = draggedItemId === item.id;
                         const isOverdue = item.due_date && dayjs(item.due_date).isBefore(dayjs(), 'day') && item.status !== 'Đã hoàn thành';
+                        const fileAttachments = extractFileAttachments(item.description);
 
                         const contextMenuItems = [
                           {
@@ -964,14 +1361,24 @@ const KanbanBoard = () => {
                                 </div>
 
                                 {/* Title */}
-                                <div className="font-semibold text-slate-800 dark:text-gray-100 text-sm leading-snug w-[85%]">
+                                <div className="font-semibold text-slate-800 dark:text-gray-100 text-sm leading-snug w-[85%] break-words">
                                   {item.title}
                                 </div>
 
-                                {/* Description */}
+                                {/* Description Text (Inline Mentions rendered) */}
                                 {item.description && (
-                                  <div className="text-xs text-slate-500 dark:text-gray-400 leading-relaxed whitespace-pre-wrap">
+                                  <div className="text-xs text-slate-500 dark:text-gray-400 leading-relaxed whitespace-pre-wrap break-words">
                                     {renderTextWithMentions(item.description)}
+                                  </div>
+                                )}
+
+                                {/* Premium file attachments gallery grid at the bottom */}
+                                {fileAttachments.length > 0 && (
+                                  <div className="mt-2 pt-2 border-t border-slate-100 dark:border-gray-700/60" onClick={e => e.stopPropagation()}>
+                                    <div className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Tệp đính kèm ({fileAttachments.length})</div>
+                                    <div className="flex flex-wrap gap-2">
+                                      {fileAttachments.map((f, i) => renderFileAttachmentBlock(f.name, f.url, i))}
+                                    </div>
                                   </div>
                                 )}
 
@@ -992,7 +1399,7 @@ const KanbanBoard = () => {
 
                                 {/* Footer & Assignee */}
                                 <div className="pt-2.5 mt-2 border-t border-slate-100 dark:border-gray-700/60 flex justify-between items-center shrink-0">
-                                  <div className="text-[10px] text-slate-400 font-medium">
+                                  <div className="text-[10px] text-slate-400 font-medium truncate mr-2 flex-1 min-w-0" title={`ID: ${item.id} • ${item.creator_name || 'Hệ thống'}`}>
                                     ID: {item.id} • {item.creator_name || 'Hệ thống'}
                                   </div>
 
@@ -1045,74 +1452,134 @@ const KanbanBoard = () => {
                 <Paragraph className="text-lg mb-2">Chưa có ghi chú nào được tạo</Paragraph>
                 <Button type="primary" onClick={openAddNoteModal} icon={<PlusOutlined />}>Tạo Ghi Chú Đầu Tiên</Button>
               </div>
+            ) : filteredAndSortedNotes.length === 0 ? (
+              <div className="h-[250px] flex flex-col items-center justify-center text-slate-400">
+                <Paragraph className="text-lg mb-2 text-center">Không tìm thấy ghi chú phù hợp</Paragraph>
+                <Button type="default" onClick={() => { setNoteSearchKeyword(''); setNoteColorFilter(null); setNoteMentionFilter(null); }} className="rounded-lg">
+                  Xóa bộ lọc
+                </Button>
+              </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                {notes.map(note => {
+              <div className="columns-1 sm:columns-2 md:columns-3 lg:columns-4 gap-6">
+                {filteredAndSortedNotes.map(note => {
                   const stickerColor = STICKY_COLORS.find(c => c.hex === note.color) || STICKY_COLORS[0];
+                  const fileAttachments = extractFileAttachments(note.content);
 
                   return (
                     <div
                       key={note.id}
-                      className={`relative rounded-2xl p-5 shadow-sm hover:shadow-md border transform hover:-rotate-1 hover:scale-[1.02] transition-all duration-300 flex flex-col justify-between min-h-[200px] ${stickerColor.bgClass}`}
+                      data-note-id={note.id}
+                      draggable
+                      onDragStart={(e) => {
+                        e.dataTransfer.setData('noteId', note.id);
+                        setDraggedNoteId(note.id);
+                      }}
+                      onDragEnd={() => {
+                        setDraggedNoteId(null);
+                        setDragOverNoteId(null);
+                      }}
+                      onDragOver={(e) => {
+                        e.preventDefault();
+                        if (draggedNoteId && draggedNoteId !== note.id && dragOverNoteId !== note.id) {
+                          setDragOverNoteId(note.id);
+                        }
+                      }}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        const draggedId = parseInt(e.dataTransfer.getData('noteId'), 10);
+                        if (draggedId && draggedId !== note.id) {
+                          handleReorderNotes(draggedId, note.id);
+                        }
+                        setDraggedNoteId(null);
+                        setDragOverNoteId(null);
+                      }}
+                      onTouchStart={(e) => onNoteTouchStart(e, note)}
+                      onTouchMove={onNoteTouchMove}
+                      onTouchEnd={onNoteTouchEnd}
+                      className="break-inside-avoid w-full pb-6"
                     >
-                      {/* Note Header / Controls */}
-                      <div className="flex justify-between items-start mb-3">
-                        <div className="font-bold text-slate-800 text-sm line-clamp-1 pr-4">
-                          {note.title || 'Ghi chú'}
+                      <div
+                        className={`group relative rounded-xl p-5 shadow border transition-all duration-200 flex flex-col justify-between min-h-[120px] cursor-grab active:cursor-grabbing select-none ${stickerColor.bgClass} ${
+                          (draggedNoteId === note.id || touchDraggedNoteId === note.id) ? 'opacity-30 border-dashed border-2 border-slate-400' : ''
+                        } ${
+                          (dragOverNoteId === note.id || touchDragOverNoteId === note.id) ? 'ring-2 ring-blue-500 scale-[1.01] shadow-md' : ''
+                        }`}
+                      >
+                        {/* Note Header */}
+                        <div className="flex justify-between items-start mb-2.5">
+                          <div className="font-semibold text-slate-800 dark:text-slate-100 text-sm break-words pr-2">
+                            {note.title || 'Ghi chú'}
+                          </div>
                         </div>
-                        <div className="flex gap-1">
-                          {/* Run AI Chatbot from note */}
-                          <Tooltip title="Thảo luận với trợ lý AI">
-                            <Button
-                              type="text"
-                              icon={<RobotOutlined className="text-red-500 hover:scale-110" style={{ fontSize: '13px' }} />}
-                              size="small"
-                              onClick={() => handleRunAiChat(note, 'NOTE')}
-                              className="rounded-md"
-                            />
-                          </Tooltip>
-                          <Button
-                            type="text"
-                            icon={<EditOutlined style={{ fontSize: '12px' }} />}
-                            size="small"
-                            onClick={() => openEditNoteModal(note)}
-                            className="text-slate-500 hover:text-blue-600 rounded-md"
-                          />
-                          <Button
-                            type="text"
-                            icon={<DeleteOutlined style={{ fontSize: '12px' }} />}
-                            danger
-                            size="small"
-                            onClick={() => handleDeleteNote(note)}
-                            className="text-slate-400 hover:text-red-600 rounded-md"
-                          />
+
+                        {/* Content */}
+                        <div className="flex-1 text-slate-700 dark:text-slate-200 text-xs whitespace-pre-wrap leading-relaxed mb-4 break-words">
+                          {renderTextWithMentions(note.content)}
                         </div>
-                      </div>
 
-                      {/* Content */}
-                      <div className="flex-1 text-slate-700 text-xs whitespace-pre-wrap leading-relaxed mb-4">
-                        {renderTextWithMentions(note.content)}
-                      </div>
+                        {/* Premium file attachments gallery grid at the bottom of Sticky Note */}
+                        {fileAttachments.length > 0 && (
+                          <div className="mt-2 pt-2 border-t border-slate-500/10 mb-3" onClick={e => e.stopPropagation()}>
+                            <div className="flex flex-wrap gap-2">
+                              {fileAttachments.map((f, i) => renderFileAttachmentBlock(f.name, f.url, i))}
+                            </div>
+                          </div>
+                        )}
 
-                      {/* Note Footer with Color Switcher */}
-                      <div className="pt-3 border-t border-slate-500/10 flex justify-between items-center shrink-0">
-                        <span className="text-[10px] text-slate-400 font-medium">
-                          {dayjs(note.created_at).format('DD/MM/YYYY HH:mm')}
-                        </span>
-                        
-                        {/* Tiny Color Circles */}
-                        <div className="flex gap-1.5">
-                          {STICKY_COLORS.map(c => (
-                            <button
-                              key={c.hex}
-                              onClick={() => handleUpdateNoteColor(note, c.hex)}
-                              className={`w-3.5 h-3.5 rounded-full border border-black/10 transition-transform hover:scale-125 ${
-                                note.color === c.hex ? 'ring-1 ring-slate-400 scale-110' : ''
-                              }`}
-                              style={{ backgroundColor: c.hex }}
-                              title={c.name}
-                            />
-                          ))}
+                        {/* Note Footer with Color Switcher & Actions (Google Keep Style) */}
+                        <div className="pt-3 border-t border-slate-500/10 flex flex-col gap-2 shrink-0">
+                          <div className="flex justify-between items-center">
+                            <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">
+                              {dayjs(note.created_at).format('DD/MM/YYYY HH:mm')}
+                            </span>
+                            
+                            {/* Tiny Color Circles */}
+                            <div className="flex gap-1">
+                              {STICKY_COLORS.map(c => (
+                                <button
+                                  key={c.hex}
+                                  onClick={(e) => { e.stopPropagation(); handleUpdateNoteColor(note, c.hex); }}
+                                  className={`w-3 h-3 rounded-full border border-black/10 transition-transform hover:scale-125 ${
+                                    note.color === c.hex ? 'ring-1 ring-slate-400 scale-110' : ''
+                                  }`}
+                                  style={{ backgroundColor: c.hex }}
+                                  title={c.name}
+                                />
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Actions menu appearing on hover on desktop, always visible on mobile */}
+                          <div className="flex justify-end gap-1.5 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity duration-200" onClick={e => e.stopPropagation()}>
+                            <Tooltip title="Thảo luận với trợ lý AI">
+                              <Button
+                                type="text"
+                                icon={<RobotOutlined className="text-red-500" style={{ fontSize: '13px' }} />}
+                                size="small"
+                                onClick={() => handleRunAiChat(note, 'NOTE')}
+                                className="hover:bg-black/5 dark:hover:bg-white/5 rounded-md"
+                              />
+                            </Tooltip>
+                            <Tooltip title="Chỉnh sửa">
+                              <Button
+                                type="text"
+                                icon={<EditOutlined style={{ fontSize: '12px' }} />}
+                                size="small"
+                                onClick={() => openEditNoteModal(note)}
+                                className="text-slate-600 dark:text-gray-400 hover:bg-black/5 dark:hover:bg-white/5 rounded-md"
+                              />
+                            </Tooltip>
+                            <Tooltip title="Xóa ghi chú">
+                              <Button
+                                type="text"
+                                icon={<DeleteOutlined style={{ fontSize: '12px' }} />}
+                                danger
+                                size="small"
+                                onClick={() => handleDeleteNote(note)}
+                                className="text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20 rounded-md"
+                              />
+                            </Tooltip>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -1170,14 +1637,24 @@ const KanbanBoard = () => {
             </Select>
           </Form.Item>
 
-          <Form.Item name="description" label="Mô tả & chi tiết công việc">
-            <Input.TextArea rows={4} placeholder="Mô tả nhiệm vụ công việc..." className="rounded-lg" />
+          {/* Autocomplete Mentions Field */}
+          <Form.Item name="description" label="Mô tả & chi tiết công việc (Gõ @ để liên kết nhanh dữ liệu)">
+            <Mentions
+              rows={4}
+              placeholder="Nhập mô tả nhiệm vụ công việc, gõ @ để liên kết Doanh nghiệp, Hoạt động, MOU hoặc Sinh viên..."
+              options={getDynamicMentionOptions()}
+              onSearch={(text) => setMentionSearchText(text)}
+              onSelect={() => setMentionSearchText('')}
+              split=""
+              className="rounded-lg"
+              autoSize={{ minRows: 4, maxRows: 8 }}
+            />
           </Form.Item>
 
           {/* Mentions tool shelf */}
           <div className="bg-slate-50 dark:bg-gray-800/80 p-3 rounded-lg border border-slate-200/60 dark:border-gray-700/60 mb-6">
             <div className="text-xs font-bold text-slate-500 mb-2 flex items-center gap-1.5">
-              <LinkOutlined className="text-blue-500" /> Chèn liên kết & Đính kèm tập tin
+              <LinkOutlined className="text-blue-500" /> Hoặc chọn nhanh liên kết & Đính kèm tập tin
             </div>
             <Space size="small" wrap>
               <Button size="small" icon={<BankOutlined />} onClick={() => openMentionModal('enterprise', 'TASK', 'description')}>@ Doanh nghiệp</Button>
@@ -1211,8 +1688,18 @@ const KanbanBoard = () => {
             <Input placeholder="VD: Ý tưởng cuộc họp" className="rounded-lg" />
           </Form.Item>
 
-          <Form.Item name="content" label="Nội dung ghi chú" rules={[{ required: true, message: 'Nhập nội dung ghi chú!' }]}>
-            <Input.TextArea rows={5} placeholder="Nhập nội dung ghi chú..." className="rounded-lg" />
+          {/* Autocomplete Mentions Field */}
+          <Form.Item name="content" label="Nội dung ghi chú (Gõ @ để liên kết nhanh dữ liệu)" rules={[{ required: true, message: 'Nhập nội dung ghi chú!' }]}>
+            <Mentions
+              rows={5}
+              placeholder="Nhập nội dung ghi chú, gõ @ để liên kết Doanh nghiệp, Hoạt động, MOU hoặc Sinh viên..."
+              options={getDynamicMentionOptions()}
+              onSearch={(text) => setMentionSearchText(text)}
+              onSelect={() => setMentionSearchText('')}
+              split=""
+              className="rounded-lg"
+              autoSize={{ minRows: 5, maxRows: 10 }}
+            />
           </Form.Item>
 
           <Form.Item name="color" label="Màu giấy note">
@@ -1231,7 +1718,7 @@ const KanbanBoard = () => {
           {/* Mentions tool shelf */}
           <div className="bg-slate-50 dark:bg-gray-800/80 p-3 rounded-lg border border-slate-200/60 dark:border-gray-700/60 mb-6">
             <div className="text-xs font-bold text-slate-500 mb-2 flex items-center gap-1.5">
-              <LinkOutlined className="text-blue-500" /> Chèn liên kết & Đính kèm tập tin
+              <LinkOutlined className="text-blue-500" /> Hoặc chọn nhanh liên kết & Đính kèm tập tin
             </div>
             <Space size="small" wrap>
               <Button size="small" icon={<BankOutlined />} onClick={() => openMentionModal('enterprise', 'NOTE', 'content')}>@ Doanh nghiệp</Button>

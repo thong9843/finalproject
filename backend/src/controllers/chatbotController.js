@@ -246,13 +246,14 @@ const tools = [
             },
             {
                 name: 'create_activity',
-                description: 'Yêu cầu thêm hoạt động liên kết doanh nghiệp mới vào hệ thống. AI trích xuất tên hoạt động, người phụ trách, trạng thái.',
+                description: 'Yêu cầu thêm hoạt động liên kết doanh nghiệp mới vào hệ thống. AI trích xuất tên hoạt động, người phụ trách, trạng thái và tên doanh nghiệp.',
                 parameters: {
                     type: 'OBJECT',
                     properties: {
                         title: { type: 'STRING', description: 'Tên hoạt động liên kết' },
                         person_in_charge: { type: 'STRING', description: 'Người phụ trách phía nhà trường (tùy chọn)' },
-                        status: { type: 'STRING', description: 'Trạng thái: Đề xuất | Phê duyệt nội bộ | Đã triển khai | Đã kết thúc (tùy chọn)' }
+                        status: { type: 'STRING', description: 'Trạng thái: Đề xuất | Phê duyệt nội bộ | Đã triển khai | Đã kết thúc (tùy chọn)' },
+                        enterprise_name: { type: 'STRING', description: 'Tên doanh nghiệp liên kết với hoạt động (tùy chọn, ví dụ: FPT Software)' }
                     },
                     required: ['title']
                 }
@@ -623,7 +624,7 @@ Nhiệm vụ của bạn:
 - Trả lời câu hỏi về doanh nghiệp, sinh viên thực tập, hoạt động hợp tác, MOU, báo cáo thống kê
 - Sử dụng các tool được cung cấp để truy vấn dữ liệu thực tế từ hệ thống
 - Thực hiện so sánh, phân tích chuyên sâu các dữ liệu và chỉ số khi được yêu cầu (ví dụ: đối chiếu GPA sinh viên giữa các công ty, tìm kiếm ngành học có tỉ lệ liên kết cao nhất, phân tích biểu đồ, phân tích cấu trúc doanh nghiệp).
-- Khi người dùng muốn THÊM hoặc NHẬP mới một doanh nghiệp, sinh viên, hoặc hoạt động liên kết, bạn hãy gọi tool create_enterprise, create_student hoặc create_activity tương ứng để thu thập và chuẩn bị dữ liệu.
+- Khi người dùng muốn THÊM hoặc NHẬP mới một doanh nghiệp, sinh viên, hoặc hoạt động liên kết (hoặc khi nội dung câu hỏi/ghi chú/nhiệm vụ của người dùng chứa các thông tin yêu cầu thêm mới/mô tả thực thể mới chưa có trong hệ thống), bạn phải LẬP TỨC gọi các tool tương ứng (create_enterprise, create_student hoặc create_activity) với các thông tin chi tiết trích xuất được để hiển thị form thêm mới ngay lập tức trên màn hình (frontend) cho người dùng duyệt, tuyệt đối KHÔNG chỉ trả lời bằng văn bản hỏi lại ý kiến hay đề xuất họ tự đi tạo.
 - Trả lời bằng tiếng Việt, ngắn gọn, cấu trúc rõ ràng (sử dụng markdown bold, bullet points), thân thiện và dùng emoji phù hợp
 - Luôn hướng dẫn người dùng đến trang phù hợp nếu họ muốn xem thêm chi tiết
 

@@ -86,22 +86,52 @@ const ActivityList = () => {
             if (actionType === 'create_activity') {
                 setEditingId(null);
                 form.resetFields();
-                form.setFieldsValue({
-                    title: data.title,
-                    person_in_charge: data.person_in_charge,
-                    status: data.status || 'Đề xuất',
-                    start_date: data.start_date ? dayjs(data.start_date) : dayjs(),
-                    end_date: data.end_date ? dayjs(data.end_date) : null,
-                    start_time: data.start_time ? dayjs(`1970-01-01 ${data.start_time}`) : null,
-                    end_time: data.end_time ? dayjs(`1970-01-01 ${data.end_time}`) : null,
-                    collaboration_date: data.collaboration_date ? dayjs(data.collaboration_date) : null,
-                    ...data
-                });
+
+                const setFormValues = (entId) => {
+                    form.setFieldsValue({
+                        title: data.title,
+                        person_in_charge: data.person_in_charge,
+                        status: data.status || 'Đề xuất',
+                        enterprise_id: entId || data.enterprise_id,
+                        start_date: data.start_date ? dayjs(data.start_date) : dayjs(),
+                        end_date: data.end_date ? dayjs(data.end_date) : null,
+                        start_time: data.start_time ? dayjs(`1970-01-01 ${data.start_time}`) : null,
+                        end_time: data.end_time ? dayjs(`1970-01-01 ${data.end_time}`) : null,
+                        collaboration_date: data.collaboration_date ? dayjs(data.collaboration_date) : null,
+                    });
+                };
+
+                let matchedId = undefined;
+                if (data.enterprise_name && enterprises && enterprises.length > 0) {
+                    const matched = enterprises.find(e => 
+                        e.name.toLowerCase().includes(data.enterprise_name.toLowerCase()) || 
+                        data.enterprise_name.toLowerCase().includes(e.name.toLowerCase())
+                    );
+                    if (matched) matchedId = matched.id;
+                }
+
+                setFormValues(matchedId);
+
+                // Fetch enterprises list if not loaded yet to match
+                if (data.enterprise_name && (!enterprises || enterprises.length === 0)) {
+                    api.get('/enterprises').then(res => {
+                        const list = res.data || [];
+                        setEnterprises(list);
+                        const matched = list.find(e => 
+                            e.name.toLowerCase().includes(data.enterprise_name.toLowerCase()) || 
+                            data.enterprise_name.toLowerCase().includes(e.name.toLowerCase())
+                        );
+                        if (matched) {
+                            form.setFieldValue('enterprise_id', matched.id);
+                        }
+                    }).catch(err => console.error('Failed to load enterprises for matching:', err));
+                }
+
                 setIsModalVisible(true);
                 navigate(location.pathname, { replace: true, state: {} });
             }
         }
-    }, [location.state, form, navigate]);
+    }, [location.state, form, navigate, enterprises]);
 
     useEffect(() => {
         fetchData();

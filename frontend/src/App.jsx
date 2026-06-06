@@ -21,6 +21,7 @@ import HistoryLog from './pages/HistoryLog';
 import Fields from './pages/Fields';
 import Departments from './pages/Departments';
 import BulkDataTool from './pages/BulkDataTool';
+import FileManager from './pages/FileManager';
 import Cookies from 'js-cookie';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
 
@@ -123,6 +124,7 @@ const App = () => {
                             <Route path="bulk-data" element={<AdminRoute><BulkDataTool /></AdminRoute>} />
                             <Route path="ai-import" element={<AdminOrManagerRoute><AiImportTool /></AdminOrManagerRoute>} />
                             <Route path="history" element={<AdminOrManagerRoute><HistoryLog /></AdminOrManagerRoute>} />
+                            <Route path="files" element={<AdminOrManagerRoute><FileManager /></AdminOrManagerRoute>} />
                         </Route>
                     </Routes>
                 </BrowserRouter>

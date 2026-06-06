@@ -105,6 +105,9 @@ router.post('/', verifyRole(['ADMIN', 'FACULTY_MANAGER']), mouController.create)
  */
 router.post('/scan-document', upload.single('file'), verifyRole(['ADMIN', 'FACULTY_MANAGER']), mouController.scanDocument);
 
+// Upload scanned file (from AI scan) to Firebase — called after user confirms
+router.post('/upload-scan-file', upload.single('file'), verifyRole(['ADMIN', 'FACULTY_MANAGER']), mouController.uploadScanFile);
+
 /**
  * @swagger
  * /mous/{id}:
@@ -176,5 +179,11 @@ router.post('/:id/restore', verifyRole(['ADMIN', 'FACULTY_MANAGER']), mouControl
  *               format: binary
  */
 router.get('/:id/export-pdf', verifyRole(['ADMIN', 'FACULTY_MANAGER', 'LECTURER']), mouController.generatePdf);
+
+// Upload a user-selected file to Firebase and link to MOU
+router.post('/:id/upload-file', upload.single('file'), verifyRole(['ADMIN', 'FACULTY_MANAGER']), mouController.uploadFile);
+
+// Generate PDF from MOU data, upload to Firebase and link
+router.post('/:id/generate-pdf-upload', verifyRole(['ADMIN', 'FACULTY_MANAGER']), mouController.generatePdfAndUpload);
 
 module.exports = router;

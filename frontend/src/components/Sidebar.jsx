@@ -116,6 +116,10 @@ const Sidebar = ({ isOpen, onClose, collapsed }) => {
                     {
                         key: '/ai-import',
                         label: 'Import dữ liệu AI',
+                    },
+                    {
+                        key: '/files',
+                        label: 'Quản lý File & Rác',
                     }
                 ] : []),
                 ...(isAdmin ? [
