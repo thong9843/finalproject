@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Table, Tag, Card, Row, Col, Statistic, Form, Input, Select, Button, Modal, message, Space, DatePicker, InputNumber, Popover, Badge, Divider, Switch, App as AntApp, Spin, Checkbox } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, SearchOutlined, SyncOutlined, ClockCircleOutlined, CheckCircleOutlined, TeamOutlined, UploadOutlined, DownloadOutlined, FilterOutlined, SortAscendingOutlined, ClearOutlined, CalendarOutlined } from '@ant-design/icons';
+import { Table, Tag, Card, Row, Col, Statistic, Form, Input, Select, Button, Modal, message, Space, DatePicker, InputNumber, Popover, Badge, Divider, Switch, App as AntApp, Spin, Checkbox, Drawer, Descriptions, Tooltip } from 'antd';
+import { PlusOutlined, EditOutlined, DeleteOutlined, SearchOutlined, SyncOutlined, ClockCircleOutlined, CheckCircleOutlined, TeamOutlined, UploadOutlined, DownloadOutlined, FilterOutlined, SortAscendingOutlined, ClearOutlined, CalendarOutlined, EyeOutlined } from '@ant-design/icons';
 import ImportModal from '../components/ImportModal';
 import api from '../utils/api';
 import dayjs from 'dayjs';
@@ -37,6 +37,13 @@ const StudentList = () => {
     const [faculties, setFaculties] = useState([]);
     const [filterFaculty, setFilterFaculty] = useState(undefined);
     const [showDeleted, setShowDeleted] = useState(false);
+    const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+    const [selectedStudent, setSelectedStudent] = useState(null);
+
+    const handleViewDetail = (record) => {
+        setSelectedStudent(record);
+        setIsDrawerOpen(true);
+    };
 
     useEffect(() => {
         document.title = "Quản lý Sinh viên | VLU Enterprise Link Manager";
@@ -453,7 +460,7 @@ const StudentList = () => {
         {
             title: 'Thao tác',
             key: 'action',
-            width: 90,
+            width: 120,
             fixed: 'right',
             align: 'center',
             render: (_, record) => {
@@ -474,6 +481,9 @@ const StudentList = () => {
                 }
                 return (
                     <Space>
+                        <Tooltip title="Xem chi tiết">
+                            <Button type="text" size="small" icon={<EyeOutlined />} onClick={() => handleViewDetail(record)} />
+                        </Tooltip>
                         <Button type="text" size="small" icon={<EditOutlined />} onClick={() => openEditModal(record)} />
                         <Button type="text" size="small" danger icon={<DeleteOutlined />} onClick={() => {
                             modal.confirm({ title: 'Xác nhận xóa sinh viên này?', okButtonProps: { danger: true, className: '!bg-red-600 hover:!bg-red-500 text-white' }, onOk: () => handleDelete(record.id) });
@@ -578,13 +588,13 @@ const StudentList = () => {
             </div>
 
             {/* Filter Tabs + Search + Filter Popover */}
-            <div className="flex justify-between items-center mb-4">
-                <div className="flex gap-1 bg-slate-100 dark:bg-gray-800/50 rounded-lg p-1 border border-transparent">
+            <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-3 mb-4">
+                <div className="flex gap-1 bg-slate-100 dark:bg-gray-800/50 rounded-lg p-1 border border-transparent overflow-x-auto whitespace-nowrap scrollbar-none flex-nowrap max-w-full">
                     {tabs.map(tab => (
                         <button
                             key={tab.key}
                             onClick={() => setActiveTab(tab.key)}
-                            className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all
+                            className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all flex-shrink-0
                                 ${activeTab === tab.key 
                                     ? 'bg-white dark:bg-gray-700 shadow-sm dark:shadow-none text-vluRed dark:text-red-400' 
                                     : 'text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200'}`}
@@ -593,17 +603,17 @@ const StudentList = () => {
                         </button>
                     ))}
                 </div>
-                <div className="flex flex-wrap gap-2 items-center mt-2 sm:mt-0 w-full sm:w-auto">
+                <div className="flex gap-2 items-center w-full md:w-auto">
                     <Input 
                         placeholder="Tìm kiếm sinh viên..." 
                         prefix={<SearchOutlined className="text-gray-300" />}
-                        className="w-full sm:w-64 rounded-lg"
+                        className="flex-1 md:w-64 rounded-lg h-9"
                         value={searchText}
                         onChange={e => setSearchText(e.target.value)}
                         allowClear
                     />
                     <Popover content={filterContent} title="Bộ lọc & Sắp xếp" trigger="click" placement="bottomRight">
-                        <Button icon={<FilterOutlined />} className="h-8 rounded-lg text-gray-600">
+                        <Button icon={<FilterOutlined />} className="h-9 rounded-lg text-gray-600 flex items-center justify-center">
                             Bộ lọc {activeFilterCount > 0 && <Badge count={activeFilterCount} size="small" offset={[2, -2]} style={{ backgroundColor: '#1677ff' }} />}
                         </Button>
                     </Popover>
@@ -760,6 +770,7 @@ const StudentList = () => {
                                     <Space>
                                         {record.is_deleted !== 1 ? (
                                             <>
+                                                <Button type="text" size="small" icon={<EyeOutlined />} onClick={() => handleViewDetail(record)} />
                                                 <Button type="text" size="small" icon={<EditOutlined />} onClick={() => openEditModal(record)} />
                                                 <Button type="text" size="small" danger icon={<DeleteOutlined />} onClick={() => {
                                                     modal.confirm({ title: 'Xác nhận xóa sinh viên này?', okButtonProps: { danger: true, className: '!bg-red-600 hover:!bg-red-500 text-white' }, onOk: () => handleDelete(record.id) });
@@ -886,6 +897,58 @@ const StudentList = () => {
                 type="students"
                 templateColumns={['MSSV', 'Họ tên', 'Email', 'Lớp', 'Ngành học', 'Giảng viên HD', 'enterprise_id', 'Vị trí', 'Trạng thái', 'GPA', 'Ngày bắt đầu', 'Ngày kết thúc']}
             />
+
+            <Drawer
+                title={<span className="font-bold flex items-center gap-2"><TeamOutlined /> Chi tiết Sinh viên</span>}
+                placement="right"
+                styles={{ wrapper: { width: window.innerWidth < 640 ? '100%' : 540 } }}
+                onClose={() => setIsDrawerOpen(false)}
+                open={isDrawerOpen}
+                className="bg-slate-50 dark:bg-gray-800/50"
+            >
+                {selectedStudent && (
+                    <div className="flex flex-col gap-6">
+                        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-slate-200 dark:border-gray-700">
+                            <div className="flex justify-between items-start mb-4">
+                                <h2 className="text-xl font-bold text-slate-800 dark:text-gray-100 m-0 leading-tight">{selectedStudent.name}</h2>
+                                {selectedStudent.is_deleted === 1 ? (
+                                    <Tag color="red" className="m-0">Đã xóa</Tag>
+                                ) : (
+                                    <Tag color={statusConfig[selectedStudent.status]?.color || 'default'} className="m-0">
+                                        {selectedStudent.status}
+                                    </Tag>
+                                )}
+                            </div>
+                            <div className="text-sm text-gray-500 mb-6 flex flex-col gap-1">
+                                <div><span className="font-medium text-slate-600 dark:text-gray-400">MSSV:</span> <span className="font-semibold text-slate-800 dark:text-gray-100">{selectedStudent.student_code}</span></div>
+                                <div><span className="font-medium text-slate-600 dark:text-gray-400">Email:</span> <span className="text-slate-800 dark:text-gray-100">{selectedStudent.email || '---'}</span></div>
+                            </div>
+
+                            <Descriptions column={1} layout="horizontal" size="small" bordered className="bg-white dark:bg-gray-800">
+                                <Descriptions.Item label="Lớp"><span className="font-medium">{selectedStudent.class || '---'}</span></Descriptions.Item>
+                                <Descriptions.Item label="Ngành học"><span className="font-medium">{selectedStudent.major || '---'}</span></Descriptions.Item>
+                                <Descriptions.Item label="Khoa"><span className="font-medium">{selectedStudent.faculty_name || selectedStudent.faculty || '---'}</span></Descriptions.Item>
+                                <Descriptions.Item label="GPA"><span className="font-bold text-blue-600">{selectedStudent.gpa || '---'}</span></Descriptions.Item>
+                            </Descriptions>
+                        </div>
+
+                        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-slate-200 dark:border-gray-700">
+                            <h3 className="text-lg font-bold text-slate-800 dark:text-gray-100 mb-3 border-b pb-2">Thông tin Thực tập</h3>
+                            <Descriptions column={1} layout="horizontal" size="small" bordered className="bg-white dark:bg-gray-800">
+                                <Descriptions.Item label="Công ty"><span className="font-semibold text-slate-800 dark:text-gray-100">{selectedStudent.enterprise_name || 'Chưa phân công'}</span></Descriptions.Item>
+                                <Descriptions.Item label="Vị trí"><span className="font-medium">{selectedStudent.position || '---'}</span></Descriptions.Item>
+                                <Descriptions.Item label="GV Hướng dẫn"><span className="font-medium">{selectedStudent.advisor || '---'}</span></Descriptions.Item>
+                                <Descriptions.Item label="Thời gian thực tập">
+                                    <span className="font-medium">
+                                        {selectedStudent.start_date ? dayjs(selectedStudent.start_date).format('DD/MM/YYYY') : '---'} — {selectedStudent.end_date ? dayjs(selectedStudent.end_date).format('DD/MM/YYYY') : '---'}
+                                        {selectedStudent.duration_months ? ` (${selectedStudent.duration_months} tháng)` : ''}
+                                    </span>
+                                </Descriptions.Item>
+                            </Descriptions>
+                        </div>
+                    </div>
+                )}
+            </Drawer>
         </div>
     );
 };

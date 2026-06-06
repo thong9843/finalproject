@@ -5,7 +5,11 @@ const { verifyToken, verifyRole } = require('../middlewares/auth');
 
 // Apply auth middleware to all routes in this file
 router.use(verifyToken);
-// Only allow ADMIN role
+
+// Allow any authenticated user to get the assignees list for tasks assignment
+router.get('/assignees', userController.getAssignees);
+
+// Only allow ADMIN role for general user management
 router.use(verifyRole(['ADMIN']));
 
 router.get('/', userController.getAllUsers);

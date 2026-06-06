@@ -881,7 +881,8 @@ const EnterpriseList = () => {
 
             <Drawer
                 title={<span className="font-bold flex items-center gap-2"><UnorderedListOutlined /> {selectedEnterprise?.name}</span>}
-                placement="right" style={{ width: 720 }}
+                placement="right"
+                styles={{ wrapper: { width: window.innerWidth < 720 ? '100%' : 720 } }}
                 onClose={() => setIsDrawerVisible(false)}
                 open={isDrawerVisible} className="bg-slate-50 dark:bg-gray-800/50"
             >

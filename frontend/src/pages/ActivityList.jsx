@@ -990,7 +990,8 @@ const ActivityList = () => {
 
             <Drawer
                 title={<span className="font-bold flex items-center gap-2"><UnorderedListOutlined /> Chi tiết Hoạt động</span>}
-                placement="right" style={{ width: 600 }}
+                placement="right"
+                styles={{ wrapper: { width: window.innerWidth < 600 ? '100%' : 600 } }}
                 onClose={() => setIsDrawerVisible(false)}
                 open={isDrawerVisible} className="bg-slate-50 dark:bg-gray-800/50"
             >

@@ -29,6 +29,8 @@ const mouRoutes = require('./routes/mouRoutes');
 const structureRoutes = require('./routes/structureRoutes');
 const userRoutes = require('./routes/userRoutes');
 const historyRoutes = require('./routes/historyRoutes');
+const taskRoutes = require('./routes/taskRoutes');
+const noteRoutes = require('./routes/noteRoutes');
 
 // Use Routes
 app.use('/api/auth', authRoutes);
@@ -43,6 +45,8 @@ app.use('/api/mous', mouRoutes);
 app.use('/api/structure', structureRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/history', historyRoutes);
+app.use('/api/tasks', taskRoutes);
+app.use('/api/notes', noteRoutes);
 
 // Swagger Documentation Route
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, { customSiteTitle: "VLU API Documentation" }));

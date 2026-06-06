@@ -95,3 +95,16 @@ exports.deleteUser = async (req, res) => {
         }
     }
 };
+
+exports.getAssignees = async (req, res) => {
+    try {
+        const [users] = await pool.query(`
+            SELECT id, email, full_name, role, faculty_id 
+            FROM users 
+            ORDER BY full_name ASC
+        `);
+        res.json(users);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};

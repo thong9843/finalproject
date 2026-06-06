@@ -421,5 +421,36 @@ INSERT IGNORE INTO students (student_code, name, class, major, activity_id, facu
 ('207CT50111', 'Nguyễn Văn A', 'K26-IT1', 'Kỹ thuật Phần mềm', 1, 1),
 ('207CT50112', 'Trần Thị B', 'K26-IT2', 'Khoa học Máy tính', 1, 1),
 ('207BA50113', 'Lê Văn C', 'K27-BA1', 'Quản trị Marketing', 3, 2);
+-- 21. tasks (NEW FOR KANBAN V2)
+CREATE TABLE IF NOT EXISTS tasks (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    title VARCHAR(255) NOT NULL,
+    description TEXT,
+    status ENUM('Cần làm', 'Đang thực hiện', 'Đang kiểm tra', 'Đã hoàn thành') DEFAULT 'Cần làm',
+    priority ENUM('Thấp', 'Trung bình', 'Cao') DEFAULT 'Trung bình',
+    due_date DATE DEFAULT NULL,
+    assigned_to INT NULL,
+    created_by INT NOT NULL,
+    faculty_id INT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    is_deleted TINYINT(1) DEFAULT 0,
+    FOREIGN KEY (assigned_to) REFERENCES users(id) ON DELETE SET NULL,
+    FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (faculty_id) REFERENCES faculties(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 22. notes (NEW FOR KANBAN V2)
+CREATE TABLE IF NOT EXISTS notes (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    title VARCHAR(255) DEFAULT NULL,
+    content TEXT NOT NULL,
+    color VARCHAR(50) DEFAULT '#fef08a',
+    created_by INT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    is_deleted TINYINT(1) DEFAULT 0,
+    FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 SET FOREIGN_KEY_CHECKS = 1;

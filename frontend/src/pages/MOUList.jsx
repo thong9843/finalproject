@@ -1,9 +1,9 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Table, Button, Modal, Form, Input, Select, DatePicker, message, Space, Tooltip, Row, Col, Upload, Spin, Tag, Alert, Switch, Popover, Badge, Divider, App as AntApp, Card, Checkbox } from 'antd';
+import { Table, Button, Modal, Form, Input, Select, DatePicker, message, Space, Tooltip, Row, Col, Upload, Spin, Tag, Alert, Switch, Popover, Badge, Divider, App as AntApp, Card, Checkbox, Drawer, Descriptions } from 'antd';
 import {
     PlusOutlined, EditOutlined, DeleteOutlined, LinkOutlined, SearchOutlined,
     FilePdfOutlined, ScanOutlined, InboxOutlined, CheckCircleOutlined, RobotOutlined, DownloadOutlined,
-    FilterOutlined, ClearOutlined, SortAscendingOutlined, AuditOutlined
+    FilterOutlined, ClearOutlined, SortAscendingOutlined, AuditOutlined, EyeOutlined, UnorderedListOutlined
 } from '@ant-design/icons';
 import api from '../utils/api';
 import dayjs from 'dayjs';
@@ -53,6 +53,13 @@ const MOUList = () => {
     const [faculties, setFaculties] = useState([]);
     const [filterFaculty, setFilterFaculty] = useState(undefined);
     const [filterEnterprise, setFilterEnterprise] = useState(undefined);
+    const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+    const [selectedMOU, setSelectedMOU] = useState(null);
+
+    const handleViewDetail = (record) => {
+        setSelectedMOU(record);
+        setIsDrawerOpen(true);
+    };
 
     useEffect(() => {
         document.title = "Quản lý Biên bản ghi nhớ (MOU) | VLU Enterprise Link Manager";
@@ -497,7 +504,7 @@ const MOUList = () => {
         {
             title: 'Thao tác',
             key: 'action',
-            width: 180,
+            width: 210,
             fixed: 'right',
             align: 'center',
             render: (_, record) => {
@@ -518,6 +525,9 @@ const MOUList = () => {
                 }
                 return (
                     <Space>
+                        <Tooltip title="Xem chi tiết">
+                            <Button type="text" icon={<EyeOutlined />} onClick={() => handleViewDetail(record)} />
+                        </Tooltip>
                         {record.working_dir && (
                             <Tooltip title="Mở thư mục làm việc">
                                 <Button type="text" icon={<LinkOutlined />} onClick={() => window.open(record.working_dir, '_blank')} />
@@ -771,6 +781,7 @@ const MOUList = () => {
                                     </div>
                                 )}
                                 <div className="flex justify-end gap-3 pt-2 border-t border-gray-100 dark:border-gray-700 mt-2">
+                                    <Button type="text" icon={<EyeOutlined />} onClick={() => handleViewDetail(record)} />
                                     {record.working_dir && (
                                         <Button type="text" icon={<LinkOutlined />} onClick={() => window.open(record.working_dir, '_blank')} />
                                     )}
@@ -1023,6 +1034,105 @@ const MOUList = () => {
                     )}
                 </div>
             </Modal>
+
+            <Drawer
+                title={<span className="font-bold flex items-center gap-2"><AuditOutlined /> Chi tiết Biên bản ghi nhớ (MOU)</span>}
+                placement="right"
+                styles={{ wrapper: { width: window.innerWidth < 768 ? '100%' : 680 } }}
+                onClose={() => setIsDrawerOpen(false)}
+                open={isDrawerOpen}
+                className="bg-slate-50 dark:bg-gray-800/50"
+            >
+                {selectedMOU && (
+                    <div className="flex flex-col gap-6">
+                        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-slate-200 dark:border-gray-700">
+                            <div className="flex justify-between items-start mb-4">
+                                <h2 className="text-xl font-bold text-blue-600 m-0 leading-tight">{selectedMOU.mou_code}</h2>
+                                {selectedMOU.is_deleted === 1 && <Tag color="red" className="m-0">Đã xóa</Tag>}
+                            </div>
+                            <div className="text-sm text-gray-500 mb-6 flex flex-col gap-1">
+                                <div><span className="font-medium text-slate-600 dark:text-gray-400">Đối tác:</span> <span className="font-semibold text-slate-800 dark:text-gray-100">{selectedMOU.enterprise_name}</span></div>
+                                <div><span className="font-medium text-slate-600 dark:text-gray-400">Quốc gia:</span> <span className="text-slate-800 dark:text-gray-100">{selectedMOU.country || 'Việt Nam'}</span></div>
+                                <div><span className="font-medium text-slate-600 dark:text-gray-400">Đơn vị triển khai:</span> <span className="text-slate-800 dark:text-gray-100">{selectedMOU.executing_unit_name || '---'}</span></div>
+                            </div>
+
+                            <Descriptions column={2} layout="vertical" size="small" bordered className="bg-white dark:bg-gray-800">
+                                <Descriptions.Item label="Ngày ký kết"><span className="font-medium">{selectedMOU.signing_date ? dayjs(selectedMOU.signing_date).format('DD/MM/YYYY') : '---'}</span></Descriptions.Item>
+                                <Descriptions.Item label="Loại tổ chức"><Tag color="blue">{selectedMOU.org_type || '---'}</Tag></Descriptions.Item>
+                                <Descriptions.Item label="Đầu mối VLU" span={1}><span className="font-medium">{selectedMOU.vlu_contact || '---'}</span></Descriptions.Item>
+                                <Descriptions.Item label="Đầu mối Đối tác" span={1}><span className="font-medium">{selectedMOU.partner_contact || '---'}</span></Descriptions.Item>
+                                <Descriptions.Item label="Hoạt động liên kết" span={2}>
+                                    {selectedMOU.activity_title ? <Tag color="purple">{selectedMOU.activity_title}</Tag> : '---'}
+                                </Descriptions.Item>
+                            </Descriptions>
+                        </div>
+
+                        {selectedMOU.collaboration_scope && (
+                            <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-slate-200 dark:border-gray-700">
+                                <h3 className="text-lg font-bold text-slate-800 dark:text-gray-100 mb-3 border-b pb-2">Mảng hợp tác</h3>
+                                <div className="text-slate-600 dark:text-gray-300 whitespace-pre-wrap">{selectedMOU.collaboration_scope}</div>
+                            </div>
+                        )}
+
+                        {(selectedMOU.tasks_ay24_25 || selectedMOU.next_steps) && (
+                            <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-slate-200 dark:border-gray-700">
+                                <h3 className="text-lg font-bold text-slate-800 dark:text-gray-100 mb-3 border-b pb-2">Kế hoạch triển khai</h3>
+                                <Descriptions column={1} layout="vertical" size="small" bordered className="bg-white dark:bg-gray-800">
+                                    {selectedMOU.tasks_ay24_25 && (
+                                        <Descriptions.Item label="Công tác đã triển khai NH 24-25">
+                                            <div className="whitespace-pre-wrap">{selectedMOU.tasks_ay24_25}</div>
+                                        </Descriptions.Item>
+                                    )}
+                                    {selectedMOU.next_steps && (
+                                        <Descriptions.Item label="Bước kế tiếp (Dự kiến)">
+                                            <div className="whitespace-pre-wrap">{selectedMOU.next_steps}</div>
+                                        </Descriptions.Item>
+                                    )}
+                                </Descriptions>
+                            </div>
+                        )}
+
+                        {(selectedMOU.past_activities || selectedMOU.related_data) && (
+                            <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-slate-200 dark:border-gray-700">
+                                <h3 className="text-lg font-bold text-slate-800 dark:text-gray-100 mb-3 border-b pb-2">Thông tin bổ sung</h3>
+                                <Descriptions column={1} layout="vertical" size="small" bordered className="bg-white dark:bg-gray-800">
+                                    {selectedMOU.past_activities && (
+                                        <Descriptions.Item label="Hoạt động cũ">
+                                            <div className="whitespace-pre-wrap">{selectedMOU.past_activities}</div>
+                                        </Descriptions.Item>
+                                    )}
+                                    {selectedMOU.related_data && (
+                                        <Descriptions.Item label="Số liệu liên quan (sv, ngành...)">
+                                            <div className="whitespace-pre-wrap">{selectedMOU.related_data}</div>
+                                        </Descriptions.Item>
+                                    )}
+                                </Descriptions>
+                            </div>
+                        )}
+
+                        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-slate-200 dark:border-gray-700">
+                            <h3 className="text-lg font-bold text-slate-800 dark:text-gray-100 mb-3 border-b pb-2">Tài liệu đính kèm</h3>
+                            <div className="flex flex-col gap-2">
+                                {selectedMOU.file_url ? (
+                                    <Button type="primary" icon={<InboxOutlined />} onClick={() => window.open(selectedMOU.file_url, '_blank')} className="bg-purple-600 hover:bg-purple-500 border-none w-full text-white flex items-center justify-center">
+                                        Xem tài liệu gốc (Cloud)
+                                    </Button>
+                                ) : (
+                                    <div className="text-slate-400 text-center py-2 italic">Chưa đính kèm tài liệu gốc (Cloud)</div>
+                                )}
+                                <Button icon={<FilePdfOutlined />} onClick={() => handleExportPdf(selectedMOU)} className="w-full">
+                                    Xuất PDF Biên bản mẫu
+                                </Button>
+                                {selectedMOU.working_dir && (
+                                    <Button icon={<LinkOutlined />} onClick={() => window.open(selectedMOU.working_dir, '_blank')} className="w-full">
+                                        Thư mục làm việc (Drive/Link)
+                                    </Button>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </Drawer>
         </div>
     );
 };

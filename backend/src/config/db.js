@@ -33,6 +33,44 @@ const pool = mysql.createPool({
         `);
         console.log('✔ action_history table verified/created successfully.');
 
+        // 1.1 Create tasks table if not exists
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS tasks (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                title VARCHAR(255) NOT NULL,
+                description TEXT,
+                status ENUM('Cần làm', 'Đang thực hiện', 'Đang kiểm tra', 'Đã hoàn thành') DEFAULT 'Cần làm',
+                priority ENUM('Thấp', 'Trung bình', 'Cao') DEFAULT 'Trung bình',
+                due_date DATE DEFAULT NULL,
+                assigned_to INT NULL,
+                created_by INT NOT NULL,
+                faculty_id INT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                is_deleted TINYINT(1) DEFAULT 0,
+                FOREIGN KEY (assigned_to) REFERENCES users(id) ON DELETE SET NULL,
+                FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE CASCADE,
+                FOREIGN KEY (faculty_id) REFERENCES faculties(id) ON DELETE SET NULL
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        `);
+        console.log('✔ tasks table verified/created successfully.');
+
+        // 1.2 Create notes table if not exists
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS notes (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                title VARCHAR(255) DEFAULT NULL,
+                content TEXT NOT NULL,
+                color VARCHAR(50) DEFAULT '#fef08a',
+                created_by INT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                is_deleted TINYINT(1) DEFAULT 0,
+                FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        `);
+        console.log('✔ notes table verified/created successfully.');
+
         // 2. Add is_deleted columns if they do not exist
         const tables = ['enterprises', 'activities', 'mous', 'students'];
         for (const table of tables) {
