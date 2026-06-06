@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { message, Card, Select, Typography, Spin, Badge, Button, Modal, Form, Input, DatePicker, Tag, Tooltip, Dropdown, Row, Col, Space, Divider, Avatar } from 'antd';
-import { PlusOutlined, BankOutlined, ProjectOutlined, CalendarOutlined, MoreOutlined, DragOutlined, EditOutlined, DeleteOutlined, UserOutlined, HomeOutlined, FileTextOutlined, LinkOutlined, InfoCircleOutlined, CheckSquareOutlined, HeartOutlined } from '@ant-design/icons';
+import { PlusOutlined, BankOutlined, ProjectOutlined, CalendarOutlined, MoreOutlined, DragOutlined, EditOutlined, DeleteOutlined, UserOutlined, HomeOutlined, FileTextOutlined, LinkOutlined, InfoCircleOutlined, CheckSquareOutlined, RobotOutlined, CloudUploadOutlined, AudioOutlined, PictureOutlined } from '@ant-design/icons';
 import api from '../utils/api';
 import dayjs from 'dayjs';
 import Cookies from 'js-cookie';
@@ -65,6 +65,12 @@ const KanbanBoard = () => {
   const [taskForm] = Form.useForm();
   const [noteForm] = Form.useForm();
   const [submitting, setSubmitting] = useState(false);
+
+  // File Upload State
+  const fileUploaderRef = useRef(null);
+  const [uploadingFile, setUploadingFile] = useState(false);
+  const [activeUploadForm, setActiveUploadForm] = useState('TASK'); // 'TASK' or 'NOTE'
+  const [activeUploadField, setActiveUploadField] = useState('description');
 
   // Filters for Tasks
   const [searchKeyword, setSearchKeyword] = useState('');
@@ -152,6 +158,15 @@ const KanbanBoard = () => {
     }
   }, [activeTab, searchKeyword, priorityFilter, assigneeFilter]);
 
+  // Listen to custom refresh event from chatbot note saves
+  useEffect(() => {
+    const handleRefreshNotes = () => {
+      fetchNotes();
+    };
+    window.addEventListener('refresh-notes', handleRefreshNotes);
+    return () => window.removeEventListener('refresh-notes', handleRefreshNotes);
+  }, []);
+
   // Horizontal scroll for Kanban columns via mouse wheel
   const boardRef = useRef(null);
   useEffect(() => {
@@ -188,14 +203,64 @@ const KanbanBoard = () => {
     return () => el.removeEventListener('wheel', onWheel);
   }, [activeTab]);
 
-  // Regex parser for @mentions
+  // Regex parser for @mentions and file attachments
   const renderTextWithMentions = (text) => {
     if (!text) return null;
-    const parts = text.split(/(\@\[.*?\]\(entity:\w+:\d+\))/g);
-    return parts.map((part, index) => {
-      const match = part.match(/^\@\[(.*?)\]\(entity:(\w+):(\d+)\)$/);
+    // Match @[Name](entity:type:payload)
+    const parts = text.split(/(\@\[.*?\]\)entity:\w+:.*?\))/g);
+    // General parse for @[Name](entity:type:payload)
+    const matches = text.split(/(\@\[.*?\]\(entity:\w+:.*?\))/g);
+
+    return matches.map((part, index) => {
+      const match = part.match(/^\@\[(.*?)\]\(entity:(\w+):(.*?)\)$/);
       if (match) {
-        const [_, name, type, id] = match;
+        const [_, name, type, payload] = match;
+
+        // Custom renderer for Uploaded Files
+        if (type === 'file') {
+          const isImage = payload.match(/\.(jpeg|jpg|gif|png|webp|svg)/i) || name.toLowerCase().match(/\.(jpeg|jpg|gif|png|webp|svg)$/);
+          const isAudio = payload.match(/\.(mp3|wav|ogg|m4a|flac)/i) || name.toLowerCase().match(/\.(mp3|wav|ogg|m4a|flac)$/);
+
+          if (isImage) {
+            return (
+              <div key={index} className="my-2 p-1.5 bg-slate-50 dark:bg-gray-800/80 border border-slate-200 dark:border-gray-700 rounded-xl max-w-[240px] shadow-sm select-none" onClick={e => e.stopPropagation()}>
+                <img 
+                  src={payload} 
+                  alt={name} 
+                  className="rounded-lg object-cover max-h-[140px] w-full cursor-pointer hover:opacity-95 transition-opacity"
+                  onClick={() => window.open(payload, '_blank')}
+                />
+                <div className="text-[10px] text-slate-400 mt-1 truncate px-0.5">{name}</div>
+              </div>
+            );
+          } else if (isAudio) {
+            return (
+              <div key={index} className="my-2 p-2 bg-slate-50 dark:bg-gray-800/80 border border-slate-200 dark:border-gray-700 rounded-xl w-full max-w-[280px] shadow-sm" onClick={e => e.stopPropagation()}>
+                <div className="text-[10px] text-slate-500 font-semibold mb-1 truncate flex items-center gap-1">
+                  <AudioOutlined className="text-red-500" /> {name}
+                </div>
+                <audio src={payload} controls className="w-full h-8 scale-90 origin-left" />
+              </div>
+            );
+          } else {
+            return (
+              <Tag
+                key={index}
+                color="cyan"
+                icon={<LinkOutlined />}
+                className="cursor-pointer font-medium hover:opacity-85 transition-all inline-flex items-center gap-1 my-0.5 shadow-sm border"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  window.open(payload, '_blank');
+                }}
+              >
+                {name}
+              </Tag>
+            );
+          }
+        }
+
+        // Standard renderer for System Entities
         let color = 'blue';
         let icon = <BankOutlined />;
         if (type === 'activity') {
@@ -217,7 +282,7 @@ const KanbanBoard = () => {
             className="cursor-pointer font-medium hover:opacity-85 transition-all inline-flex items-center gap-1 my-0.5 shadow-sm border"
             onClick={(e) => {
               e.stopPropagation();
-              handleShowEntityPreview(type, parseInt(id, 10));
+              handleShowEntityPreview(type, parseInt(payload, 10));
             }}
           >
             {name}
@@ -243,7 +308,7 @@ const KanbanBoard = () => {
     if (matchedData) {
       setPreviewEntity({ visible: true, type, data: matchedData });
     } else {
-      message.warning("Không tìm thấy thông tin chi tiết trên bộ nhớ cache.");
+      message.warning("Không tìm thấy thông tin chi tiết thực thể.");
     }
   };
 
@@ -303,10 +368,8 @@ const KanbanBoard = () => {
     const startX = touch.clientX;
     const startY = touch.clientY;
 
-    // Save initial coordinates to verify movement
     touchDragRef.current = { item, startX, startY, moved: false };
 
-    // Start 250ms long press timer
     touchTimeoutRef.current = setTimeout(() => {
       const sourceEl = e.currentTarget;
       const rect = sourceEl.getBoundingClientRect();
@@ -327,7 +390,6 @@ const KanbanBoard = () => {
       `;
       document.body.appendChild(ghost);
 
-      // Try to trigger subtle vibration haptic feedback
       if (navigator.vibrate) {
         navigator.vibrate(40);
       }
@@ -340,7 +402,6 @@ const KanbanBoard = () => {
   const onTouchMove = (e) => {
     const touch = e.touches[0];
 
-    // If drag hasn't started yet, cancel timer if they scroll/move finger too far
     if (!touchDraggedItemId) {
       if (touchDragRef.current) {
         const dx = touch.clientX - touchDragRef.current.startX;
@@ -362,12 +423,10 @@ const KanbanBoard = () => {
     const dy = touch.clientY - touchDragRef.current.startY;
     touchDragRef.current.moved = true;
 
-    // Prevent screen vertical scroll while actively dragging
     e.preventDefault();
 
     ghostEl.style.transform = `translate(${dx}px, ${dy}px) rotate(2deg) scale(1.04)`;
 
-    // Detect drop targets under the touch point
     ghostEl.style.display = 'none';
     const elUnder = document.elementFromPoint(touch.clientX, touch.clientY);
     ghostEl.style.display = '';
@@ -395,7 +454,6 @@ const KanbanBoard = () => {
 
     if (moved && overCol && item) {
       handleTaskStatusChange(item, overCol);
-      // Auto switch column on mobile to the column where it was dropped
       if (window.innerWidth < 768) {
         setActiveMobileColumn(overCol);
       }
@@ -583,6 +641,57 @@ const KanbanBoard = () => {
     setIsMentionModalOpen(false);
   };
 
+  // Cloud File upload triggers
+  const triggerFileUpload = (formType, fieldName) => {
+    setActiveUploadForm(formType);
+    setActiveUploadField(fieldName);
+    fileUploaderRef.current?.click();
+  };
+
+  const handleFileUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadingFile(true);
+    const hideLoading = message.loading('Đang tải tệp tin lên cloud...', 0);
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const res = await api.post('/tasks/upload', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+
+      const { file_url, file_name } = res.data;
+      const mentionMarkup = ` @[${file_name}](entity:file:${file_url}) `;
+
+      const activeForm = activeUploadForm === 'TASK' ? taskForm : noteForm;
+      const currentText = activeForm.getFieldValue(activeUploadField) || '';
+      activeForm.setFieldsValue({
+        [activeUploadField]: currentText + mentionMarkup
+      });
+
+      message.success('Đã đính kèm tệp tin thành công!');
+    } catch (error) {
+      message.error('Lỗi khi upload file: ' + (error.response?.data?.message || error.message));
+    } finally {
+      setUploadingFile(false);
+      hideLoading();
+      e.target.value = '';
+    }
+  };
+
+  // Run chatbot AI directly from notes/tasks
+  const handleRunAiChat = (item, type) => {
+    const title = type === 'TASK' ? item.title : (item.title || 'Ghi chú');
+    const content = type === 'TASK' ? item.description : item.content;
+    const prompt = `Tôi có một ${type === 'TASK' ? 'nhiệm vụ' : 'ghi chú'} với tiêu đề: "${title}". Nội dung chi tiết: "${content || ''}". Hãy phân tích nội dung này và gợi ý cho tôi các bước tiếp theo cần triển khai.`;
+    
+    // Open chatbot widget with predefined prompt
+    window.dispatchEvent(new CustomEvent('open-chatbot', { detail: { prompt } }));
+  };
+
   const getPriorityColor = (priority) => {
     if (priority === 'Cao') return 'red';
     if (priority === 'Trung bình') return 'orange';
@@ -591,6 +700,14 @@ const KanbanBoard = () => {
 
   return (
     <div className="flex flex-col h-[calc(100vh-8rem)] w-full min-w-0">
+      {/* Hidden file uploader input */}
+      <input
+        ref={fileUploaderRef}
+        type="file"
+        style={{ display: 'none' }}
+        onChange={handleFileUpload}
+      />
+
       {/* Upper Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4 shrink-0">
         <div className="flex items-center gap-3">
@@ -787,6 +904,12 @@ const KanbanBoard = () => {
 
                         const contextMenuItems = [
                           {
+                            key: 'ai-chat',
+                            icon: <RobotOutlined className="text-red-500" />,
+                            label: 'Thảo luận với AI',
+                            onClick: () => handleRunAiChat(item, 'TASK'),
+                          },
+                          {
                             key: 'edit',
                             icon: <EditOutlined />,
                             label: 'Chỉnh sửa',
@@ -847,7 +970,7 @@ const KanbanBoard = () => {
 
                                 {/* Description */}
                                 {item.description && (
-                                  <div className="text-xs text-slate-500 dark:text-gray-400 line-clamp-3 leading-relaxed whitespace-pre-wrap">
+                                  <div className="text-xs text-slate-500 dark:text-gray-400 leading-relaxed whitespace-pre-wrap">
                                     {renderTextWithMentions(item.description)}
                                   </div>
                                 )}
@@ -937,7 +1060,17 @@ const KanbanBoard = () => {
                         <div className="font-bold text-slate-800 text-sm line-clamp-1 pr-4">
                           {note.title || 'Ghi chú'}
                         </div>
-                        <div className="flex gap-1.5">
+                        <div className="flex gap-1">
+                          {/* Run AI Chatbot from note */}
+                          <Tooltip title="Thảo luận với trợ lý AI">
+                            <Button
+                              type="text"
+                              icon={<RobotOutlined className="text-red-500 hover:scale-110" style={{ fontSize: '13px' }} />}
+                              size="small"
+                              onClick={() => handleRunAiChat(note, 'NOTE')}
+                              className="rounded-md"
+                            />
+                          </Tooltip>
                           <Button
                             type="text"
                             icon={<EditOutlined style={{ fontSize: '12px' }} />}
@@ -963,7 +1096,7 @@ const KanbanBoard = () => {
 
                       {/* Note Footer with Color Switcher */}
                       <div className="pt-3 border-t border-slate-500/10 flex justify-between items-center shrink-0">
-                        <span className="text-[10px] text-slate-400">
+                        <span className="text-[10px] text-slate-400 font-medium">
                           {dayjs(note.created_at).format('DD/MM/YYYY HH:mm')}
                         </span>
                         
@@ -1044,13 +1177,16 @@ const KanbanBoard = () => {
           {/* Mentions tool shelf */}
           <div className="bg-slate-50 dark:bg-gray-800/80 p-3 rounded-lg border border-slate-200/60 dark:border-gray-700/60 mb-6">
             <div className="text-xs font-bold text-slate-500 mb-2 flex items-center gap-1.5">
-              <LinkOutlined className="text-blue-500" /> Chèn liên kết thực thể hệ thống
+              <LinkOutlined className="text-blue-500" /> Chèn liên kết & Đính kèm tập tin
             </div>
             <Space size="small" wrap>
               <Button size="small" icon={<BankOutlined />} onClick={() => openMentionModal('enterprise', 'TASK', 'description')}>@ Doanh nghiệp</Button>
               <Button size="small" icon={<ProjectOutlined />} onClick={() => openMentionModal('activity', 'TASK', 'description')}>@ Hoạt động</Button>
               <Button size="small" icon={<FileTextOutlined />} onClick={() => openMentionModal('mou', 'TASK', 'description')}>@ MOU</Button>
               <Button size="small" icon={<UserOutlined />} onClick={() => openMentionModal('student', 'TASK', 'description')}>@ Sinh viên</Button>
+              <Button size="small" type="primary" ghost icon={<CloudUploadOutlined />} onClick={() => triggerFileUpload('TASK', 'description')} loading={uploadingFile}>
+                Đính kèm File/Audio/Ảnh
+              </Button>
             </Space>
           </div>
 
@@ -1095,13 +1231,16 @@ const KanbanBoard = () => {
           {/* Mentions tool shelf */}
           <div className="bg-slate-50 dark:bg-gray-800/80 p-3 rounded-lg border border-slate-200/60 dark:border-gray-700/60 mb-6">
             <div className="text-xs font-bold text-slate-500 mb-2 flex items-center gap-1.5">
-              <LinkOutlined className="text-blue-500" /> Chèn liên kết thực thể hệ thống
+              <LinkOutlined className="text-blue-500" /> Chèn liên kết & Đính kèm tập tin
             </div>
             <Space size="small" wrap>
               <Button size="small" icon={<BankOutlined />} onClick={() => openMentionModal('enterprise', 'NOTE', 'content')}>@ Doanh nghiệp</Button>
               <Button size="small" icon={<ProjectOutlined />} onClick={() => openMentionModal('activity', 'NOTE', 'content')}>@ Hoạt động</Button>
               <Button size="small" icon={<FileTextOutlined />} onClick={() => openMentionModal('mou', 'NOTE', 'content')}>@ MOU</Button>
               <Button size="small" icon={<UserOutlined />} onClick={() => openMentionModal('student', 'NOTE', 'content')}>@ Sinh viên</Button>
+              <Button size="small" type="primary" ghost icon={<CloudUploadOutlined />} onClick={() => triggerFileUpload('NOTE', 'content')} loading={uploadingFile}>
+                Đính kèm File/Audio/Ảnh
+              </Button>
             </Space>
           </div>
 
@@ -1223,7 +1362,7 @@ const KanbanBoard = () => {
                   <>
                     <Divider style={{ margin: '12px 0' }} />
                     <h4 className="font-semibold text-sm text-slate-800"><FileTextOutlined className="mr-1" /> Nội dung chi tiết</h4>
-                    <div className="text-slate-600 bg-slate-50 dark:bg-gray-800 p-3 rounded-lg border border-slate-100 dark:border-gray-700 whitespace-pre-wrap">
+                    <div className="text-slate-600 bg-slate-50 dark:bg-gray-800/50 p-3 rounded-lg border border-slate-100 dark:border-gray-700 whitespace-pre-wrap">
                       {previewEntity.data.detail}
                     </div>
                   </>
@@ -1256,7 +1395,7 @@ const KanbanBoard = () => {
                   <>
                     <Divider style={{ margin: '12px 0' }} />
                     <h4 className="font-semibold text-sm text-slate-800"><LinkOutlined className="mr-1" /> Phạm vi hợp tác</h4>
-                    <div className="text-slate-600 bg-slate-50 dark:bg-gray-800 p-3 rounded-lg border border-slate-100 dark:border-gray-700 whitespace-pre-wrap">
+                    <div className="text-slate-600 bg-slate-50 dark:bg-gray-800/50 p-3 rounded-lg border border-slate-100 dark:border-gray-700 whitespace-pre-wrap">
                       {previewEntity.data.collaboration_scope}
                     </div>
                   </>

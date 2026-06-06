@@ -166,3 +166,48 @@ exports.remove = async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 };
+
+const path = require('path');
+const fs = require('fs');
+const bucket = require('../config/firebase');
+
+exports.uploadFile = async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ message: 'Vui lòng chọn file để tải lên' });
+        }
+
+        let fileUrl = null;
+        if (bucket) {
+            const mimeType = req.file.mimetype;
+            const destFileName = `kanban/${Date.now()}_${path.basename(req.file.path)}`;
+            const uploadRes = await bucket.upload(req.file.path, {
+                destination: destFileName,
+                metadata: {
+                    contentType: mimeType,
+                }
+            });
+            const file = uploadRes[0];
+            const encodedPath = encodeURIComponent(file.name);
+            fileUrl = `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${encodedPath}?alt=media`;
+        } else {
+            // Local fallback
+            const relativePath = `uploads/mou-scans/${path.basename(req.file.path)}`;
+            fileUrl = `${req.protocol}://${req.get('host')}/${relativePath}`;
+        }
+
+        // Clean up temporary local file
+        try { fs.unlinkSync(req.file.path); } catch (e) {}
+
+        res.status(200).json({
+            file_url: fileUrl,
+            file_name: req.file.originalname,
+            mime_type: req.file.mimetype
+        });
+    } catch (error) {
+        if (req.file?.path) {
+            try { fs.unlinkSync(req.file.path); } catch (e) {}
+        }
+        res.status(500).json({ message: error.message });
+    }
+};

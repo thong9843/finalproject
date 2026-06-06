@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { MessageOutlined, CloseOutlined, SendOutlined, RobotOutlined, UserOutlined, PictureOutlined } from '@ant-design/icons';
+import { MessageOutlined, CloseOutlined, SendOutlined, RobotOutlined, UserOutlined, PictureOutlined, FileTextOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
+import { message } from 'antd';
 import api from '../utils/api';
 
 const SLASH_COMMANDS = [
@@ -42,6 +43,19 @@ const ChatbotWidget = ({ isOpen, onClose }) => {
         }
     }, [isOpen]);
 
+    // Listen to custom event to pre-populate text from a Note card
+    useEffect(() => {
+        const handleOpenChat = (e) => {
+            if (e.detail && e.detail.prompt) {
+                setInputValue(e.detail.prompt);
+                if (inputRef.current) {
+                    inputRef.current.focus();
+                }
+            }
+        };
+        window.addEventListener('open-chatbot', handleOpenChat);
+        return () => window.removeEventListener('open-chatbot', handleOpenChat);
+    }, []);
 
     const handleSend = async () => {
         const trimmed = inputValue.trim();
@@ -68,11 +82,11 @@ const ChatbotWidget = ({ isOpen, onClose }) => {
             const res = await api.post('/chatbot', {
                 message: trimmed || 'Hãy phân tích hình ảnh này',
                 image: imagePayload,
-                history: messages.filter(m => m.role !== 'system').slice(-10)
+                history: messages.filter(m => msg => msg.role !== 'system').slice(-10)
             });
             setMessages(prev => [...prev, { role: 'assistant', content: res.data.reply }]);
 
-            // Nếu AI phản hồi có action yêu cầu ghi DB
+            // Action triggers from AI
             if (res.data.action) {
                 const action = res.data.action;
                 if (action.actionType === 'create_enterprise') {
@@ -86,13 +100,27 @@ const ChatbotWidget = ({ isOpen, onClose }) => {
         } catch (error) {
             setMessages(prev => [...prev, { 
                 role: 'assistant', 
-                content: '❌ Không thể kết nối tới server. Vui lòng kiểm tra backend đang chạy.' 
+                content: '❌ Không thể kết nối tới server hoặc xảy ra lỗi phân tích AI.' 
             }]);
         } finally {
             setLoading(false);
         }
     };
 
+    const handleSaveMessageAsNote = async (text) => {
+        try {
+            await api.post('/notes', {
+                title: 'Trích xuất từ Chatbot AI',
+                content: text,
+                color: '#fef08a' // default yellow
+            });
+            message.success('Đã lưu tin nhắn thành Ghi chú thành công!');
+            // Notify Kanban page notes tab to reload notes
+            window.dispatchEvent(new CustomEvent('refresh-notes'));
+        } catch (error) {
+            message.error('Lỗi khi lưu ghi chú: ' + (error.response?.data?.message || error.message));
+        }
+    };
 
     const handleKeyDown = (e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
@@ -142,7 +170,7 @@ const ChatbotWidget = ({ isOpen, onClose }) => {
         const file = e.target.files?.[0];
         if (file) {
             processImageFile(file);
-            e.target.value = ''; // Reset file input
+            e.target.value = '';
         }
     };
 
@@ -206,7 +234,6 @@ const ChatbotWidget = ({ isOpen, onClose }) => {
         }, 100);
     };
 
-    // Render markdown: bold + newlines
     const renderContent = (text) => {
         return text.split('\n').map((line, lineIdx) => (
             <span key={lineIdx}>
@@ -220,7 +247,7 @@ const ChatbotWidget = ({ isOpen, onClose }) => {
 
     return (
         <div 
-            className={`fixed right-0 top-0 h-screen bg-white dark:bg-gray-800 shadow-2xl z-40 flex flex-col transition-all duration-300 transform border-l border-gray-200 dark:border-gray-700/50 ${
+            className={`fixed right-0 top-0 h-screen bg-white dark:bg-gray-800 shadow-2xl z-[10000] flex flex-col transition-all duration-300 transform border-l border-gray-200 dark:border-gray-700/50 ${
                 isOpen ? 'translate-x-0' : 'translate-x-full'
             }`}
             style={{ 
@@ -277,6 +304,20 @@ const ChatbotWidget = ({ isOpen, onClose }) => {
                                 />
                             )}
                             {msg.content && renderContent(msg.content)}
+
+                            {/* Save message as note option */}
+                            {msg.role === 'assistant' && msg.content && (
+                                <div className="mt-2.5 pt-2.5 border-t border-slate-100 dark:border-gray-700/60 flex justify-end">
+                                    <button
+                                        onClick={() => handleSaveMessageAsNote(msg.content)}
+                                        className="text-[10px] text-red-600 dark:text-red-400 font-medium hover:underline flex items-center gap-1.5 focus:outline-none"
+                                        title="Lưu tin nhắn này làm Ghi chú"
+                                    >
+                                        <FileTextOutlined style={{ fontSize: 10 }} />
+                                        Lưu làm Ghi chú
+                                    </button>
+                                </div>
+                            )}
                         </div>
                         {msg.role === 'user' && (
                             <div className="w-7 h-7 bg-gray-200 rounded-full flex items-center justify-center ml-2 flex-shrink-0 mt-1">
@@ -359,7 +400,6 @@ const ChatbotWidget = ({ isOpen, onClose }) => {
                 )}
 
                 <div className="flex items-center gap-2">
-                    {/* Slash Command Button */}
                     <button
                         onClick={() => setShowSlashMenu(prev => !prev)}
                         className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all focus:outline-none border ${
@@ -372,7 +412,6 @@ const ChatbotWidget = ({ isOpen, onClose }) => {
                         <span className="font-bold text-base">/</span>
                     </button>
 
-                    {/* Image Attach Button */}
                     <label
                         htmlFor="chatbot-image-upload"
                         className="w-10 h-10 bg-gray-50 border border-gray-200 text-gray-500 hover:bg-gray-100 dark:bg-gray-700/50 dark:border-gray-700 dark:text-gray-400 rounded-xl flex items-center justify-center cursor-pointer transition-all hover:scale-105"
@@ -409,7 +448,6 @@ const ChatbotWidget = ({ isOpen, onClose }) => {
                     </button>
                 </div>
             </div>
-
 
             {/* Drag and Drop Overlay */}
             {isDragging && (
