@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Card, Row, Col, Tag, Form, Select, Button, Modal, message, Input, DatePicker, TimePicker, Statistic, Spin, Empty, Tooltip, Drawer, Descriptions, Popover, Badge, Divider, Pagination, Checkbox, Switch, Space, App as AntApp } from 'antd';
+import { Card, Table, Row, Col, Tag, Form, Select, Button, Modal, message, Input, DatePicker, TimePicker, Statistic, Spin, Empty, Tooltip, Drawer, Descriptions, Popover, Badge, Divider, Pagination, Checkbox, Switch, Space, App as AntApp } from 'antd';
 import {
     ClockCircleOutlined, SyncOutlined, CheckOutlined, PauseCircleOutlined,
     UploadOutlined, DownloadOutlined, PlusOutlined, CheckCircleOutlined,
@@ -422,6 +422,166 @@ const ActivityList = () => {
     const pendingCount = filteredData.filter(item => item.status === 'Đề xuất' || item.status === 'Phê duyệt nội bộ').length;
     const totalStudents = filteredData.reduce((sum, item) => sum + (item.student_count || 0), 0);
 
+    const tableColumns = [
+        {
+            title: 'Tên Hoạt động',
+            dataIndex: 'title',
+            key: 'title',
+            width: 250,
+            fixed: 'left',
+            render: (text, record) => (
+                <span 
+                    className="font-semibold text-slate-800 dark:text-gray-100 flex items-center gap-2 cursor-pointer hover:text-blue-600"
+                    onClick={() => {
+                        setSelectedActivity(record);
+                        setIsDrawerVisible(true);
+                    }}
+                >
+                    {text}
+                    {record.is_deleted === 1 && <Tag color="red">Đã xóa</Tag>}
+                </span>
+            )
+        },
+        {
+            title: 'Doanh nghiệp',
+            dataIndex: 'enterprise_name',
+            key: 'enterprise_name',
+            width: 200,
+            render: (text) => (
+                <span className="text-slate-700 dark:text-gray-300 font-medium">
+                    {text || '---'}
+                </span>
+            )
+        },
+        {
+            title: 'Phân loại',
+            dataIndex: 'type_names',
+            key: 'type_names',
+            width: 220,
+            render: (text) => {
+                if (!text) return <span className="text-slate-300 italic">Chưa phân loại</span>;
+                return (
+                    <div className="flex flex-wrap gap-1.5">
+                        {text.split(', ').map(t => {
+                            const tc = typeConfig[t] || typeConfig['Khác'];
+                            return (
+                                <span key={t} className={`px-2 py-0.5 rounded-md text-[10px] font-medium whitespace-nowrap ${tc.colorClass}`}>
+                                    {t}
+                                </span>
+                            );
+                        })}
+                    </div>
+                );
+            }
+        },
+        {
+            title: 'Thời gian',
+            key: 'dates',
+            width: 200,
+            render: (_, record) => (
+                <span className="text-xs text-slate-600 dark:text-gray-300">
+                    {dayjs(record.start_date).format('DD/MM/YYYY')} — {record.end_date ? dayjs(record.end_date).format('DD/MM/YYYY') : 'Chưa rõ'}
+                </span>
+            )
+        },
+        {
+            title: 'Sinh viên',
+            dataIndex: 'student_count',
+            key: 'student_count',
+            width: 110,
+            align: 'center',
+            render: (count) => (
+                <Tag color="purple" className="font-semibold">
+                    {count || 0} SV
+                </Tag>
+            )
+        },
+        ...(user?.role === 'ADMIN' ? [{
+            title: 'Khoa quản lý',
+            dataIndex: 'faculty_name',
+            key: 'faculty_name',
+            width: 160,
+            render: (text) => text ? <Tag color="orange">{text}</Tag> : <span className="text-gray-400">Hệ thống</span>
+        }] : []),
+        {
+            title: 'Trạng thái',
+            dataIndex: 'status',
+            key: 'status',
+            width: 160,
+            render: (text, record) => {
+                const isDeleted = record.is_deleted === 1;
+                if (isLecturer || isDeleted) {
+                    return <Tag color={statusConfig[text] ? (text === 'Đã triển khai' ? 'green' : text === 'Đã kết thúc' ? 'blue' : 'orange') : 'default'}>{text}</Tag>;
+                }
+                return (
+                    <div className="action-buttons">
+                        <Select
+                            size="small"
+                            value={text}
+                            onChange={(val) => handleUpdateStatus(record.id, val)}
+                            className="w-[140px]"
+                        >
+                            <Option value="Đề xuất">Đề xuất</Option>
+                            <Option value="Phê duyệt nội bộ">Phê duyệt nội bộ</Option>
+                            <Option value="Đã triển khai">Đã triển khai</Option>
+                            <Option value="Đã kết thúc">Đã kết thúc</Option>
+                        </Select>
+                    </div>
+                );
+            }
+        },
+        {
+            title: 'Thao tác',
+            key: 'action',
+            width: 120,
+            fixed: 'right',
+            align: 'center',
+            render: (_, record) => {
+                const isDeleted = record.is_deleted === 1;
+                if (isDeleted) {
+                    return (
+                        <div className="action-buttons">
+                            <Button
+                                type="primary"
+                                size="small"
+                                className="bg-green-600 hover:bg-green-500 text-white border-0 rounded-md"
+                                onClick={() => handleRestore(record.id)}
+                            >
+                                Khôi phục
+                            </Button>
+                        </div>
+                    );
+                }
+                return (
+                    <Space size="middle" className="action-buttons">
+                        {!isLecturer && (
+                            <Button type="text" className="text-blue-500 p-0" icon={<EditOutlined />} onClick={() => {
+                                setEditingId(record.id);
+                                form.setFieldsValue({
+                                    ...record,
+                                    type_ids: record.type_ids ? record.type_ids.split(',').map(Number) : [],
+                                    target_ids: record.target_ids ? record.target_ids.split(',').map(Number) : [],
+                                    start_date: record.start_date ? dayjs(record.start_date) : null,
+                                    end_date: record.end_date ? dayjs(record.end_date) : null,
+                                    start_time: record.start_time ? dayjs(`1970-01-01 ${record.start_time}`) : null,
+                                    end_time: record.end_time ? dayjs(`1970-01-01 ${record.end_time}`) : null,
+                                    collaboration_date: record.collaboration_date ? dayjs(record.collaboration_date) : null,
+                                    faculty_id: record.faculty_id,
+                                });
+                                setIsModalVisible(true);
+                            }} />
+                        )}
+                        {!isLecturer && (
+                            <Button type="text" danger className="p-0" icon={<DeleteOutlined />} onClick={() => {
+                                modal.confirm({ title: 'Xác nhận xóa hoạt động này?', okButtonProps: { danger: true, className: '!bg-red-600 hover:!bg-red-500 text-white' }, onOk: () => handleDelete(record.id) });
+                            }} />
+                        )}
+                    </Space>
+                );
+            }
+        }
+    ];
+
     const handleExport = () => {
         if (!filteredData || filteredData.length === 0) {
             message.warning('Không có dữ liệu để xuất');
@@ -445,6 +605,179 @@ const ActivityList = () => {
         XLSX.utils.book_append_sheet(wb, ws, 'HoatDong');
         XLSX.writeFile(wb, `DanhSachHoatDong_${dayjs().format('YYYYMMDD')}.xlsx`);
     };
+
+    const renderActivityCard = (item) => {
+        const sc = statusConfig[item.status] || { colorClass: 'text-gray-500 bg-gray-50', icon: <ClockCircleOutlined /> };
+        const firstType = item.type_names ? item.type_names.split(', ')[0].trim() : 'Khác';
+        const tc = typeConfig[firstType] || typeConfig['Khác'];
+        const isChecked = selectedActivities.includes(item.id);
+
+        return (
+            <Col xs={24} sm={viewMode === 'list' ? 24 : 12} lg={viewMode === 'list' ? 24 : 8} key={item.id}>
+                <div className={`bg-white dark:bg-gray-800 rounded-2xl border shadow-sm hover:shadow-md dark:shadow-none transition-all h-full flex flex-col overflow-hidden group cursor-pointer relative ${
+                    isChecked 
+                        ? 'border-blue-400 dark:border-blue-500 bg-blue-50/5 dark:bg-blue-955/5' 
+                        : 'border-gray-100 dark:border-gray-700 dark:hover:border-gray-500'
+                } ${item.is_deleted === 1 ? 'opacity-65 border-red-200 dark:border-red-950/30' : ''}`}
+                    onClick={(e) => {
+                        if (e.target.closest('.action-buttons') || e.target.closest('.ant-checkbox-wrapper')) return;
+                        setSelectedActivity(item);
+                        setIsDrawerVisible(true);
+                    }}
+                >
+                    {/* Card Header */}
+                    <div className="p-5 pb-3 flex-1">
+                        <div className="flex justify-between items-start mb-3">
+                            <div className="flex items-start gap-3 flex-1 min-w-0">
+                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 text-lg shadow-sm dark:shadow-none ${tc.colorClass}`}>
+                                    {typeIcons[firstType] || '📋'}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <h3 className="font-bold text-gray-800 dark:text-gray-100 text-[15px] leading-snug line-clamp-2 mb-1 transition-colors">
+                                        {item.title}
+                                    </h3>
+                                    <div className="flex items-center gap-1.5 text-gray-400 text-xs transition-colors">
+                                        <BankOutlined />
+                                        <span className="truncate">{item.enterprise_name}</span>
+                                    </div>
+                                    {user?.role === 'ADMIN' && item.faculty_name && (
+                                        <div className="mt-1">
+                                            <Tag color="orange" className="text-[10px] px-1.5 py-0">{item.faculty_name}</Tag>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-2 flex-shrink-0 ml-2 mt-1">
+                                {item.is_deleted === 1 && <Tag color="red" className="m-0 mr-1 flex-shrink-0">Đã xóa</Tag>}
+                                <div
+                                    className={`rounded-full px-2.5 py-0.5 text-xs font-medium flex-shrink-0 border-0 ${sc.colorClass}`}
+                                >
+                                    {item.status}
+                                </div>
+                                {!isLecturer && item.is_deleted !== 1 && (
+                                    <Checkbox
+                                        checked={selectedActivities.includes(item.id)}
+                                        onChange={() => handleToggleActivity(item.id)}
+                                        className="scale-110 ml-1"
+                                    />
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Description */}
+                        {item.description && (
+                            <p className="text-gray-400 text-xs leading-relaxed line-clamp-2 mb-3 ml-[52px] transition-colors">
+                                {item.description}
+                            </p>
+                        )}
+
+                        {/* Meta info */}
+                        <div className="flex items-center gap-4 text-xs text-gray-400 mb-3 ml-[52px] transition-colors">
+                            <span className="flex items-center gap-1">
+                                <CalendarOutlined />
+                                {dayjs(item.start_date).format('DD/MM/YYYY')} — {item.end_date ? dayjs(item.end_date).format('DD/MM/YYYY') : 'Chưa rõ'}
+                            </span>
+                            <span className="flex items-center gap-1">
+                                <TeamOutlined />
+                                {item.student_count || 0} sinh viên
+                            </span>
+                        </div>
+
+                        {/* Tags */}
+                        <div className="flex gap-1.5 ml-[52px] flex-wrap">
+                            {item.type_names ? (
+                                item.type_names.split(', ').map(t => {
+                                    const trimmed = t.trim();
+                                    const tagConf = typeConfig[trimmed] || typeConfig['Khác'];
+                                    return (
+                                        <span key={trimmed} className={`px-2 py-0.5 rounded-md text-[10px] font-medium whitespace-nowrap ${tagConf.colorClass}`}>
+                                            {trimmed}
+                                        </span>
+                                    );
+                                })
+                            ) : null}
+                        </div>
+                    </div>
+
+                    {/* Card Footer */}
+                    <div className="px-5 py-3 border-t border-gray-50 flex items-center justify-between bg-white dark:bg-gray-800/50 transition-colors action-buttons">
+                        {item.is_deleted === 1 ? (
+                            <Button
+                                type="primary"
+                                size="small"
+                                className="bg-green-600 hover:bg-green-500 text-white border-0 rounded-md animate-fade-in"
+                                onClick={() => handleRestore(item.id)}
+                            >
+                                Khôi phục
+                            </Button>
+                        ) : (
+                            <>
+                                <Select
+                                    size="small"
+                                    value={item.status}
+                                    onChange={(val) => handleUpdateStatus(item.id, val)}
+                                    className="w-[140px]"
+                                    variant="borderless"
+                                    disabled={isLecturer}
+                                >
+                                    <Option value="Đề xuất">Đề xuất</Option>
+                                    <Option value="Phê duyệt nội bộ">Phê duyệt nội bộ</Option>
+                                    <Option value="Đã triển khai">Đã triển khai</Option>
+                                    <Option value="Đã kết thúc">Đã kết thúc</Option>
+                                </Select>
+                                {!isLecturer && (
+                                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <Tooltip title="Chỉnh sửa">
+                                            <button className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-400 hover:text-blue-500 hover:bg-blue-50:bg-blue-900/30 transition-all"
+                                                onClick={() => {
+                                                    setEditingId(item.id);
+                                                    form.setFieldsValue({
+                                                        ...item,
+                                                        type_ids: item.type_ids ? item.type_ids.split(',').map(Number) : [],
+                                                        target_ids: item.target_ids ? item.target_ids.split(',').map(Number) : [],
+                                                        start_date: item.start_date ? dayjs(item.start_date) : null,
+                                                        end_date: item.end_date ? dayjs(item.end_date) : null,
+                                                        start_time: item.start_time ? dayjs(`1970-01-01 ${item.start_time}`) : null,
+                                                        end_time: item.end_time ? dayjs(`1970-01-01 ${item.end_time}`) : null,
+                                                        collaboration_date: item.collaboration_date ? dayjs(item.collaboration_date) : null,
+                                                        faculty_id: item.faculty_id,
+                                                    });
+                                                    setIsModalVisible(true);
+                                                }}>
+                                                <EditOutlined style={{ fontSize: 13 }} />
+                                            </button>
+                                        </Tooltip>
+                                        <Tooltip title="Xóa">
+                                            <button className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50:bg-red-900/30 transition-all"
+                                                onClick={() => modal.confirm({ title: 'Xác nhận xóa hoạt động này?', okButtonProps: { danger: true, className: '!bg-red-600 hover:!bg-red-500 text-white' }, onOk: () => handleDelete(item.id) })}>
+                                                <DeleteOutlined style={{ fontSize: 13 }} />
+                                            </button>
+                                        </Tooltip>
+                                    </div>
+                                )}
+                            </>
+                        )}
+                    </div>
+                </div>
+            </Col>
+        );
+    };
+
+    const renderPagination = () => (
+        <div className="flex justify-center mt-8 pb-4">
+            <Pagination
+                current={currentPage}
+                pageSize={pageSize}
+                total={filteredData.length}
+                onChange={(page, size) => {
+                    setCurrentPage(page);
+                    setPageSize(size);
+                }}
+                showSizeChanger
+                pageSizeOptions={['12', '24', '48', '96']}
+            />
+        </div>
+    );
 
     return (
         <div>
@@ -735,187 +1068,63 @@ const ActivityList = () => {
                 </div>
             )}
 
-            {/* Activity Cards */}
-            {loading ? (
-                <div className="flex justify-center py-20"><Spin size="large" /></div>
-            ) : filteredData.length > 0 ? (
-                <Row gutter={[20, 20]}>
-                    {paginatedData.map(item => {
-                        const sc = statusConfig[item.status] || { colorClass: 'text-gray-500 bg-gray-50', icon: <ClockCircleOutlined /> };
-                        const firstType = item.type ? item.type.split(',')[0].trim() : 'Khác';
-                        const tc = typeConfig[firstType] || typeConfig['Khác'];
-                        const isChecked = selectedActivities.includes(item.id);
-
-                        return (
-                            <Col xs={24} sm={viewMode === 'list' ? 24 : 12} lg={viewMode === 'list' ? 24 : 8} key={item.id}>
-                                <div className={`bg-white dark:bg-gray-800 rounded-2xl border shadow-sm hover:shadow-md dark:shadow-none transition-all h-full flex flex-col overflow-hidden group cursor-pointer relative ${
-                                    isChecked 
-                                        ? 'border-blue-400 dark:border-blue-500 bg-blue-50/5 dark:bg-blue-955/5' 
-                                        : 'border-gray-100 dark:border-gray-700 dark:hover:border-gray-500'
-                                } ${item.is_deleted === 1 ? 'opacity-65 border-red-200 dark:border-red-950/30' : ''}`}
-                                    onClick={(e) => {
-                                        if (e.target.closest('.action-buttons') || e.target.closest('.ant-checkbox-wrapper')) return;
-                                        setSelectedActivity(item);
-                                        setIsDrawerVisible(true);
-                                    }}
-                                >
-                                    {/* Card Header */}
-                                    <div className="p-5 pb-3 flex-1">
-                                        <div className="flex justify-between items-start mb-3">
-                                            <div className="flex items-start gap-3 flex-1 min-w-0">
-                                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 text-lg shadow-sm dark:shadow-none ${tc.colorClass}`}>
-                                                    {typeIcons[firstType] || '📋'}
-                                                </div>
-                                                <div className="flex-1 min-w-0">
-                                                    <h3 className="font-bold text-gray-800 dark:text-gray-100 text-[15px] leading-snug line-clamp-2 mb-1 transition-colors">
-                                                        {item.title}
-                                                    </h3>
-                                                    <div className="flex items-center gap-1.5 text-gray-400 text-xs transition-colors">
-                                                        <BankOutlined />
-                                                        <span className="truncate">{item.enterprise_name}</span>
-                                                    </div>
-                                                    {user?.role === 'ADMIN' && item.faculty_name && (
-                                                        <div className="mt-1">
-                                                            <Tag color="orange" className="text-[10px] px-1.5 py-0">{item.faculty_name}</Tag>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            </div>
-                                            <div className="flex items-center gap-2 flex-shrink-0 ml-2 mt-1">
-                                                {item.is_deleted === 1 && <Tag color="red" className="m-0 mr-1 flex-shrink-0">Đã xóa</Tag>}
-                                                <div
-                                                    className={`rounded-full px-2.5 py-0.5 text-xs font-medium flex-shrink-0 border-0 ${sc.colorClass}`}
-                                                >
-                                                    {item.status}
-                                                </div>
-                                                {!isLecturer && item.is_deleted !== 1 && (
-                                                    <Checkbox
-                                                        checked={selectedActivities.includes(item.id)}
-                                                        onChange={() => handleToggleActivity(item.id)}
-                                                        className="scale-110 ml-1"
-                                                    />
-                                                )}
-                                            </div>
-                                        </div>
-
-                                        {/* Description */}
-                                        {item.description && (
-                                            <p className="text-gray-400 text-xs leading-relaxed line-clamp-2 mb-3 ml-[52px] transition-colors">
-                                                {item.description}
-                                            </p>
-                                        )}
-
-                                        {/* Meta info */}
-                                        <div className="flex items-center gap-4 text-xs text-gray-400 mb-3 ml-[52px] transition-colors">
-                                            <span className="flex items-center gap-1">
-                                                <CalendarOutlined />
-                                                {dayjs(item.start_date).format('DD/MM/YYYY')} — {item.end_date ? dayjs(item.end_date).format('DD/MM/YYYY') : 'Chưa rõ'}
-                                            </span>
-                                            <span className="flex items-center gap-1">
-                                                <TeamOutlined />
-                                                {item.student_count || 0} sinh viên
-                                            </span>
-                                        </div>
-
-                                        {/* Tags */}
-                                        <div className="flex gap-1.5 ml-[52px] flex-wrap">
-                                            {item.type ? (
-                                                item.type.split(',').map(t => {
-                                                    const trimmed = t.trim();
-                                                    const tagConf = typeConfig[trimmed] || typeConfig['Khác'];
-                                                    return (
-                                                        <span key={trimmed} className={`px-2 py-0.5 rounded-md text-[10px] font-medium whitespace-nowrap ${tagConf.colorClass}`}>
-                                                            {trimmed}
-                                                        </span>
-                                                    );
-                                                })
-                                            ) : null}
-                                        </div>
-                                    </div>
-
-                                    {/* Card Footer */}
-                                    <div className="px-5 py-3 border-t border-gray-50 flex items-center justify-between bg-white dark:bg-gray-800/50 transition-colors action-buttons">
-                                        {item.is_deleted === 1 ? (
-                                            <Button
-                                                type="primary"
-                                                size="small"
-                                                className="bg-green-600 hover:bg-green-500 text-white border-0 rounded-md animate-fade-in"
-                                                onClick={() => handleRestore(item.id)}
-                                            >
-                                                Khôi phục
-                                            </Button>
-                                        ) : (
-                                            <>
-                                                <Select
-                                                    size="small"
-                                                    value={item.status}
-                                                    onChange={(val) => handleUpdateStatus(item.id, val)}
-                                                    className="w-[140px]"
-                                                    variant="borderless"
-                                                    disabled={isLecturer}
-                                                >
-                                                    <Option value="Đề xuất">Đề xuất</Option>
-                                                    <Option value="Phê duyệt nội bộ">Phê duyệt nội bộ</Option>
-                                                    <Option value="Đã triển khai">Đã triển khai</Option>
-                                                    <Option value="Đã kết thúc">Đã kết thúc</Option>
-                                                </Select>
-                                                {!isLecturer && (
-                                                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                        <Tooltip title="Chỉnh sửa">
-                                                            <button className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-400 hover:text-blue-500 hover:bg-blue-50:bg-blue-900/30 transition-all"
-                                                                onClick={() => {
-                                                                    setEditingId(item.id);
-                                                                    form.setFieldsValue({
-                                                                        ...item,
-                                                                        type_ids: item.type_ids ? item.type_ids.split(',').map(Number) : [],
-                                                                        target_ids: item.target_ids ? item.target_ids.split(',').map(Number) : [],
-                                                                        start_date: item.start_date ? dayjs(item.start_date) : null,
-                                                                        end_date: item.end_date ? dayjs(item.end_date) : null,
-                                                                        start_time: item.start_time ? dayjs(`1970-01-01 ${item.start_time}`) : null,
-                                                                        end_time: item.end_time ? dayjs(`1970-01-01 ${item.end_time}`) : null,
-                                                                        collaboration_date: item.collaboration_date ? dayjs(item.collaboration_date) : null,
-                                                                        faculty_id: item.faculty_id,
-                                                                    });
-                                                                    setIsModalVisible(true);
-                                                                }}>
-                                                                <EditOutlined style={{ fontSize: 13 }} />
-                                                            </button>
-                                                        </Tooltip>
-                                                        <Tooltip title="Xóa">
-                                                            <button className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50:bg-red-900/30 transition-all"
-                                                                onClick={() => modal.confirm({ title: 'Xác nhận xóa hoạt động này?', okButtonProps: { danger: true, className: '!bg-red-600 hover:!bg-red-500 text-white' }, onOk: () => handleDelete(item.id) })}>
-                                                                <DeleteOutlined style={{ fontSize: 13 }} />
-                                                            </button>
-                                                        </Tooltip>
-                                                    </div>
-                                                )}
-                                            </>
-                                        )}
-                                    </div>
-                                </div>
-                            </Col>
-                        );
-                    })}
-                </Row>
-            ) : (
-                <Empty description="Không tìm thấy hoạt động nào" className="mt-20" />
-            )}
-
-            {filteredData.length > 0 && (
-                <div className="flex justify-center mt-8 pb-4">
-                    <Pagination
-                        current={currentPage}
-                        pageSize={pageSize}
-                        total={filteredData.length}
-                        onChange={(page, size) => {
-                            setCurrentPage(page);
-                            setPageSize(size);
+            {/* Desktop View */}
+            <div className="hidden md:block">
+                {loading ? (
+                    <div className="flex justify-center py-20"><Spin size="large" /></div>
+                ) : filteredData.length === 0 ? (
+                    <Empty description="Không tìm thấy hoạt động nào" className="mt-20" />
+                ) : viewMode === 'grid' ? (
+                    <>
+                        <Row gutter={[20, 20]}>
+                            {paginatedData.map(item => renderActivityCard(item))}
+                        </Row>
+                        {filteredData.length > 0 && renderPagination()}
+                    </>
+                ) : (
+                    <Table
+                        rowSelection={isLecturer ? null : {
+                            selectedRowKeys: selectedActivities,
+                            onChange: setSelectedActivities,
                         }}
-                        showSizeChanger
-                        pageSizeOptions={['12', '24', '48', '96']}
+                        columns={tableColumns}
+                        dataSource={filteredData}
+                        loading={loading}
+                        rowKey="id"
+                        rowClassName={(record) => record.is_deleted === 1 ? 'opacity-65 bg-red-50/20 dark:bg-red-955/10' : ''}
+                        pagination={{
+                            current: currentPage,
+                            pageSize: pageSize,
+                            onChange: (page, size) => {
+                                setCurrentPage(page);
+                                setPageSize(size);
+                            },
+                            showSizeChanger: true,
+                            pageSizeOptions: ['12', '24', '48', '96'],
+                            showTotal: (total) => `Tổng số ${total} hoạt động`,
+                            style: { marginRight: '16px', marginBottom: '16px' }
+                        }}
+                        className="shadow-sm border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-xl overflow-hidden"
+                        scroll={{ x: 'max-content' }}
                     />
-                </div>
-            )}
+                )}
+            </div>
+
+            {/* Mobile View */}
+            <div className="block md:hidden">
+                {loading ? (
+                    <div className="flex justify-center py-20"><Spin size="large" /></div>
+                ) : filteredData.length === 0 ? (
+                    <Empty description="Không tìm thấy hoạt động nào" className="mt-20" />
+                ) : (
+                    <>
+                        <Row gutter={[20, 20]}>
+                            {paginatedData.map(item => renderActivityCard(item))}
+                        </Row>
+                        {filteredData.length > 0 && renderPagination()}
+                    </>
+                )}
+            </div>
 
             {/* Modal Form */}
             <Modal
