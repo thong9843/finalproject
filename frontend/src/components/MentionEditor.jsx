@@ -1,0 +1,573 @@
+import React, { useState, useEffect, useImperativeHandle, forwardRef } from 'react';
+import { useEditor, EditorContent, ReactRenderer } from '@tiptap/react';
+import StarterKit from '@tiptap/starter-kit';
+import Mention from '@tiptap/extension-mention';
+import tippy from 'tippy.js';
+
+// Markdown-HTML bidirectional converter helpers
+const markdownToHtml = (markdown) => {
+  if (!markdown) return '';
+  let html = markdown;
+  
+  // Convert bold **text** to <strong>text</strong>
+  html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+  
+  // Convert italic *text* to <em>text</em>
+  html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
+  
+  // Convert strike ~~text~~ to <s>text</s>
+  html = html.replace(/~~(.*?)~~/g, '<s>$1</s>');
+  
+  // Convert mentions @[label](entity:type:id)
+  html = html.replace(/@\[(.*?)\]\(entity:(\w+):(.*?)\)/g, (match, label, type, id) => {
+    return `<span data-type="mention" data-id="${type}:${id}" data-label="${label}">@${label}</span>`;
+  });
+  
+  // Convert markdown lists to HTML ul/ol
+  const lines = html.split('\n');
+  let result = [];
+  let inUl = false;
+  let inOl = false;
+  
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const ulMatch = line.match(/^[\s\-\*]*\-\s+(.*)$/) || line.match(/^[\s\-\*]*\*\s+(.*)$/);
+    const olMatch = line.match(/^\s*\d+\.\s+(.*)$/);
+    
+    if (ulMatch) {
+      if (inOl) {
+        result.push('</ol>');
+        inOl = false;
+      }
+      if (!inUl) {
+        result.push('<ul>');
+        inUl = true;
+      }
+      result.push(`<li>${ulMatch[1]}</li>`);
+    } else if (olMatch) {
+      if (inUl) {
+        result.push('</ul>');
+        inUl = false;
+      }
+      if (!inOl) {
+        result.push('<ol>');
+        inOl = true;
+      }
+      result.push(`<li>${olMatch[1]}</li>`);
+    } else {
+      if (inUl) {
+        result.push('</ul>');
+        inUl = false;
+      }
+      if (inOl) {
+        result.push('</ol>');
+        inOl = false;
+      }
+      result.push(line);
+    }
+  }
+  
+  if (inUl) result.push('</ul>');
+  if (inOl) result.push('</ol>');
+  
+  html = result.join('\n');
+  
+  // Convert newlines to <br /> inside paragraphs
+  html = html.replace(/\n/g, '<br />');
+  
+  return html;
+};
+
+const htmlToMarkdown = (html) => {
+  if (!html) return '';
+  let text = html;
+  
+  // Convert Tiptap mention spans back to raw markdown format (attribute-order independent)
+  text = text.replace(/<span\s+([^>]*data-type=["']mention["'][^>]*)>(.*?)<\/span>/g, (match, attributesGroup) => {
+    const idMatch = attributesGroup.match(/data-id=["']([^'"]*)["']/);
+    const labelMatch = attributesGroup.match(/data-label=["']([^'"]*)["']/);
+    
+    if (idMatch && labelMatch) {
+      const id = idMatch[1];
+      const label = labelMatch[1];
+      const firstColon = id.indexOf(':');
+      if (firstColon !== -1) {
+        const type = id.substring(0, firstColon);
+        const payload = id.substring(firstColon + 1);
+        return `@[${label}](entity:${type}:${payload})`;
+      }
+    }
+    return match;
+  });
+  
+  // Convert Tiptap HTML lists back to Markdown lists
+  text = text.replace(/<ul[^>]*>([\s\S]*?)<\/ul>/g, (match, listContent) => {
+    return listContent.replace(/<li[^>]*>([\s\S]*?)<\/li>/g, '- $1\n');
+  });
+  
+  text = text.replace(/<ol[^>]*>([\s\S]*?)<\/ol>/g, (match, listContent) => {
+    let index = 1;
+    return listContent.replace(/<li[^>]*>([\s\S]*?)<\/li>/g, () => `${index++}. $1\n`);
+  });
+  
+  // Convert bold, italic, and strike tags back to Markdown
+  text = text
+    .replace(/<strong[^>]*>([\s\S]*?)<\/strong>/g, '**$1**')
+    .replace(/<b[^>]*>([\s\S]*?)<\/b>/g, '**$1**')
+    .replace(/<em[^>]*>([\s\S]*?)<\/em>/g, '*$1*')
+    .replace(/<i[^>]*>([\s\S]*?)<\/i>/g, '*$1*')
+    .replace(/<s[^>]*>([\s\S]*?)<\/s>/g, '~~$1~~')
+    .replace(/<del[^>]*>([\s\S]*?)<\/del>/g, '~~$1~~')
+    .replace(/<strike[^>]*>([\s\S]*?)<\/strike>/g, '~~$1~~');
+  
+  // Convert standard Tiptap paragraph tags and breaks to line breaks
+  text = text
+    .replace(/<\/p><p>/g, '\n')
+    .replace(/<p>/g, '')
+    .replace(/<\/p>/g, '')
+    .replace(/<br\s*\/?>/g, '\n')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>');
+    
+  return text;
+};
+
+// SVG Icons for Toolbar
+const BoldIcon = () => (
+  <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 stroke-current fill-none" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M6 4h8a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"/><path d="M6 12h9a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"/></svg>
+);
+
+const ItalicIcon = () => (
+  <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 stroke-current fill-none" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="4" x2="10" y2="4"/><line x1="14" y1="20" x2="5" y2="20"/><line x1="15" y1="4" x2="9" y2="20"/></svg>
+);
+
+const StrikeIcon = () => (
+  <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 stroke-current fill-none" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><path d="M16 6a4 4 0 0 0-4-4 4 4 0 0 0-4 4v3m0 6v3a4 4 0 0 0 4 4 4 4 0 0 0 4-4"/></svg>
+);
+
+const BulletListIcon = () => (
+  <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 stroke-current fill-none" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+);
+
+const OrderedListIcon = () => (
+  <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 stroke-current fill-none" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="10" y1="6" x2="21" y2="6"/><line x1="10" y1="12" x2="21" y2="12"/><line x1="10" y1="18" x2="21" y2="18"/><path d="M4 6H3v-2h1v2zm0 6H3V9h1v3zm0 6H3v-3h1v3z"/></svg>
+);
+
+const UndoIcon = () => (
+  <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 stroke-current fill-none" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg>
+);
+
+const RedoIcon = () => (
+  <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 stroke-current fill-none" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3l3 2.7"/></svg>
+);
+
+// Toolbar Menu Component
+const MenuBar = ({ editor }) => {
+  if (!editor) {
+    return null;
+  }
+
+  const btnClass = (active) => 
+    `p-1.5 rounded hover:bg-slate-200/80 dark:hover:bg-gray-700 transition-colors duration-100 text-slate-500 dark:text-gray-400 ${
+      active ? 'bg-blue-100 dark:bg-gray-700 text-blue-600 dark:text-blue-400' : ''
+    }`;
+
+  return (
+    <div className="border-b border-slate-200 dark:border-gray-700 bg-slate-50 dark:bg-gray-800/40 px-3 py-1.5 flex flex-wrap gap-1 items-center w-full">
+      <button
+        type="button"
+        onClick={() => editor.chain().focus().toggleBold().run()}
+        className={btnClass(editor.isActive('bold'))}
+        title="In đậm"
+      >
+        <BoldIcon />
+      </button>
+      <button
+        type="button"
+        onClick={() => editor.chain().focus().toggleItalic().run()}
+        className={btnClass(editor.isActive('italic'))}
+        title="In nghiêng"
+      >
+        <ItalicIcon />
+      </button>
+      <button
+        type="button"
+        onClick={() => editor.chain().focus().toggleStrike().run()}
+        className={btnClass(editor.isActive('strike'))}
+        title="Gạch ngang"
+      >
+        <StrikeIcon />
+      </button>
+      
+      <div className="w-[1px] h-4 bg-slate-300 dark:bg-gray-600 mx-1" />
+      
+      <button
+        type="button"
+        onClick={() => editor.chain().focus().toggleBulletList().run()}
+        className={btnClass(editor.isActive('bulletList'))}
+        title="Danh sách dấu chấm"
+      >
+        <BulletListIcon />
+      </button>
+      <button
+        type="button"
+        onClick={() => editor.chain().focus().toggleOrderedList().run()}
+        className={btnClass(editor.isActive('orderedList'))}
+        title="Danh sách số"
+      >
+        <OrderedListIcon />
+      </button>
+      
+      <div className="w-[1px] h-4 bg-slate-300 dark:bg-gray-600 mx-1" />
+      
+      <button
+        type="button"
+        onClick={() => editor.chain().focus().undo().run()}
+        disabled={!editor.can().undo()}
+        className="p-1.5 rounded hover:bg-slate-200/80 dark:hover:bg-gray-700 transition-colors duration-100 text-slate-500 dark:text-gray-400 disabled:opacity-30 disabled:pointer-events-none"
+        title="Hoàn tác"
+      >
+        <UndoIcon />
+      </button>
+      <button
+        type="button"
+        onClick={() => editor.chain().focus().redo().run()}
+        disabled={!editor.can().redo()}
+        className="p-1.5 rounded hover:bg-slate-200/80 dark:hover:bg-gray-700 transition-colors duration-100 text-slate-500 dark:text-gray-400 disabled:opacity-30 disabled:pointer-events-none"
+        title="Làm lại"
+      >
+        <RedoIcon />
+      </button>
+    </div>
+  );
+};
+
+// Suggestion popup rendering list component
+const MentionList = forwardRef((props, ref) => {
+  const [selectedIndex, setSelectedIndex] = useState(0);
+
+  useEffect(() => {
+    setSelectedIndex(0);
+  }, [props.items]);
+
+  const selectItem = (index) => {
+    const item = props.items[index];
+    if (item) {
+      props.command({ id: item.id, label: item.label });
+    }
+  };
+
+  useImperativeHandle(ref, () => ({
+    onKeyDown: ({ event }) => {
+      if (event.key === 'ArrowUp') {
+        setSelectedIndex((selectedIndex + props.items.length - 1) % props.items.length);
+        return true;
+      }
+      if (event.key === 'ArrowDown') {
+        setSelectedIndex((selectedIndex + 1) % props.items.length);
+        return true;
+      }
+      if (event.key === 'Enter') {
+        selectItem(selectedIndex);
+        return true;
+      }
+      return false;
+    },
+  }));
+
+  if (props.items.length === 0) {
+    return (
+      <div className="bg-white dark:bg-gray-800 border border-slate-200 dark:border-gray-700 rounded-lg p-2 text-slate-400 text-xs shadow-lg">
+        Không tìm thấy kết quả
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-white dark:bg-gray-800 border border-slate-200 dark:border-gray-700 rounded-lg shadow-lg max-h-[220px] overflow-y-auto py-1 z-[99999] min-w-[200px]">
+      {props.items.map((item, index) => (
+        <button
+          type="button"
+          key={item.id}
+          onClick={() => selectItem(index)}
+          className={`w-full text-left px-3 py-1.5 text-sm flex items-center gap-2 transition-colors duration-100 ${
+            index === selectedIndex
+              ? 'bg-slate-100 dark:bg-gray-700 text-slate-900 dark:text-gray-100'
+              : 'text-slate-700 dark:text-gray-300 hover:bg-slate-50 dark:hover:bg-gray-700/50'
+          }`}
+        >
+          <span className="text-base">{item.icon || '🔗'}</span>
+          <span className="truncate">{item.display || item.label}</span>
+        </button>
+      ))}
+    </div>
+  );
+});
+
+MentionList.displayName = 'MentionList';
+
+const CustomMention = Mention.extend({
+  renderHTML({ node, HTMLAttributes }) {
+    const idStr = node.attrs.id || '';
+    const label = node.attrs.label || '';
+
+    if (idStr.startsWith('file:')) {
+      const fileUrl = idStr.substring(5);
+      const isImage = fileUrl.match(/\.(jpeg|jpg|gif|png|webp|svg)/i) || label.toLowerCase().match(/\.(jpeg|jpg|gif|png|webp|svg)$/);
+      const isAudio = fileUrl.match(/\.(mp3|wav|ogg|m4a|flac)/i) || label.toLowerCase().match(/\.(mp3|wav|ogg|m4a|flac)$/);
+
+      if (isImage) {
+        return [
+          'span',
+          {
+            ...HTMLAttributes,
+            class: 'mention-image',
+            'data-type': 'mention',
+          },
+          ['img', { src: fileUrl, alt: label }],
+        ];
+      } else if (isAudio) {
+        return [
+          'span',
+          {
+            ...HTMLAttributes,
+            class: 'mention-audio',
+            'data-type': 'mention',
+          },
+          ['span', { class: 'audio-label' }, '🎵 '],
+          ['audio', { src: fileUrl, controls: 'true' }],
+        ];
+      } else {
+        let fileIcon = '📄';
+        if (label.endsWith('.pdf')) fileIcon = '📕';
+        else if (label.endsWith('.xlsx') || label.endsWith('.xls')) fileIcon = '📗';
+        else if (label.endsWith('.docx') || label.endsWith('.doc')) fileIcon = '📘';
+        else if (label.endsWith('.zip') || label.endsWith('.rar')) fileIcon = '📦';
+
+        return [
+          'span',
+          {
+            ...HTMLAttributes,
+            class: 'mention-file',
+            'data-type': 'mention',
+          },
+          `${fileIcon} ${label}`,
+        ];
+      }
+    }
+
+    let emoji = '🏢';
+    if (idStr.startsWith('activity:')) emoji = '📅';
+    else if (idStr.startsWith('mou:')) emoji = '🤝';
+    else if (idStr.startsWith('student:')) emoji = '🎓';
+
+    return [
+      'span',
+      {
+        ...HTMLAttributes,
+        class: 'mention',
+        'data-type': 'mention',
+      },
+      `${emoji} ${label}`,
+    ];
+  },
+  renderText({ node }) {
+    return `@${node.attrs.label}`;
+  },
+});
+
+// Core MentionEditor Component
+const MentionEditor = ({ value, onChange, placeholder, onMentionClick, allEnterprises = [], allActivities = [], allMous = [], allStudents = [] }) => {
+  const editor = useEditor({
+    extensions: [
+      StarterKit,
+      CustomMention.configure({
+        suggestion: {
+          allowSpaces: true,
+          items: ({ query }) => {
+            const text = query || '';
+            const match = text.match(/^(Doanh nghiệp|Hoạt động|MOU|Sinh viên):(.*)$/i);
+            
+            if (match) {
+              const [_, category, subQuery] = match;
+              const lowerQuery = subQuery.trim().toLowerCase();
+              
+              if (category.toLowerCase() === 'doanh nghiệp') {
+                return allEnterprises
+                  .filter(e => e.name.toLowerCase().includes(lowerQuery))
+                  .map(e => ({ id: `enterprise:${e.id}`, label: e.name, icon: '🏢' }))
+                  .slice(0, 10);
+              } else if (category.toLowerCase() === 'hoạt động') {
+                return allActivities
+                  .filter(a => a.title.toLowerCase().includes(lowerQuery))
+                  .map(a => ({ id: `activity:${a.id}`, label: a.title, icon: '📅' }))
+                  .slice(0, 10);
+              } else if (category.toLowerCase() === 'mou') {
+                return allMous
+                  .filter(m => 
+                    m.mou_code.toLowerCase().includes(lowerQuery) || 
+                    (m.partner_name && m.partner_name.toLowerCase().includes(lowerQuery)) ||
+                    (m.enterprise_name && m.enterprise_name.toLowerCase().includes(lowerQuery))
+                  )
+                  .map(m => ({ id: `mou:${m.id}`, label: m.mou_code, icon: '🤝' }))
+                  .slice(0, 10);
+              } else if (category.toLowerCase() === 'sinh viên') {
+                return allStudents
+                  .filter(s => 
+                    s.name.toLowerCase().includes(lowerQuery) || 
+                    s.student_code.toLowerCase().includes(lowerQuery)
+                  )
+                  .map(s => ({ id: `student:${s.id}`, label: s.name, icon: '🎓' }))
+                  .slice(0, 10);
+              }
+              return [];
+            } else {
+              const categories = [
+                { id: 'category:enterprise', label: 'Doanh nghiệp:', display: 'Doanh nghiệp...' },
+                { id: 'category:activity', label: 'Hoạt động:', display: 'Hoạt động...' },
+                { id: 'category:mou', label: 'MOU:', display: 'MOU...' },
+                { id: 'category:student', label: 'Sinh viên:', display: 'Sinh viên...' },
+              ];
+              const lowerText = text.trim().toLowerCase();
+              if (!lowerText) return categories;
+              return categories.filter(c => 
+                c.label.toLowerCase().includes(lowerText) || 
+                c.display.toLowerCase().includes(lowerText)
+              );
+            }
+          },
+          render: () => {
+            let component;
+            let popup;
+
+            return {
+              onStart: (props) => {
+                component = new ReactRenderer(MentionList, {
+                  props,
+                  editor: props.editor,
+                });
+
+                if (!props.clientRect) {
+                  return;
+                }
+
+                popup = tippy('body', {
+                  getReferenceClientRect: props.clientRect,
+                  appendTo: () => document.body,
+                  content: component.element,
+                  showOnCreate: true,
+                  interactive: true,
+                  trigger: 'manual',
+                  placement: 'bottom-start',
+                });
+              },
+
+              onUpdate(props) {
+                component.updateProps(props);
+
+                if (!props.clientRect) {
+                  return;
+                }
+
+                popup[0].setProps({
+                  getReferenceClientRect: props.clientRect,
+                });
+              },
+
+              onKeyDown(props) {
+                if (props.event.key === 'Escape') {
+                  popup[0].hide();
+                  return true;
+                }
+
+                return component.ref?.onKeyDown(props);
+              },
+
+              onExit() {
+                popup[0].destroy();
+                component.destroy();
+              },
+            };
+          },
+          command: ({ editor, range, props }) => {
+            // Check if user selected a category rather than a leaf entity
+            if (props.id.startsWith('category:')) {
+              editor
+                .chain()
+                .focus()
+                .insertContentAt(range, `@${props.label} `)
+                .run();
+              return;
+            }
+            
+            // Insert standard mention node
+            editor
+              .chain()
+              .focus()
+              .insertContentAt(range, [
+                {
+                  type: 'mention',
+                  attrs: {
+                    id: props.id,
+                    label: props.label,
+                  },
+                },
+                {
+                  type: 'text',
+                  text: ' ',
+                },
+              ])
+              .run();
+          },
+        },
+      }),
+    ],
+    content: markdownToHtml(value),
+    onUpdate: ({ editor }) => {
+      const html = editor.getHTML();
+      const markdown = htmlToMarkdown(html);
+      if (onChange) {
+        onChange(markdown);
+      }
+    },
+    editorProps: {
+      attributes: {
+        class: 'tiptap-editor-content outline-none w-full min-h-[110px] max-h-[250px] overflow-y-auto p-3 text-sm text-slate-700 dark:text-gray-200',
+        placeholder: placeholder || '',
+      },
+      handleClick: (view, pos, event) => {
+        const mentionElement = event.target.closest('[data-type="mention"]');
+        if (mentionElement) {
+          const dataId = mentionElement.getAttribute('data-id');
+          if (dataId && onMentionClick) {
+            onMentionClick(dataId);
+            return true;
+          }
+        }
+        return false;
+      }
+    },
+  }, [allEnterprises, allActivities, allMous, allStudents]);
+
+  // Synchronize editor content with form value when modified externally
+  useEffect(() => {
+    if (editor) {
+      const currentHtml = editor.getHTML();
+      const currentMarkdown = htmlToMarkdown(currentHtml);
+      if (currentMarkdown !== value) {
+        editor.commands.setContent(markdownToHtml(value));
+      }
+    }
+  }, [value, editor]);
+
+  return (
+    <div className="border border-slate-300 dark:border-gray-700 rounded-lg hover:border-blue-400 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500/20 dark:hover:border-red-400 dark:focus-within:border-red-500 dark:focus-within:ring-red-500/20 transition-all bg-white dark:bg-gray-800 overflow-hidden min-h-[150px] flex flex-col w-full">
+      <MenuBar editor={editor} />
+      <EditorContent editor={editor} className="w-full flex-1 flex" />
+    </div>
+  );
+};
+
+export default MentionEditor;

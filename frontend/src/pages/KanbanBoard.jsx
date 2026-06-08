@@ -4,6 +4,7 @@ import { PlusOutlined, BankOutlined, ProjectOutlined, CalendarOutlined, MoreOutl
 import api from '../utils/api';
 import dayjs from 'dayjs';
 import Cookies from 'js-cookie';
+import MentionEditor from '../components/MentionEditor';
 
 const { Title, Text, Paragraph } = Typography;
 const { Option } = Select;
@@ -280,82 +281,7 @@ const KanbanBoard = () => {
     return () => el.removeEventListener('wheel', onWheel);
   }, [activeTab]);
 
-  // Formulate Mentions options dynamically based on the current search text (category -> entity)
-  const getDynamicMentionOptions = () => {
-    const text = mentionSearchText || '';
-    
-    // Check if the search text contains a category colon
-    const match = text.match(/^(Doanh nghiệp|Hoạt động|MOU|Sinh viên):(.*)$/i);
-    
-    if (match) {
-      const [_, category, query] = match;
-      const lowerQuery = query.trim().toLowerCase();
-      const options = [];
-      
-      if (category.toLowerCase() === 'doanh nghiệp') {
-        const filtered = allEnterprises.filter(e => e.name.toLowerCase().includes(lowerQuery));
-        filtered.forEach(e => {
-          options.push({
-            value: `@[${e.name}](entity:enterprise:${e.id}) `,
-            label: `🏢 ${e.name}`
-          });
-        });
-      } else if (category.toLowerCase() === 'hoạt động') {
-        const filtered = allActivities.filter(a => a.title.toLowerCase().includes(lowerQuery));
-        filtered.forEach(a => {
-          options.push({
-            value: `@[${a.title}](entity:activity:${a.id}) `,
-            label: `📅 ${a.title}`
-          });
-        });
-      } else if (category.toLowerCase() === 'mou') {
-        const filtered = allMous.filter(m => 
-          m.mou_code.toLowerCase().includes(lowerQuery) || 
-          (m.partner_name && m.partner_name.toLowerCase().includes(lowerQuery)) ||
-          (m.enterprise_name && m.enterprise_name.toLowerCase().includes(lowerQuery))
-        );
-        filtered.forEach(m => {
-          options.push({
-            value: `@[${m.mou_code}](entity:mou:${m.id}) `,
-            label: `🤝 ${m.mou_code} (${m.partner_name || m.enterprise_name || 'MOU'})`
-          });
-        });
-      } else if (category.toLowerCase() === 'sinh viên') {
-        const filtered = allStudents.filter(s => 
-          s.name.toLowerCase().includes(lowerQuery) || 
-          s.student_code.toLowerCase().includes(lowerQuery)
-        );
-        filtered.forEach(s => {
-          options.push({
-            value: `@[${s.name}](entity:student:${s.id}) `,
-            label: `🎓 ${s.name} - ${s.student_code}`
-          });
-        });
-      }
-      
-      return options.map(opt => ({
-        ...opt,
-        key: opt.value
-      }));
-    } else {
-      // If there is no colon, show the 4 categories
-      const categories = [
-        { value: 'Doanh nghiệp:', label: '🏢 Doanh nghiệp...' },
-        { value: 'Hoạt động:', label: '📅 Hoạt động...' },
-        { value: 'MOU:', label: '🤝 MOU...' },
-        { value: 'Sinh viên:', label: '🎓 Sinh viên...' },
-      ];
-      
-      const lowerText = text.trim().toLowerCase();
-      if (!lowerText) return categories.map(opt => ({ ...opt, key: opt.value }));
-      
-      const filteredCategories = categories.filter(c => 
-        c.label.toLowerCase().includes(lowerText) || 
-        c.value.toLowerCase().includes(lowerText)
-      );
-      return filteredCategories.map(opt => ({ ...opt, key: opt.value }));
-    }
-  };
+
 
   // Helper to extract file references from text to render them nicely at the bottom
   const extractFileAttachments = (text) => {
@@ -396,20 +322,58 @@ const KanbanBoard = () => {
 
         // Custom inline file pill
         if (type === 'file') {
-          return (
-            <Tag
-              key={index}
-              color="cyan"
-              icon={<LinkOutlined style={{ fontSize: '10px' }} />}
-              className="cursor-pointer font-medium hover:opacity-85 inline-flex items-center gap-1.5 my-0.5 shadow-sm border border-cyan-200 max-w-full whitespace-normal break-all"
-              onClick={(e) => {
-                e.stopPropagation();
-                window.open(payload, '_blank');
-              }}
-            >
-              📎 {name}
-            </Tag>
-          );
+          const isImage = payload.match(/\.(jpeg|jpg|gif|png|webp|svg)/i) || name.toLowerCase().match(/\.(jpeg|jpg|gif|png|webp|svg)$/);
+          const isAudio = payload.match(/\.(mp3|wav|ogg|m4a|flac)/i) || name.toLowerCase().match(/\.(mp3|wav|ogg|m4a|flac)$/);
+
+          if (isImage) {
+            return (
+              <div 
+                key={index} 
+                className="my-1.5 max-w-[260px] rounded-lg overflow-hidden border border-slate-200 dark:border-gray-700 shadow-xs inline-block align-middle bg-slate-50 dark:bg-gray-800 p-1" 
+                onClick={(e) => e.stopPropagation()}
+              >
+                <img 
+                  src={payload} 
+                  alt={name} 
+                  className="w-full h-auto cursor-pointer hover:opacity-90 transition-opacity rounded-md block" 
+                  onClick={() => window.open(payload, '_blank')}
+                />
+              </div>
+            );
+          } else if (isAudio) {
+            return (
+              <div 
+                key={index} 
+                className="my-1.5 max-w-[300px] p-2 bg-slate-50 dark:bg-gray-800/80 border border-slate-200 dark:border-gray-700 rounded-lg flex flex-col gap-1 shadow-xs inline-flex align-middle" 
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="text-[10px] text-slate-500 font-bold truncate flex items-center gap-1">
+                  <AudioOutlined className="text-red-500" /> {name}
+                </div>
+                <audio src={payload} controls className="w-full h-8 scale-95 origin-left" />
+              </div>
+            );
+          } else {
+            let fileIcon = '📄';
+            if (name.endsWith('.pdf')) fileIcon = '📕';
+            else if (name.endsWith('.xlsx') || name.endsWith('.xls')) fileIcon = '📗';
+            else if (name.endsWith('.docx') || name.endsWith('.doc')) fileIcon = '📘';
+            else if (name.endsWith('.zip') || name.endsWith('.rar')) fileIcon = '📦';
+
+            return (
+              <Tag
+                key={index}
+                color="blue"
+                className="cursor-pointer font-medium hover:opacity-85 inline-flex items-center gap-1.5 my-0.5 shadow-sm border border-blue-200 max-w-full whitespace-normal break-all bg-blue-50 text-blue-600 dark:bg-blue-950/20 dark:text-blue-400 dark:border-blue-900 align-middle"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  window.open(payload, '_blank');
+                }}
+              >
+                {fileIcon} {name}
+              </Tag>
+            );
+          }
         }
 
         // Standard System Entity Badge
@@ -580,7 +544,7 @@ const KanbanBoard = () => {
     const startX = touch.clientX;
     const startY = touch.clientY;
 
-    touchDragRef.current = { item, startX, startY, moved: false };
+    touchDragRef.current = { item, startX, startY, lastX: startX, lastY: startY, moved: false };
 
     touchTimeoutRef.current = setTimeout(() => {
       const sourceEl = e.currentTarget;
@@ -598,7 +562,8 @@ const KanbanBoard = () => {
         border-radius: 12px;
         box-shadow: 0 20px 50px rgba(0,0,0,0.35);
         transform: rotate(2deg) scale(1.04);
-        transition: transform 0.08s ease;
+        transition: transform 0.1s ease-out;
+        will-change: transform;
       `;
       document.body.appendChild(ghost);
 
@@ -631,6 +596,10 @@ const KanbanBoard = () => {
     if (!touchDragRef.current || !touchDragRef.current.ghostEl) return;
     const { ghostEl } = touchDragRef.current;
 
+    if (!touchDragRef.current.moved) {
+      ghostEl.style.transition = 'none';
+    }
+
     const dx = touch.clientX - touchDragRef.current.startX;
     const dy = touch.clientY - touchDragRef.current.startY;
     touchDragRef.current.moved = true;
@@ -639,15 +608,24 @@ const KanbanBoard = () => {
 
     ghostEl.style.transform = `translate(${dx}px, ${dy}px) rotate(2deg) scale(1.04)`;
 
-    ghostEl.style.display = 'none';
-    const elUnder = document.elementFromPoint(touch.clientX, touch.clientY);
-    ghostEl.style.display = '';
+    const lastX = touchDragRef.current.lastX || 0;
+    const lastY = touchDragRef.current.lastY || 0;
+    const dist = Math.hypot(touch.clientX - lastX, touch.clientY - lastY);
 
-    const dropTarget = elUnder?.closest('[data-drop-status]');
-    const newOverCol = dropTarget ? dropTarget.getAttribute('data-drop-status') : null;
-    if (newOverCol !== touchDragRef.current.overCol) {
-      touchDragRef.current.overCol = newOverCol;
-      setTouchDragOverCol(newOverCol);
+    if (dist > 6) {
+      touchDragRef.current.lastX = touch.clientX;
+      touchDragRef.current.lastY = touch.clientY;
+
+      ghostEl.style.display = 'none';
+      const elUnder = document.elementFromPoint(touch.clientX, touch.clientY);
+      ghostEl.style.display = '';
+
+      const dropTarget = elUnder?.closest('[data-drop-status]');
+      const newOverCol = dropTarget ? dropTarget.getAttribute('data-drop-status') : null;
+      if (newOverCol !== touchDragRef.current.overCol) {
+        touchDragRef.current.overCol = newOverCol;
+        setTouchDragOverCol(newOverCol);
+      }
     }
   };
 
@@ -703,7 +681,7 @@ const KanbanBoard = () => {
     const startX = touch.clientX;
     const startY = touch.clientY;
     
-    touchNoteDragRef.current = { item, startX, startY, moved: false };
+    touchNoteDragRef.current = { item, startX, startY, lastX: startX, lastY: startY, moved: false };
     
     touchNoteTimeoutRef.current = setTimeout(() => {
       const sourceEl = e.currentTarget;
@@ -721,7 +699,8 @@ const KanbanBoard = () => {
         border-radius: 12px;
         box-shadow: 0 20px 50px rgba(0,0,0,0.35);
         transform: scale(1.04);
-        transition: transform 0.08s ease;
+        transition: transform 0.1s ease-out;
+        will-change: transform;
       `;
       document.body.appendChild(ghost);
       
@@ -754,6 +733,10 @@ const KanbanBoard = () => {
     if (!touchNoteDragRef.current || !touchNoteDragRef.current.ghostEl) return;
     const { ghostEl } = touchNoteDragRef.current;
     
+    if (!touchNoteDragRef.current.moved) {
+      ghostEl.style.transition = 'none';
+    }
+    
     const dx = touch.clientX - touchNoteDragRef.current.startX;
     const dy = touch.clientY - touchNoteDragRef.current.startY;
     touchNoteDragRef.current.moved = true;
@@ -762,15 +745,24 @@ const KanbanBoard = () => {
     
     ghostEl.style.transform = `translate(${dx}px, ${dy}px) scale(1.04)`;
     
-    ghostEl.style.display = 'none';
-    const elUnder = document.elementFromPoint(touch.clientX, touch.clientY);
-    ghostEl.style.display = '';
-    
-    const dropTarget = elUnder?.closest('[data-note-id]');
-    const overId = dropTarget ? parseInt(dropTarget.getAttribute('data-note-id'), 10) : null;
-    if (overId !== touchNoteDragRef.current.overId) {
-      touchNoteDragRef.current.overId = overId;
-      setTouchDragOverNoteId(overId);
+    const lastX = touchNoteDragRef.current.lastX || 0;
+    const lastY = touchNoteDragRef.current.lastY || 0;
+    const dist = Math.hypot(touch.clientX - lastX, touch.clientY - lastY);
+
+    if (dist > 6) {
+      touchNoteDragRef.current.lastX = touch.clientX;
+      touchNoteDragRef.current.lastY = touch.clientY;
+
+      ghostEl.style.display = 'none';
+      const elUnder = document.elementFromPoint(touch.clientX, touch.clientY);
+      ghostEl.style.display = '';
+      
+      const dropTarget = elUnder?.closest('[data-note-id]');
+      const overId = dropTarget ? parseInt(dropTarget.getAttribute('data-note-id'), 10) : null;
+      if (overId !== touchNoteDragRef.current.overId) {
+        touchNoteDragRef.current.overId = overId;
+        setTouchDragOverNoteId(overId);
+      }
     }
   };
 
@@ -1238,7 +1230,7 @@ const KanbanBoard = () => {
                   onDragOver={(e) => onDragOver(e, col.name)}
                   onDragLeave={onDragLeave}
                   onDrop={(e) => onDrop(e, col.name)}
-                  className={`px-3.5 py-2 rounded-xl border text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
+                  className={`px-3.5 py-2 rounded-xl border text-xs font-bold transition-[border-color,background-color,color,transform,box-shadow] duration-150 flex items-center gap-2 cursor-pointer ${
                     isActive
                       ? 'bg-blue-600 text-white border-blue-600 scale-105 shadow-md'
                       : 'bg-slate-50 dark:bg-gray-800 border-slate-200 dark:border-gray-700 text-slate-700 dark:text-gray-300'
@@ -1271,7 +1263,7 @@ const KanbanBoard = () => {
                   <div
                     key={status}
                     data-drop-status={status}
-                    className={`bg-slate-100/70 dark:bg-gray-800/40 rounded-2xl w-full md:w-[320px] flex flex-col h-full border border-slate-200 dark:border-gray-700/60 shadow-sm dark:shadow-none transition-all duration-200 ${
+                    className={`bg-slate-100/70 dark:bg-gray-800/40 rounded-2xl w-full md:w-[320px] flex flex-col h-full border border-slate-200 dark:border-gray-700/60 shadow-sm dark:shadow-none transition-[border-color,background-color,box-shadow,transform] duration-200 ${
                       isDragOver || touchDragOverCol === status ? 'ring-2 ring-blue-400 bg-blue-50/50 dark:bg-blue-900/20 scale-[1.01]' : ''
                     } ${
                       isCurrentMobileCol ? 'flex' : 'hidden md:flex'
@@ -1349,7 +1341,7 @@ const KanbanBoard = () => {
                               onTouchStart={(e) => onTouchStart(e, item)}
                               onTouchMove={onTouchMove}
                               onTouchEnd={onTouchEnd}
-                              className={`group bg-white dark:bg-gray-800 rounded-xl p-4 border border-slate-200 dark:border-gray-700 shadow-sm dark:shadow-none hover:shadow dark:hover:shadow-none hover:border-blue-300 dark:hover:border-blue-500 transition-all cursor-grab active:cursor-grabbing select-none touch-none ${
+                              className={`group bg-white dark:bg-gray-800 rounded-xl p-4 border border-slate-200 dark:border-gray-700 shadow-sm dark:shadow-none hover:shadow dark:hover:shadow-none hover:border-blue-300 dark:hover:border-blue-500 transition-[border-color,box-shadow,opacity] duration-150 cursor-grab active:cursor-grabbing select-none touch-none will-change-transform ${
                                 isDragged || isTouchDragged ? 'opacity-30 rotate-1 scale-95 ring-2 ring-blue-400 border-none' : ''
                               }`}
                             >
@@ -1499,7 +1491,7 @@ const KanbanBoard = () => {
                       className="break-inside-avoid w-full pb-6"
                     >
                       <div
-                        className={`group relative rounded-xl p-5 shadow border transition-all duration-200 flex flex-col justify-between min-h-[120px] cursor-grab active:cursor-grabbing select-none ${stickerColor.bgClass} ${
+                        className={`group relative rounded-xl p-5 shadow border transition-[border-color,box-shadow,opacity] duration-150 flex flex-col justify-between min-h-[120px] cursor-grab active:cursor-grabbing select-none will-change-transform ${stickerColor.bgClass} ${
                           (draggedNoteId === note.id || touchDraggedNoteId === note.id) ? 'opacity-30 border-dashed border-2 border-slate-400' : ''
                         } ${
                           (dragOverNoteId === note.id || touchDragOverNoteId === note.id) ? 'ring-2 ring-blue-500 scale-[1.01] shadow-md' : ''
@@ -1637,17 +1629,17 @@ const KanbanBoard = () => {
             </Select>
           </Form.Item>
 
-          {/* Autocomplete Mentions Field */}
           <Form.Item name="description" label="Mô tả & chi tiết công việc (Gõ @ để liên kết nhanh dữ liệu)">
-            <Mentions
-              rows={4}
+            <MentionEditor
               placeholder="Nhập mô tả nhiệm vụ công việc, gõ @ để liên kết Doanh nghiệp, Hoạt động, MOU hoặc Sinh viên..."
-              options={getDynamicMentionOptions()}
-              onSearch={(text) => setMentionSearchText(text)}
-              onSelect={() => setMentionSearchText('')}
-              split=""
-              className="rounded-lg"
-              autoSize={{ minRows: 4, maxRows: 8 }}
+              allEnterprises={allEnterprises}
+              allActivities={allActivities}
+              allMous={allMous}
+              allStudents={allStudents}
+              onMentionClick={(dataId) => {
+                const [type, id] = dataId.split(':');
+                handleShowEntityPreview(type, parseInt(id, 10));
+              }}
             />
           </Form.Item>
 
@@ -1688,17 +1680,17 @@ const KanbanBoard = () => {
             <Input placeholder="VD: Ý tưởng cuộc họp" className="rounded-lg" />
           </Form.Item>
 
-          {/* Autocomplete Mentions Field */}
           <Form.Item name="content" label="Nội dung ghi chú (Gõ @ để liên kết nhanh dữ liệu)" rules={[{ required: true, message: 'Nhập nội dung ghi chú!' }]}>
-            <Mentions
-              rows={5}
+            <MentionEditor
               placeholder="Nhập nội dung ghi chú, gõ @ để liên kết Doanh nghiệp, Hoạt động, MOU hoặc Sinh viên..."
-              options={getDynamicMentionOptions()}
-              onSearch={(text) => setMentionSearchText(text)}
-              onSelect={() => setMentionSearchText('')}
-              split=""
-              className="rounded-lg"
-              autoSize={{ minRows: 5, maxRows: 10 }}
+              allEnterprises={allEnterprises}
+              allActivities={allActivities}
+              allMous={allMous}
+              allStudents={allStudents}
+              onMentionClick={(dataId) => {
+                const [type, id] = dataId.split(':');
+                handleShowEntityPreview(type, parseInt(id, 10));
+              }}
             />
           </Form.Item>
 

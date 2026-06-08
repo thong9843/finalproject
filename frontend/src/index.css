@@ -193,3 +193,252 @@ html.dark .custom-scroller::-webkit-scrollbar-thumb:hover {
     border-radius: 6px !important;
   }
 }
+
+/* Styling for react-mentions component */
+.vlu-mentions-input {
+  width: 100%;
+}
+
+.vlu-mentions-input__control {
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 1.5;
+  border-radius: 8px !important;
+  overflow: hidden !important;
+}
+
+.vlu-mentions-input__control--multiLine {
+  border: 1px solid #d9d9d9;
+  border-radius: 8px !important;
+  background-color: #ffffff;
+  transition: all 0.2s;
+  overflow: hidden !important;
+}
+
+html.dark .vlu-mentions-input__control--multiLine {
+  border-color: #374151; /* gray-700 */
+  background-color: #1f2937; /* gray-800 */
+  border-radius: 8px !important;
+}
+
+/* Hover/Focus states to match Antd input */
+.vlu-mentions-input__control--multiLine:hover {
+  border-color: #40a9ff;
+}
+
+.vlu-mentions-input__control--multiLine:focus-within {
+  border-color: #1890ff;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+}
+
+html.dark .vlu-mentions-input__control--multiLine:hover {
+  border-color: #ff4d4f; /* VLU brand red */
+}
+
+html.dark .vlu-mentions-input__control--multiLine:focus-within {
+  border-color: #ff4d4f;
+  box-shadow: 0 0 0 2px rgba(255, 77, 79, 0.2);
+}
+
+.vlu-mentions-input__highlighter {
+  padding: 8px 12px;
+  border: 1px solid transparent;
+  box-sizing: border-box;
+  background-color: transparent !important;
+  color: #1f2937; /* gray-800 */
+  font-family: inherit !important;
+  font-size: 14px !important;
+  line-height: 1.5 !important;
+}
+
+html.dark .vlu-mentions-input__highlighter {
+  color: #f3f4f6; /* gray-100 */
+}
+
+.vlu-mentions-input__input {
+  padding: 8px 12px;
+  border: 1px solid transparent;
+  box-sizing: border-box;
+  outline: none;
+  background-color: transparent !important;
+  color: transparent !important;
+  -webkit-text-fill-color: transparent !important;
+  caret-color: #1f2937 !important;
+  font-family: inherit !important;
+  font-size: 14px !important;
+  line-height: 1.5 !important;
+}
+
+html.dark .vlu-mentions-input__input {
+  caret-color: #f3f4f6 !important;
+}
+
+.vlu-mentions-input__suggestions {
+  background-color: #ffffff;
+  border: 1px solid #f0f0f0;
+  border-radius: 8px;
+  box-shadow: 0 6px 16px 0 rgba(0, 0, 0, 0.08), 0 3px 6px -4px rgba(0, 0, 0, 0.12);
+  font-size: 14px;
+  z-index: 99999;
+}
+
+html.dark .vlu-mentions-input__suggestions {
+  background-color: #1f2937; /* gray-800 */
+  border-color: #374151; /* gray-700 */
+  box-shadow: 0 6px 16px 0 rgba(0, 0, 0, 0.4);
+}
+
+.vlu-mentions-input__suggestions__list {
+  max-height: 250px;
+  overflow-y: auto;
+}
+
+.vlu-mentions-input__suggestions__item {
+  padding: 8px 12px;
+  border-bottom: 1px solid #f0f0f0;
+  color: #1f2937;
+  transition: all 0.1s;
+}
+
+html.dark .vlu-mentions-input__suggestions__item {
+  border-bottom-color: #374151;
+  color: #f3f4f6;
+}
+
+.vlu-mentions-input__suggestions__item--focused {
+  background-color: #f5f5f5;
+  color: #da251d; /* VLU brand red */
+}
+
+html.dark .vlu-mentions-input__suggestions__item--focused {
+  background-color: #374151; /* gray-700 */
+  color: #ff4d4f;
+}
+
+/* Tiptap Rich Editor Custom Mention Styles */
+.tiptap-editor-content {
+  outline: none;
+}
+
+.tiptap-editor-content p {
+  margin: 0;
+}
+
+/* Styled mentions inline inside Tiptap editor */
+.tiptap-editor-content .mention {
+  border-radius: 4px;
+  padding: 1px 4px;
+  font-weight: 500;
+  display: inline-block;
+  white-space: nowrap;
+  font-size: 13px;
+  margin: 0 2px;
+}
+
+/* Custom styling per entity type inside Tiptap */
+.tiptap-editor-content .mention[data-id^="enterprise:"] {
+  background-color: #e6f7ff;
+  color: #1890ff;
+  border: 1px solid #91d5ff;
+}
+
+.tiptap-editor-content .mention[data-id^="activity:"] {
+  background-color: #f6ffed;
+  color: #52c41a;
+  border: 1px solid #b7eb8f;
+}
+
+.tiptap-editor-content .mention[data-id^="mou:"] {
+  background-color: #f9f0ff;
+  color: #722ed1;
+  border: 1px solid #d3adf7;
+}
+
+.tiptap-editor-content .mention[data-id^="student:"] {
+  background-color: #fff7e6;
+  color: #fa8c16;
+  border: 1px solid #ffd591;
+}
+
+/* Bullet & Ordered List Styling inside Tiptap */
+.tiptap-editor-content ul {
+  list-style-type: disc !important;
+  padding-left: 24px !important;
+  margin-top: 8px !important;
+  margin-bottom: 8px !important;
+}
+
+.tiptap-editor-content ol {
+  list-style-type: decimal !important;
+  padding-left: 24px !important;
+  margin-top: 8px !important;
+  margin-bottom: 8px !important;
+}
+
+.tiptap-editor-content li {
+  margin-top: 4px !important;
+  margin-bottom: 4px !important;
+  display: list-item !important;
+}
+
+/* Styled inline files inside Tiptap editor */
+.tiptap-editor-content .mention-image {
+  display: inline-block;
+  vertical-align: middle;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 4px;
+  background-color: #f8fafc;
+  margin: 6px 2px;
+  max-width: 260px;
+  content-visibility: auto;
+}
+
+.tiptap-editor-content .mention-image img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 6px;
+  display: block;
+}
+
+.tiptap-editor-content .mention-audio {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background-color: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 6px 10px;
+  margin: 6px 2px;
+  max-width: 320px;
+  vertical-align: middle;
+}
+
+.tiptap-editor-content .mention-audio audio {
+  height: 28px;
+  vertical-align: middle;
+}
+
+.tiptap-editor-content .mention-audio .audio-label {
+  font-weight: 600;
+  color: #475569;
+  font-size: 13px;
+}
+
+.tiptap-editor-content .mention-file {
+  background-color: #e0f2fe;
+  color: #0284c7;
+  border: 1px solid #bae6fd;
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-weight: 500;
+  font-size: 13px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin: 2px;
+  vertical-align: middle;
+}
+
+
+
