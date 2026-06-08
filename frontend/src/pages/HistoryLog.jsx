@@ -486,7 +486,13 @@ const HistoryLog = () => {
                 loading={loading}
                 className="shadow-sm border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-xl overflow-hidden"
                 scroll={{ x: 'max-content' }}
-                pagination={{ pageSize: 15 }} 
+                pagination={{
+                    defaultPageSize: 15,
+                    showSizeChanger: true,
+                    pageSizeOptions: ['15', '30', '50', '100'],
+                    showTotal: (total) => `Tổng số ${total} bản ghi`,
+                    style: { marginRight: '16px', marginBottom: '16px' }
+                }} 
             />
 
             {/* Detail Log Modal */}

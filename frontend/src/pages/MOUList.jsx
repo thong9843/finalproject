@@ -844,7 +844,13 @@ const MOUList = () => {
                     loading={loading}
                     rowKey="id"
                     rowClassName={(record) => record.is_deleted === 1 ? 'opacity-65 bg-red-50/20 dark:bg-red-950/10' : ''}
-                    pagination={{ pageSize: 12 }}
+                    pagination={{
+                        defaultPageSize: 12,
+                        showSizeChanger: true,
+                        pageSizeOptions: ['12', '24', '48', '96'],
+                        showTotal: (total) => `Tổng số ${total} biên bản`,
+                        style: { marginRight: '16px', marginBottom: '16px' }
+                    }}
                     className="border-none"
                     scroll={{ x: 'max-content' }}
                 />

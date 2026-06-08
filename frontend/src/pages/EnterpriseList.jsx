@@ -291,7 +291,7 @@ const EnterpriseList = () => {
             item.rep_phone?.toLowerCase().includes(q);
         const matchScale = !filterScale || item.scale_id === filterScale;
         const matchField = !filterField || (item.field_ids && item.field_ids.split(',').map(Number).includes(filterField));
-        const matchIsHcmc = filterIsHcmc === undefined || item.is_hcmc === filterIsHcmc;
+        const matchIsHcmc = filterIsHcmc === undefined || !!item.is_hcmc === filterIsHcmc;
         const matchDistrict = !filterDistrict || item.district === filterDistrict;
         const matchStatus = !statusFilter || item.status === statusFilter;
         return matchSearch && matchScale && matchField && matchIsHcmc && matchDistrict && matchStatus;
@@ -598,7 +598,13 @@ const EnterpriseList = () => {
                     rowClassName={(record) => record.is_deleted === 1 ? 'opacity-65 bg-red-50/20 dark:bg-red-955/10' : ''}
                     className="shadow-sm border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-xl overflow-hidden"
                     scroll={{ x: 'max-content' }}
-                    pagination={{ pageSize: 12 }} />
+                    pagination={{
+                        defaultPageSize: 12,
+                        showSizeChanger: true,
+                        pageSizeOptions: ['12', '24', '48', '96'],
+                        showTotal: (total) => `Tổng số ${total} doanh nghiệp`,
+                        style: { marginRight: '16px', marginBottom: '16px' }
+                    }} />
             </div>
 
             {/* Mobile View */}
