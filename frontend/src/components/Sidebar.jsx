@@ -205,14 +205,14 @@ const Sidebar = ({ isOpen, onClose, collapsed }) => {
                     theme={isDark ? 'dark' : 'light'}
                 />
             </div>
-            <div className="border-t border-gray-100 dark:border-gray-700/50 pb-4 pt-2">
+            <div className="border-t border-gray-100 dark:border-gray-700/50 pb-0 pt-2">
                 <Menu
                     mode="inline"
                     inlineCollapsed={isCollapsedDesktop}
                     selectedKeys={[location.pathname]}
                     onClick={handleMenuClick}
                     items={bottomItems}
-                    className="border-r-0"
+                    className="border-r-0 mb-0"
                     theme={isDark ? 'dark' : 'light'}
                 />
             </div>
