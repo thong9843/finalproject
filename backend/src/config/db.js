@@ -87,6 +87,37 @@ const pool = mysql.createPool({
             await pool.query("ALTER TABLE `users` ADD COLUMN tags VARCHAR(500) DEFAULT NULL");
             console.log("✔ Added tags column to users table.");
         }
+
+        // 4. Add faculty_id column to mous if it does not exist
+        const [mouColumns] = await pool.query("SHOW COLUMNS FROM `mous` LIKE 'faculty_id'");
+        if (mouColumns.length === 0) {
+            await pool.query("ALTER TABLE `mous` ADD COLUMN faculty_id INT NULL");
+            console.log("✔ Added faculty_id column to mous table.");
+
+            // Add foreign key constraint
+            try {
+                await pool.query("ALTER TABLE `mous` ADD CONSTRAINT fk_mous_faculties FOREIGN KEY (faculty_id) REFERENCES faculties(id) ON DELETE CASCADE");
+                console.log("✔ Added foreign key fk_mous_faculties to mous table.");
+            } catch (fkErr) {
+                console.error("✖ Error adding foreign key fk_mous_faculties:", fkErr.message);
+            }
+
+            // Sync existing data from enterprises.faculty_id
+            try {
+                const [syncResult] = await pool.query(`
+                    UPDATE mous m 
+                    JOIN enterprises e ON m.enterprise_id = e.id 
+                    SET m.faculty_id = e.faculty_id 
+                    WHERE m.faculty_id IS NULL
+                `);
+                console.log(`✔ Synced faculty_id for existing MOUs. Affected rows: ${syncResult.affectedRows}`);
+                
+                // Fallback sync for remaining nulls
+                await pool.query("UPDATE mous SET faculty_id = 1 WHERE faculty_id IS NULL");
+            } catch (syncErr) {
+                console.error("✖ Error syncing existing faculty_ids:", syncErr.message);
+            }
+        }
     } catch (err) {
         console.error('✖ Error performing automatic database migrations:', err.message);
     }

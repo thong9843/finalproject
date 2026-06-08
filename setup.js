@@ -101,7 +101,7 @@ async function run() {
     await new Promise(resolve => setTimeout(resolve, 3000));
 
     try {
-        log('\n[1/3] Running migrations (database.sql)...', 'info');
+        log('\n[1/2] Running migrations (database.sql)...', 'info');
         execSync('node backend/migrations/run-sql.js', { 
             cwd: __dirname, 
             stdio: 'inherit',
@@ -109,21 +109,13 @@ async function run() {
         });
         log('✔ Database and tables set up successfully.', 'success');
 
-        log('\n[2/3] Importing CSV raw data...', 'info');
-        execSync('node backend/import-csv.js', { 
+        log('\n[2/2] Running consolidated database seeder (seed.js)...', 'info');
+        execSync('node backend/seed.js', { 
             cwd: __dirname, 
             stdio: 'inherit',
             shell: true
         });
-        log('✔ CSV raw data imported successfully.', 'success');
-
-        log('\n[3/3] Seeding student data...', 'info');
-        execSync('node backend/migrations/run_seed_students.js', { 
-            cwd: __dirname, 
-            stdio: 'inherit',
-            shell: true
-        });
-        log('✔ Student records seeded successfully.', 'success');
+        log('✔ Database seeded with rich multi-faculty mock data successfully.', 'success');
 
         log('\n======================================================', 'success');
         log('✔ SETUP COMPLETED SUCCESSFULLY!', 'success');
@@ -140,8 +132,7 @@ async function run() {
         log('\n⚠ Database setup encountered issues: ' + dbErr.message, 'warning');
         log('Please check your local MySQL connection settings in backend/.env and run steps manually:', 'warning');
         log('  1. node backend/migrations/run-sql.js', 'warning');
-        log('  2. node backend/import-csv.js', 'warning');
-        log('  3. node backend/migrations/run_seed_students.js\n', 'warning');
+        log('  2. node backend/seed.js\n', 'warning');
     }
 }
 

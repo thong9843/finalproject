@@ -329,11 +329,11 @@ exports.restore = async (req, res) => {
                     `UPDATE mous SET mou_code=?, enterprise_id=?, signing_date=?, partner_contact=?,
                      org_type=?, country=?, collaboration_scope=?, executing_unit_id=?, vlu_contact=?,
                      tasks_ay24_25=?, next_steps=?, past_activities=?, related_data=?, working_dir=?,
-                     activity_id=?, file_url=? WHERE id=?`,
+                     activity_id=?, file_url=?, faculty_id=? WHERE id=?`,
                     [mou.mou_code, mou.enterprise_id, mou.signing_date, mou.partner_contact,
                      mou.org_type, mou.country, mou.collaboration_scope, mou.executing_unit_id, mou.vlu_contact,
                      mou.tasks_ay24_25, mou.next_steps, mou.past_activities, mou.related_data, mou.working_dir,
-                     mou.activity_id, mou.file_url, entityId]
+                     mou.activity_id, mou.file_url, mou.faculty_id, entityId]
                 );
             } else if (entityType === 'STUDENT') {
                 const student = oldValue?.student;

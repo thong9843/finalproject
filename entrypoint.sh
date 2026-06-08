@@ -76,8 +76,7 @@ else
     export DB_NAME=vlu_enterprise_link
 
     node /app/backend/migrations/run-sql.js
-    node /app/backend/import-csv.js
-    node /app/backend/migrations/run_seed_students.js
+    node /app/backend/seed.js
     echo "✔ Database migrations completed."
 fi
 

@@ -16,19 +16,30 @@ const FONTS = {
 exports.getAll = async (req, res) => {
     try {
         let query = `
-            SELECT m.*, e.name as enterprise_name, d.name as executing_unit_name, a.title as activity_title
+            SELECT m.*, e.name as enterprise_name, d.name as executing_unit_name, a.title as activity_title, f.name as faculty_name
             FROM mous m
             JOIN enterprises e ON m.enterprise_id = e.id
             LEFT JOIN departments d ON m.executing_unit_id = d.id
             LEFT JOIN activities a ON m.activity_id = a.id
+            LEFT JOIN faculties f ON m.faculty_id = f.id
             WHERE m.is_deleted = ?
         `;
         const showDeleted = req.query.is_deleted === '1' || req.query.is_deleted === 'true';
         let params = [showDeleted ? 1 : 0];
+        
         if (req.user.role !== 'ADMIN') {
-            query += ' AND e.faculty_id = ?';
+            query += ' AND m.faculty_id = ?';
             params.push(req.user.faculty_id);
+        } else if (req.query.faculty_id) {
+            query += ' AND m.faculty_id = ?';
+            params.push(req.query.faculty_id);
         }
+
+        if (req.query.enterprise_id) {
+            query += ' AND m.enterprise_id = ?';
+            params.push(req.query.enterprise_id);
+        }
+
         query += ' ORDER BY m.created_at DESC';
         const [rows] = await pool.query(query, params);
         res.status(200).json(rows);
@@ -40,9 +51,8 @@ exports.getAll = async (req, res) => {
 exports.getById = async (req, res) => {
     try {
         const [rows] = await pool.query(`
-            SELECT m.*, e.faculty_id
+            SELECT m.*
             FROM mous m
-            JOIN enterprises e ON m.enterprise_id = e.id
             WHERE m.id = ? AND m.is_deleted = 0`, [req.params.id]);
         if (rows.length === 0) return res.status(404).json({ message: 'Not found' });
         const mou = rows[0];
@@ -61,6 +71,8 @@ exports.create = async (req, res) => {
             collaboration_scope, executing_unit_id, vlu_contact, tasks_ay24_25,
             next_steps, past_activities, related_data, working_dir, activity_id, file_url } = req.body;
 
+        let { faculty_id } = req.body;
+
         if (mou_code) {
             const [existingMou] = await pool.query(
                 'SELECT id FROM mous WHERE mou_code = ? AND is_deleted = 0',
@@ -71,35 +83,42 @@ exports.create = async (req, res) => {
             }
         }
 
+        const [ents] = await pool.query('SELECT faculty_id FROM enterprises WHERE id = ?', [enterprise_id]);
+        if (ents.length === 0) {
+            return res.status(400).json({ message: 'Enterprise not found' });
+        }
+
         if (req.user.role !== 'ADMIN') {
-            const [ents] = await pool.query('SELECT faculty_id FROM enterprises WHERE id = ?', [enterprise_id]);
-            if (ents.length === 0) {
-                return res.status(400).json({ message: 'Enterprise not found' });
-            }
             if (ents[0].faculty_id !== req.user.faculty_id) {
                 return res.status(403).json({ message: 'Enterprise does not belong to your faculty' });
             }
+            faculty_id = req.user.faculty_id;
+        } else {
+            // Admin role: fallback to enterprise's faculty_id if none provided
+            if (!faculty_id) {
+                faculty_id = ents[0].faculty_id;
+            }
         }
+
         const [result] = await pool.query(
             `INSERT INTO mous (mou_code, enterprise_id, signing_date, partner_contact, org_type, country,
                 collaboration_scope, executing_unit_id, vlu_contact, tasks_ay24_25,
-                next_steps, past_activities, related_data, working_dir, activity_id, file_url)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                next_steps, past_activities, related_data, working_dir, activity_id, file_url, faculty_id)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [mou_code, enterprise_id, signing_date || null, partner_contact, org_type, country,
                 collaboration_scope, executing_unit_id || null, vlu_contact, tasks_ay24_25,
-                next_steps, past_activities, related_data, working_dir, activity_id || null, file_url || null]
+                next_steps, past_activities, related_data, working_dir, activity_id || null, file_url || null, faculty_id]
         );
         const mouId = result.insertId;
 
         // Log creation
         const [newMou] = await pool.query('SELECT * FROM mous WHERE id = ?', [mouId]);
-        const [ent] = await pool.query('SELECT faculty_id FROM enterprises WHERE id = ?', [enterprise_id]);
         const historyHelper = require('../utils/historyHelper');
         await historyHelper.logCreate(pool, {
             entityType: 'MOU',
             entityId: mouId,
             entityName: mou_code,
-            facultyId: ent[0]?.faculty_id,
+            facultyId: newMou[0].faculty_id,
             changedBy: req.user.id,
             newValue: { mou: newMou[0] }
         });
@@ -117,6 +136,13 @@ exports.update = async (req, res) => {
             collaboration_scope, executing_unit_id, vlu_contact, tasks_ay24_25,
             next_steps, past_activities, related_data, working_dir, activity_id, file_url } = req.body;
 
+        let { faculty_id } = req.body;
+
+        const [oldMou] = await pool.query('SELECT * FROM mous WHERE id = ?', [id]);
+        if (oldMou.length === 0) {
+            return res.status(404).json({ message: 'MOU not found' });
+        }
+
         if (mou_code) {
             const [existingMou] = await pool.query(
                 'SELECT id FROM mous WHERE mou_code = ? AND id != ? AND is_deleted = 0',
@@ -127,53 +153,48 @@ exports.update = async (req, res) => {
             }
         }
 
+        const [ents] = await pool.query('SELECT faculty_id FROM enterprises WHERE id = ?', [enterprise_id]);
+        if (ents.length === 0) {
+            return res.status(400).json({ message: 'Enterprise not found' });
+        }
+
         if (req.user.role !== 'ADMIN') {
-            const existing = await pool.query(`
-                SELECT e.faculty_id 
-                FROM mous m 
-                JOIN enterprises e ON m.enterprise_id = e.id 
-                WHERE m.id = ?`, [id]);
-            if (existing[0].length === 0) {
-                return res.status(404).json({ message: 'MOU not found' });
-            }
-            if (existing[0][0].faculty_id !== req.user.faculty_id) {
+            if (oldMou[0].faculty_id !== req.user.faculty_id) {
                 return res.status(403).json({ message: 'Access denied to this MOU' });
-            }
-            const [ents] = await pool.query('SELECT faculty_id FROM enterprises WHERE id = ?', [enterprise_id]);
-            if (ents.length === 0) {
-                return res.status(400).json({ message: 'Enterprise not found' });
             }
             if (ents[0].faculty_id !== req.user.faculty_id) {
                 return res.status(403).json({ message: 'New enterprise does not belong to your faculty' });
             }
+            faculty_id = req.user.faculty_id;
+        } else {
+            // Admin: fallback to existing faculty_id if none provided
+            if (!faculty_id) {
+                faculty_id = oldMou[0].faculty_id;
+            }
         }
 
-        // Fetch old values for logging
-        const [oldMou] = await pool.query('SELECT * FROM mous WHERE id = ?', [id]);
         const oldValue = { mou: oldMou[0] };
 
         await pool.query(
             `UPDATE mous SET mou_code=?, enterprise_id=?, signing_date=?, partner_contact=?,
                 org_type=?, country=?, collaboration_scope=?, executing_unit_id=?, vlu_contact=?,
-                tasks_ay24_25=?, next_steps=?, past_activities=?, related_data=?, working_dir=?, activity_id=?, file_url=?
+                tasks_ay24_25=?, next_steps=?, past_activities=?, related_data=?, working_dir=?, activity_id=?, file_url=?, faculty_id=?
              WHERE id=?`,
             [mou_code, enterprise_id, signing_date || null, partner_contact, org_type, country,
                 collaboration_scope, executing_unit_id || null, vlu_contact, tasks_ay24_25,
-                next_steps, past_activities, related_data, working_dir, activity_id || null, file_url || null, id]
+                next_steps, past_activities, related_data, working_dir, activity_id || null, file_url || null, faculty_id, id]
         );
 
         // Fetch new values for logging
         const [newMou] = await pool.query('SELECT * FROM mous WHERE id = ?', [id]);
         const newValue = { mou: newMou[0] };
 
-        const [ent] = await pool.query('SELECT faculty_id FROM enterprises WHERE id = ?', [enterprise_id]);
-
         const historyHelper = require('../utils/historyHelper');
         await historyHelper.logUpdate(pool, {
             entityType: 'MOU',
             entityId: id,
             entityName: mou_code,
-            facultyId: ent[0]?.faculty_id,
+            facultyId: newMou[0].faculty_id,
             changedBy: req.user.id,
             oldValue,
             newValue
@@ -189,9 +210,8 @@ exports.remove = async (req, res) => {
     try {
         const { id } = req.params;
         const [existing] = await pool.query(`
-            SELECT e.faculty_id, m.mou_code, m.is_deleted
+            SELECT m.faculty_id, m.mou_code, m.is_deleted
             FROM mous m 
-            JOIN enterprises e ON m.enterprise_id = e.id 
             WHERE m.id = ?`, [id]);
 
         if (existing.length === 0) {
@@ -235,7 +255,7 @@ exports.generatePdf = async (req, res) => {
         const { id } = req.params;
 
         const [rows] = await pool.query(`
-            SELECT m.*, e.name as enterprise_name, e.tax_code, e.faculty_id,
+            SELECT m.*, e.name as enterprise_name, e.tax_code,
                    d.name as executing_unit_name,
                    ea.building_street, ea.district, ea.province,
                    er.title, er.full_name, er.phone
@@ -513,7 +533,7 @@ exports.uploadFile = async (req, res) => {
         if (!req.file) return res.status(400).json({ message: 'Vui lòng chọn file để tải lên.' });
 
         // Access check
-        const [rows] = await pool.query(`SELECT m.*, e.faculty_id FROM mous m JOIN enterprises e ON m.enterprise_id = e.id WHERE m.id = ? AND m.is_deleted = 0`, [id]);
+        const [rows] = await pool.query(`SELECT m.faculty_id FROM mous m WHERE m.id = ? AND m.is_deleted = 0`, [id]);
         if (rows.length === 0) return res.status(404).json({ message: 'MOU không tồn tại.' });
         if (req.user.role !== 'ADMIN' && rows[0].faculty_id !== req.user.faculty_id) {
             return res.status(403).json({ message: 'Không có quyền truy cập MOU này.' });
@@ -610,7 +630,7 @@ exports.generatePdfAndUpload = async (req, res) => {
         const { id } = req.params;
 
         const [rows] = await pool.query(`
-            SELECT m.*, e.name as enterprise_name, e.tax_code, e.faculty_id,
+            SELECT m.*, e.name as enterprise_name, e.tax_code,
                    d.name as executing_unit_name,
                    ea.building_street, ea.district, ea.province,
                    er.title, er.full_name, er.phone

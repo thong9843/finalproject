@@ -437,6 +437,7 @@ const MOUList = () => {
             next_steps: scanResult.next_steps,
             past_activities: scanResult.past_activities,
             related_data: scanResult.related_data,
+            faculty_id: filterFaculty || user?.faculty_id || undefined,
         };
         Object.keys(fields).forEach(k => fields[k] == null && delete fields[k]);
         form.setFieldsValue(fields);
@@ -966,6 +967,17 @@ const MOUList = () => {
             >
                 <Form layout="vertical" form={form} onFinish={handleSave} className="mt-4">
                     <Form.Item name="file_url" hidden><Input /></Form.Item>
+                    {user?.role === 'ADMIN' && (
+                        <Row gutter={16}>
+                            <Col span={24}>
+                                <Form.Item name="faculty_id" label="Khoa quản lý" rules={[{ required: true, message: 'Vui lòng chọn khoa!' }]}>
+                                    <Select placeholder="Chọn khoa quản lý..." className="rounded-lg" showSearch optionFilterProp="children">
+                                        {faculties.map(f => <Option key={f.id} value={f.id}>{f.name}</Option>)}
+                                    </Select>
+                                </Form.Item>
+                            </Col>
+                        </Row>
+                    )}
                     <Row gutter={16}>
                         <Col span={8}>
                             <Form.Item name="mou_code" label="Mã biên bản" rules={[{ required: true, message: 'Vui lòng nhập!' }]}>
