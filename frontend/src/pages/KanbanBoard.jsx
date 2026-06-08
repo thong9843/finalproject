@@ -72,6 +72,7 @@ const KanbanBoard = () => {
   const [uploadingFile, setUploadingFile] = useState(false);
   const [activeUploadForm, setActiveUploadForm] = useState('TASK'); // 'TASK' or 'NOTE'
   const [activeUploadField, setActiveUploadField] = useState('description');
+  const [pendingNoteFiles, setPendingNoteFiles] = useState([]);
 
   // Filters for Tasks
   const [searchKeyword, setSearchKeyword] = useState('');
@@ -861,6 +862,7 @@ const KanbanBoard = () => {
     setEditingNoteId(null);
     noteForm.resetFields();
     noteForm.setFieldsValue({ color: '#fef08a' });
+    setPendingNoteFiles([]);
     setMentionSearchText('');
     setIsNoteModalOpen(true);
   };
@@ -872,6 +874,7 @@ const KanbanBoard = () => {
       content: note.content,
       color: note.color,
     });
+    setPendingNoteFiles([]);
     setMentionSearchText('');
     setIsNoteModalOpen(true);
   };
@@ -879,15 +882,51 @@ const KanbanBoard = () => {
   const handleSaveNote = async (values) => {
     setSubmitting(true);
     try {
+      let updatedContent = values.content || '';
+      const pendingMatches = [...updatedContent.matchAll(/pending:(blob:http[s]?:\/\/[^\s\)]+)/g)];
+      
+      if (pendingMatches.length > 0) {
+        const hideLoading = message.loading('Đang tải tệp tin lên cloud...', 0);
+        try {
+          for (const match of pendingMatches) {
+            const pendingUrl = match[1];
+            const found = pendingNoteFiles.find(f => f.id === pendingUrl);
+            if (found) {
+              const formData = new FormData();
+              formData.append('file', found.file);
+              
+              const res = await api.post('/tasks/upload', formData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+              });
+              
+              const { file_url } = res.data;
+              updatedContent = updatedContent.replaceAll(`pending:${pendingUrl}`, file_url);
+            }
+          }
+        } catch (err) {
+          message.error('Lỗi khi tải tệp lên cloud: ' + err.message);
+          setSubmitting(false);
+          return;
+        } finally {
+          hideLoading();
+        }
+      }
+
+      const payload = {
+        ...values,
+        content: updatedContent
+      };
+
       if (editingNoteId) {
-        await api.put(`/notes/${editingNoteId}`, values);
+        await api.put(`/notes/${editingNoteId}`, payload);
         message.success('Cập nhật ghi chú thành công');
       } else {
-        await api.post('/notes', values);
+        await api.post('/notes', payload);
         message.success('Tạo ghi chú thành công');
       }
 
       setIsNoteModalOpen(false);
+      setPendingNoteFiles([]);
       noteForm.resetFields();
       fetchNotes();
     } catch (error) {
@@ -979,6 +1018,20 @@ const KanbanBoard = () => {
   const handleFileUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    if (activeUploadForm === 'NOTE') {
+      const localUrl = URL.createObjectURL(file);
+      setPendingNoteFiles(prev => [...prev, { id: localUrl, file, name: file.name }]);
+      
+      const mentionMarkup = ` @[${file.name}](entity:file:pending:${localUrl}) `;
+      const currentText = noteForm.getFieldValue(activeUploadField) || '';
+      noteForm.setFieldsValue({
+        [activeUploadField]: currentText + mentionMarkup
+      });
+      message.success('Đã đính kèm tệp tin (sẽ được tải lên khi lưu ghi chú)!');
+      e.target.value = '';
+      return;
+    }
 
     setUploadingFile(true);
     const hideLoading = message.loading('Đang tải tệp tin lên cloud...', 0);
@@ -1670,7 +1723,7 @@ const KanbanBoard = () => {
       <Modal
         title={<div className="font-bold text-lg">{editingNoteId ? 'Chỉnh sửa ghi chú' : 'Thêm ghi chú mới'}</div>}
         open={isNoteModalOpen}
-        onCancel={() => setIsNoteModalOpen(false)}
+        onCancel={() => { setIsNoteModalOpen(false); setPendingNoteFiles([]); }}
         footer={null}
         destroyOnClose
         width={600}
@@ -1724,7 +1777,7 @@ const KanbanBoard = () => {
           </div>
 
           <div className="flex justify-end gap-3 pt-4 border-t border-slate-100 dark:border-gray-700">
-            <Button onClick={() => setIsNoteModalOpen(false)}>Hủy</Button>
+            <Button onClick={() => { setIsNoteModalOpen(false); setPendingNoteFiles([]); }}>Hủy</Button>
             <Button type="primary" htmlType="submit" loading={submitting} className="bg-vluRed hover:bg-vluRedHover border-none text-white font-medium">Lưu</Button>
           </div>
         </Form>

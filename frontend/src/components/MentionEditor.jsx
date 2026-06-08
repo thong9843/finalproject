@@ -152,7 +152,14 @@ const BulletListIcon = () => (
 );
 
 const OrderedListIcon = () => (
-  <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 stroke-current fill-none" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="10" y1="6" x2="21" y2="6"/><line x1="10" y1="12" x2="21" y2="12"/><line x1="10" y1="18" x2="21" y2="18"/><path d="M4 6H3v-2h1v2zm0 6H3V9h1v3zm0 6H3v-3h1v3z"/></svg>
+  <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 stroke-current fill-none" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="10" y1="6" x2="21" y2="6"/>
+    <line x1="10" y1="12" x2="21" y2="12"/>
+    <line x1="10" y1="18" x2="21" y2="18"/>
+    <path d="M4 6h1v4"/>
+    <path d="M4 10h2"/>
+    <path d="M6 18H4c0-1 2-2 2-3s-1-1.5-2-1"/>
+  </svg>
 );
 
 const UndoIcon = () => (
@@ -319,6 +326,7 @@ const CustomMention = Mention.extend({
       const isAudio = fileUrl.match(/\.(mp3|wav|ogg|m4a|flac)/i) || label.toLowerCase().match(/\.(mp3|wav|ogg|m4a|flac)$/);
 
       if (isImage) {
+        const displayUrl = fileUrl.startsWith('pending:') ? fileUrl.substring(8) : fileUrl;
         return [
           'span',
           {
@@ -326,9 +334,10 @@ const CustomMention = Mention.extend({
             class: 'mention-image',
             'data-type': 'mention',
           },
-          ['img', { src: fileUrl, alt: label }],
+          ['img', { src: displayUrl, alt: label }],
         ];
       } else if (isAudio) {
+        const displayUrl = fileUrl.startsWith('pending:') ? fileUrl.substring(8) : fileUrl;
         return [
           'span',
           {
@@ -337,7 +346,7 @@ const CustomMention = Mention.extend({
             'data-type': 'mention',
           },
           ['span', { class: 'audio-label' }, '🎵 '],
-          ['audio', { src: fileUrl, controls: 'true' }],
+          ['audio', { src: displayUrl, controls: 'true' }],
         ];
       } else {
         let fileIcon = '📄';
