@@ -1,0 +1,6 @@
+# Thay thế domain dưới đây bằng tên miền No-IP thực tế của bạn
+# Ví dụ: vlulink.ddns.net
+vlulink.ddns.net {
+    # Chuyển hướng toàn bộ traffic vào container frontend ở cổng 80
+    reverse_proxy vlu_frontend_ui:80
+}

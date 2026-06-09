@@ -134,12 +134,7 @@ else
     echo "✔ Database migrations, seed and setup completed."
 fi
 
-# Start Node.js Backend Server in background
-echo "Starting Backend API on port 5000..."
+# Start Node.js Backend Server in foreground
+echo "Starting Unified Application on port 5000..."
 cd /app/backend
-node src/index.js &
-
-# Start Frontend (Vite Dev Server) in foreground
-echo "Starting Frontend Vite Dev Server on port 8080..."
-cd /app/frontend
-npm run dev -- --host 0.0.0.0 --port 8080
+node src/index.js

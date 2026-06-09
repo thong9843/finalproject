@@ -15,10 +15,6 @@ app.use(express.urlencoded({ limit: '10mb', extended: true }));
 const path = require('path');
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
-// Basic Route
-app.get('/', (req, res) => {
-    res.send('VLU Enterprise Link Manager API is running');
-});
 
 // Import Routes
 const authRoutes = require('./routes/authRoutes');
@@ -56,6 +52,18 @@ app.use('/api/files', fileRoutes);
 
 // Swagger Documentation Route
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, { customSiteTitle: "VLU API Documentation" }));
+
+// Phục vụ các file tĩnh của Frontend đã build
+app.use(express.static(path.join(__dirname, '../../frontend/dist')));
+
+// Trả về file index.html cho các route của Single Page Application (React/Vite Router)
+app.get('*', (req, res, next) => {
+    // Nếu là request API thì bỏ qua để đi tiếp vào các router API bên dưới
+    if (req.path.startsWith('/api/') || req.path.startsWith('/api-docs')) {
+        return next();
+    }
+    res.sendFile(path.join(__dirname, '../../frontend/dist/index.html'));
+});
 
 // Error Handling Middleware
 app.use((err, req, res, next) => {

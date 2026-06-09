@@ -12,6 +12,7 @@ WORKDIR /app/frontend
 COPY frontend/package*.json ./
 RUN npm ci
 COPY frontend/ .
+RUN npm run build
 
 # Set up Backend directory
 WORKDIR /app/backend
@@ -32,10 +33,9 @@ RUN chmod +x /entrypoint.sh
 COPY setup.js /app/setup.js
 RUN chmod +x /app/setup.js
 
-# Expose ports: 8080 (Vite Dev Server), 5000 (Backend API)
-EXPOSE 8080 5000
+# Expose ports: 5000 (Unified App)
+EXPOSE 5000
 
 
 # Run entrypoint script
 ENTRYPOINT ["/entrypoint.sh"]
-
