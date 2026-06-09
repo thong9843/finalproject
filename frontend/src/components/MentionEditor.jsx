@@ -1,15 +1,22 @@
-import React, { useState, useEffect, useImperativeHandle, forwardRef } from 'react';
+import React, { useState, useEffect, useRef, useImperativeHandle, forwardRef } from 'react';
 import { useEditor, EditorContent, ReactRenderer } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
+import Underline from '@tiptap/extension-underline';
 import Mention from '@tiptap/extension-mention';
 import Link from '@tiptap/extension-link';
 import { marked } from 'marked';
 import tippy from 'tippy.js';
 
 // Markdown-HTML bidirectional converter helpers
+const normalizeLineEndings = (str) => {
+  if (!str) return '';
+  return str.replace(/\r\n/g, '\n').trim();
+};
+
 const markdownToHtml = (markdown) => {
   if (!markdown) return '';
-  let text = markdown;
+  // Chuẩn hóa ký tự xuống dòng của Windows/Mac để tránh lỗi regex
+  let text = markdown.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
   
   // Clean up duplicate audio markup leftover from old htmlToMarkdown bug
   text = text.replace(/(\@\[.*?\]\(entity:file:.*?\))<audio\s+[^>]*>([\s\S]*?)<\/audio>(?:<\/span>)?/g, '$1');
@@ -19,13 +26,27 @@ const markdownToHtml = (markdown) => {
     return `<span data-type="mention" data-id="${type}:${id}" data-label="${label}">@${label}</span>`;
   });
   
-  // Sử dụng thư viện marked chuyển đổi Markdown thô sang HTML cho editor
-  return marked.parse(text);
+  // Chuẩn hóa các dấu đầu dòng phổ biến (•, *, +) thành dấu gạch ngang (-) để marked parse thành danh sách
+  text = text.replace(/^[•\*\+]\s+/gm, '- ');
+
+  // Sử dụng thư viện marked chuyển đổi Markdown thô sang HTML cho editor với breaks và gfm
+  const rawHtml = marked.parse(text, { breaks: true, gfm: true });
+  
+  // Convert standard paragraph breaks </p>\n<p> to empty paragraphs </p><p><br></p><p> for visual blank lines in the editor
+  let cleanedHtml = rawHtml.replace(/<\/p>\s*\n\s*<p>/gi, '</p><p><br></p><p>');
+
+  // Loại bỏ ký tự xuống dòng thừa sau thẻ <br> do marked sinh ra để tránh Tiptap hiểu nhầm thành dòng mới
+  cleanedHtml = cleanedHtml.replace(/<br\s*\/?>\s*\n/gi, '<br>');
+  // Loại bỏ các khoảng trắng và ký tự xuống dòng thừa giữa các thẻ HTML block để tránh Tiptap tự tạo dòng trống
+  cleanedHtml = cleanedHtml.replace(/>\s*\n\s*</g, '><');
+  
+  return cleanedHtml;
 };
 
 const htmlToMarkdown = (html) => {
   if (!html) return '';
-  let text = html;
+  // Chuẩn hóa ký tự xuống dòng của Windows/Mac để tránh lỗi regex
+  let text = html.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
   
   // Loại bỏ thẻ span phụ của audio-label để tránh lỗi regex match nhầm span đóng của nó
   text = text.replace(/<span\s+[^>]*class=["']audio-label["'][^>]*>([\s\S]*?)<\/span>/g, '');
@@ -51,14 +72,22 @@ const htmlToMarkdown = (html) => {
   // Chuyển đổi thẻ HTML link <a href="url">text</a> của Tiptap sang Markdown [text](url)
   text = text.replace(/<a\s+[^>]*href=["']([^'"]*)["'][^>]*>([\s\S]*?)<\/a>/g, '[$2]($1)');
 
-  // Chuyển đổi danh sách không thứ tự (ul) và có thứ tự (ol) về Markdown
-  text = text.replace(/<ul[^>]*>([\s\S]*?)<\/ul>/g, (match, listContent) => {
-    return listContent.replace(/<li[^>]*>([\s\S]*?)<\/li>/g, (liMatch, p1) => `- ${p1}\n`).trim() + '\n';
+  // Chuyển đổi danh sách không thứ tự (ul) và có thứ tự (ol) về Markdown với khoảng xuống dòng kép để tránh bị dính liền với đoạn văn xung quanh
+  text = text.replace(/<ul[^>]*>([\s\S]*?)<\/ul>/gi, (match, listContent) => {
+    const cleaned = listContent
+      .replace(/<p[^>]*>([\s\S]*?)<\/p>/gi, '$1')
+      .replace(/\s*<li/gi, '<li')
+      .replace(/<\/li>\s*/gi, '</li>');
+    return '\n\n' + cleaned.replace(/<li[^>]*>([\s\S]*?)<\/li>/gi, (liMatch, p1) => `- ${p1.trim()}\n`).trim() + '\n\n';
   });
   
-  text = text.replace(/<ol[^>]*>([\s\S]*?)<\/ol>/g, (match, listContent) => {
+  text = text.replace(/<ol[^>]*>([\s\S]*?)<\/ol>/gi, (match, listContent) => {
+    const cleaned = listContent
+      .replace(/<p[^>]*>([\s\S]*?)<\/p>/gi, '$1')
+      .replace(/\s*<li/gi, '<li')
+      .replace(/<\/li>\s*/gi, '</li>');
     let index = 1;
-    return listContent.replace(/<li[^>]*>([\s\S]*?)<\/li>/g, (liMatch, p1) => `${index++}. ${p1}\n`).trim() + '\n';
+    return '\n\n' + cleaned.replace(/<li[^>]*>([\s\S]*?)<\/li>/gi, (liMatch, p1) => `${index++}. ${p1.trim()}\n`).trim() + '\n\n';
   });
   
   // Chuyển đổi các tag in đậm, in nghiêng, gạch ngang về Markdown
@@ -67,16 +96,20 @@ const htmlToMarkdown = (html) => {
     .replace(/<b[^>]*>([\s\S]*?)<\/b>/g, '**$1**')
     .replace(/<em[^>]*>([\s\S]*?)<\/em>/g, '*$1*')
     .replace(/<i[^>]*>([\s\S]*?)<\/i>/g, '*$1*')
+    .replace(/<u[^>]*>([\s\S]*?)<\/u>/g, '<u>$1</u>')
     .replace(/<s[^>]*>([\s\S]*?)<\/s>/g, '~~$1~~')
     .replace(/<del[^>]*>([\s\S]*?)<\/del>/g, '~~$1~~')
     .replace(/<strike[^>]*>([\s\S]*?)<\/strike>/g, '~~$1~~');
   
-  // Chuyển các khối paragraph <p> của Tiptap về ký tự xuống dòng \n
+  // Chuyển các khối paragraph <p> của Tiptap về ký tự xuống dòng \n để giữ cấu trúc văn bản thô
+  // Đầu tiên convert các paragraph trống (như <p><br></p>) sang \n
+  text = text.replace(/<p>\s*(?:<br\s*\/?>)?\s*<\/p>/gi, '\n');
+
   text = text
     .replace(/<\/p>\s*<p>/g, '\n')
     .replace(/<p>/g, '')
     .replace(/<\/p>/g, '')
-    .replace(/<br\s*\/?>/g, '\n');
+    .replace(/<br\s*\/?>\s*/gi, '\n');
     
   // Giải mã các thực thể HTML thực tế
   text = text
@@ -102,6 +135,13 @@ const ItalicIcon = () => (
 
 const StrikeIcon = () => (
   <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 stroke-current fill-none" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><path d="M16 6a4 4 0 0 0-4-4 4 4 0 0 0-4 4v3m0 6v3a4 4 0 0 0 4 4 4 4 0 0 0 4-4"/></svg>
+);
+
+const UnderlineIcon = () => (
+  <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 stroke-current fill-none" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M6 4v6a6 6 0 0 0 12 0V4"/>
+    <line x1="4" y1="20" x2="20" y2="20"/>
+  </svg>
 );
 
 const BulletListIcon = () => (
@@ -163,6 +203,14 @@ const MenuBar = ({ editor }) => {
         title="Gạch ngang"
       >
         <StrikeIcon />
+      </button>
+      <button
+        type="button"
+        onClick={() => editor.chain().focus().toggleUnderline().run()}
+        className={btnClass(editor.isActive('underline'))}
+        title="Gạch chân"
+      >
+        <UnderlineIcon />
       </button>
       
       <div className="w-[1px] h-4 bg-slate-300 dark:bg-gray-600 mx-1" />
@@ -345,10 +393,58 @@ const CustomMention = Mention.extend({
 });
 
 // Core MentionEditor Component
-const MentionEditor = ({ value, onChange, placeholder, onMentionClick, allEnterprises = [], allActivities = [], allMous = [], allStudents = [] }) => {
+const MentionEditor = forwardRef(({ value, onChange, placeholder, onMentionClick, allEnterprises = [], allActivities = [], allMous = [], allStudents = [] }, ref) => {
+  const lastEditorValue = useRef(value || '');
+
+  useImperativeHandle(ref, () => ({
+    insertFile: (name, url) => {
+      if (editor) {
+        editor
+          .chain()
+          .focus()
+          .insertContent([
+            {
+              type: 'mention',
+              attrs: {
+                id: `file:${url}`,
+                label: name,
+              },
+            },
+            {
+              type: 'text',
+              text: ' ',
+            },
+          ])
+          .run();
+      }
+    },
+    insertMention: (entityType, id, label) => {
+      if (editor) {
+        editor
+          .chain()
+          .focus()
+          .insertContent([
+            {
+              type: 'mention',
+              attrs: {
+                id: `${entityType}:${id}`,
+                label: label,
+              },
+            },
+            {
+              type: 'text',
+              text: ' ',
+            },
+          ])
+          .run();
+      }
+    }
+  }));
+
   const editor = useEditor({
     extensions: [
       StarterKit,
+      Underline,
       Link.configure({
         openOnClick: false,
         HTMLAttributes: {
@@ -500,6 +596,7 @@ const MentionEditor = ({ value, onChange, placeholder, onMentionClick, allEnterp
     onUpdate: ({ editor }) => {
       const html = editor.getHTML();
       const markdown = htmlToMarkdown(html);
+      lastEditorValue.current = markdown;
       if (onChange) {
         onChange(markdown);
       }
@@ -525,11 +622,10 @@ const MentionEditor = ({ value, onChange, placeholder, onMentionClick, allEnterp
 
   // Synchronize editor content with form value when modified externally
   useEffect(() => {
-    if (editor) {
-      const currentHtml = editor.getHTML();
-      const currentMarkdown = htmlToMarkdown(currentHtml);
-      if (currentMarkdown !== value) {
+    if (editor && !editor.isFocused) {
+      if (normalizeLineEndings(value) !== normalizeLineEndings(lastEditorValue.current)) {
         editor.commands.setContent(markdownToHtml(value));
+        lastEditorValue.current = value;
       }
     }
   }, [value, editor]);
@@ -540,6 +636,6 @@ const MentionEditor = ({ value, onChange, placeholder, onMentionClick, allEnterp
       <EditorContent editor={editor} className="w-full flex-1 flex" />
     </div>
   );
-};
+});
 
 export default MentionEditor;

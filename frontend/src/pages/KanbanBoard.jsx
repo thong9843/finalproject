@@ -73,6 +73,8 @@ const KanbanBoard = () => {
 
   // File Upload State
   const fileUploaderRef = useRef(null);
+  const taskEditorRef = useRef(null);
+  const noteEditorRef = useRef(null);
   const [uploadingFile, setUploadingFile] = useState(false);
   const [activeUploadForm, setActiveUploadForm] = useState('TASK'); // 'TASK' or 'NOTE'
   const [activeUploadField, setActiveUploadField] = useState('description');
@@ -957,13 +959,8 @@ const KanbanBoard = () => {
       selectedName = stu ? stu.name : 'Sinh viên';
     }
 
-    const mentionMarkup = ` @[${selectedName}](entity:${mentionType}:${selectedId}) `;
-    
-    const activeForm = activeFormType === 'TASK' ? taskForm : noteForm;
-    const currentText = activeForm.getFieldValue(activeField) || '';
-    activeForm.setFieldsValue({
-      [activeField]: currentText + mentionMarkup
-    });
+    const activeEditorRef = activeFormType === 'TASK' ? taskEditorRef : noteEditorRef;
+    activeEditorRef.current?.insertMention(mentionType, selectedId, selectedName);
 
     setIsMentionModalOpen(false);
   };
@@ -983,11 +980,8 @@ const KanbanBoard = () => {
       const localUrl = URL.createObjectURL(file);
       setPendingNoteFiles(prev => [...prev, { id: localUrl, file, name: file.name }]);
       
-      const mentionMarkup = ` @[${file.name}](entity:file:pending:${localUrl}) `;
-      const currentText = noteForm.getFieldValue(activeUploadField) || '';
-      noteForm.setFieldsValue({
-        [activeUploadField]: currentText + mentionMarkup
-      });
+      noteEditorRef.current?.insertFile(file.name, `pending:${localUrl}`);
+      
       message.success('Đã đính kèm tệp tin (sẽ được tải lên khi lưu ghi chú)!');
       e.target.value = '';
       return;
@@ -1005,13 +999,9 @@ const KanbanBoard = () => {
       });
 
       const { file_url, file_name } = res.data;
-      const mentionMarkup = ` @[${file_name}](entity:file:${file_url}) `;
 
-      const activeForm = activeUploadForm === 'TASK' ? taskForm : noteForm;
-      const currentText = activeForm.getFieldValue(activeUploadField) || '';
-      activeForm.setFieldsValue({
-        [activeUploadField]: currentText + mentionMarkup
-      });
+      const activeEditorRef = activeUploadForm === 'TASK' ? taskEditorRef : noteEditorRef;
+      activeEditorRef.current?.insertFile(file_name, file_url);
 
       message.success('Đã đính kèm tệp tin thành công!');
     } catch (error) {
@@ -1321,7 +1311,7 @@ const KanbanBoard = () => {
         ) : activeTab === 'TASKS' ? (
           // ==================== KANBAN BOARD FOR TASKS ====================
           <div ref={boardRef} className="flex-1 overflow-x-auto md:overflow-x-auto overflow-y-auto md:overflow-y-hidden w-full h-full bg-slate-50 dark:bg-gray-800/50 p-4 md:p-6 will-change-scroll custom-scroller border border-slate-200 dark:border-gray-700 rounded-xl shadow-sm">
-            <div className="flex flex-col md:flex-row gap-6 h-full items-stretch md:items-start md:w-max pb-2">
+            <div className="flex flex-col md:flex-row gap-6 h-full items-stretch md:items-start w-full pb-2">
               {TASK_STATUSES.map(colConfig => {
                 const status = colConfig.name;
                 const columnItems = tasks.filter(t => t.status === status);
@@ -1332,7 +1322,7 @@ const KanbanBoard = () => {
                   <div
                     key={status}
                     data-drop-status={status}
-                    className={`bg-slate-100/70 dark:bg-gray-800/40 rounded-2xl w-full md:w-[320px] flex flex-col h-full border border-slate-200 dark:border-gray-700/60 shadow-sm dark:shadow-none transition-[border-color,background-color,box-shadow,transform] duration-200 ${
+                    className={`bg-slate-100/70 dark:bg-gray-800/40 rounded-2xl w-full md:flex-1 md:min-w-[240px] flex flex-col h-full border border-slate-200 dark:border-gray-700/60 shadow-sm dark:shadow-none transition-[border-color,background-color,box-shadow,transform] duration-200 ${
                       isDragOver || touchDragOverCol === status ? 'ring-2 ring-blue-400 bg-blue-50/50 dark:bg-blue-900/20 scale-[1.01]' : ''
                     } ${
                       isCurrentMobileCol ? 'flex' : 'hidden md:flex'
@@ -1739,6 +1729,7 @@ const KanbanBoard = () => {
 
           <Form.Item name="description" label="Mô tả & chi tiết công việc (Gõ @ để liên kết nhanh dữ liệu)">
             <MentionEditor
+              ref={taskEditorRef}
               placeholder="Nhập mô tả nhiệm vụ công việc, gõ @ để liên kết Doanh nghiệp, Hoạt động, MOU hoặc Sinh viên..."
               allEnterprises={allEnterprises}
               allActivities={allActivities}
@@ -1790,6 +1781,7 @@ const KanbanBoard = () => {
 
           <Form.Item name="content" label="Nội dung ghi chú (Gõ @ để liên kết nhanh dữ liệu)" rules={[{ required: true, message: 'Nhập nội dung ghi chú!' }]}>
             <MentionEditor
+              ref={noteEditorRef}
               placeholder="Nhập nội dung ghi chú, gõ @ để liên kết Doanh nghiệp, Hoạt động, MOU hoặc Sinh viên..."
               allEnterprises={allEnterprises}
               allActivities={allActivities}

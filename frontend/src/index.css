@@ -321,7 +321,8 @@ html.dark .vlu-mentions-input__suggestions__item--focused {
 }
 
 .tiptap-editor-content p {
-  margin: 0;
+  margin-top: 0;
+  margin-bottom: 0;
 }
 
 /* Styled mentions inline inside Tiptap editor */
