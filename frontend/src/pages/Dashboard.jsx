@@ -101,6 +101,10 @@ const Dashboard = () => {
         return getDateRange(period);
     }, [period, customRange]);
 
+    const topFields = useMemo(() => {
+        return stats?.charts?.enterpriseByFields?.slice(0, 10) || [];
+    }, [stats]);
+
     useEffect(() => {
         const fetchStats = async () => {
             setLoading(true);
@@ -307,10 +311,16 @@ const Dashboard = () => {
             label: 'Số lượng',
             data: charts.enterpriseByStatus?.map(item => item.count) || [],
             backgroundColor: charts.enterpriseByStatus?.map(item => {
-                if (item.status === 'Đang triển khai' || item.status === 'Đang hợp tác') return '#10b981';
-                if (item.status === 'Đã ký kết') return '#3b82f6';
-                if (item.status === 'Đề xuất' || item.status === 'Chờ ký') return '#f59e0b';
-                return '#ef4444';
+                const status = item.status;
+                if (status === 'Đang triển khai' || status === 'Đang hợp tác') return '#10b981'; // Green
+                if (status === 'Đã ký hợp tác' || status === 'Đã ký kết') return '#3b82f6'; // Blue
+                if (status === 'Đàm phán') return '#8b5cf6'; // Purple
+                if (status === 'Liên hệ') return '#ec4899'; // Pink
+                if (status === 'Tiềm năng') return '#06b6d4'; // Cyan
+                if (status === 'Đề xuất' || status === 'Chờ ký') return '#f59e0b'; // Amber
+                if (status === 'Đã hoàn thành') return '#14b8a6'; // Teal
+                if (status === 'Đã tạm ngưng') return '#9ca3af'; // Gray
+                return '#ef4444'; // Red
             }) || '#3b82f6',
             borderRadius: 6,
             barThickness: 24
@@ -318,13 +328,14 @@ const Dashboard = () => {
     };
 
     const fieldsData = {
-        labels: charts.enterpriseByFields?.map(item => item.field) || [],
+        labels: topFields.map(item => item.field),
         datasets: [{
             label: 'Doanh nghiệp',
-            data: charts.enterpriseByFields?.map(item => item.count) || [],
+            data: topFields.map(item => item.count),
             backgroundColor: 'rgba(59, 130, 246, 0.85)',
             borderRadius: 4,
-            barThickness: 16
+            barPercentage: 0.5,
+            categoryPercentage: 0.8
         }]
     };
 

@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { MessageOutlined, CloseOutlined, SendOutlined, RobotOutlined, UserOutlined, PictureOutlined, FileTextOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { message } from 'antd';
+import { marked } from 'marked';
 import api from '../utils/api';
 
 const SLASH_COMMANDS = [
@@ -16,6 +17,19 @@ const SLASH_COMMANDS = [
 
 const ChatbotWidget = ({ isOpen, onClose }) => {
     const navigate = useNavigate();
+    
+    // Bắt sự kiện click vào các liên kết trong tin nhắn chatbot
+    const handleContentClick = (e) => {
+        const target = e.target.closest('a');
+        if (target) {
+            const href = target.getAttribute('href');
+            if (href && href.startsWith('/')) {
+                e.preventDefault();
+                navigate(href);
+            }
+        }
+    };
+
     const [messages, setMessages] = useState([
         { role: 'assistant', content: 'Xin chào! 👋 Tôi là **VLU Assistant** – trợ lý AI của hệ thống quản lý liên kết doanh nghiệp. Bạn có thể hỏi tôi về doanh nghiệp, sinh viên, hoạt động hoặc thống kê nhé!' }
     ]);
@@ -43,11 +57,42 @@ const ChatbotWidget = ({ isOpen, onClose }) => {
         }
     }, [isOpen]);
 
-    // Listen to custom event to pre-populate text from a Note card
+    // Listen to custom event to pre-populate text and attach files from a card
     useEffect(() => {
         const handleOpenChat = (e) => {
-            if (e.detail && e.detail.prompt) {
-                setInputValue(e.detail.prompt);
+            if (e.detail) {
+                if (e.detail.prompt) {
+                    setInputValue(e.detail.prompt);
+                }
+                
+                if (e.detail.attachedFile) {
+                    const { name, url, type } = e.detail.attachedFile;
+                    fetch(url)
+                        .then(res => {
+                            if (!res.ok) throw new Error('Không thể tải tệp tin');
+                            return res.blob();
+                        })
+                        .then(blob => {
+                            if (blob.size > 4 * 1024 * 1024) {
+                                message.warning(`Tệp "${name}" quá lớn (>4MB), không thể chuyển vào chatbox.`);
+                                return;
+                            }
+                            const reader = new FileReader();
+                            reader.onloadend = () => {
+                                setSelectedImage({
+                                    base64: reader.result.split(',')[1],
+                                    previewUrl: type === 'image' ? reader.result : null,
+                                    mimeType: blob.type,
+                                    fileName: name
+                                });
+                            };
+                            reader.readAsDataURL(blob);
+                        })
+                        .catch(err => {
+                            console.error("Lỗi khi tải tệp cho chatbot:", err);
+                        });
+                }
+
                 if (inputRef.current) {
                     inputRef.current.focus();
                 }
@@ -235,14 +280,74 @@ const ChatbotWidget = ({ isOpen, onClose }) => {
     };
 
     const renderContent = (text) => {
-        return text.split('\n').map((line, lineIdx) => (
-            <span key={lineIdx}>
-                {lineIdx > 0 && <br />}
-                {line.split('**').map((part, i) =>
-                    i % 2 === 1 ? <strong key={i} className="font-bold text-slate-900 dark:text-white">{part}</strong> : part
-                )}
-            </span>
-        ));
+        if (!text) return null;
+        
+        return text.split('\n').map((line, lineIdx) => {
+            const elements = [];
+            let lastIndex = 0;
+            
+            // Regex tìm kiếm đồng thời markdown link và bold text
+            // Group 1: link text, Group 2: link url
+            // Group 3: bold text
+            const regex = /\[([^\]]+)\]\(([^)]+)\)|\*\*([^*]+)\*\*/g;
+            let match;
+            
+            while ((match = regex.exec(line)) !== null) {
+                const matchIndex = match.index;
+                
+                // Thêm text thường trước match
+                if (matchIndex > lastIndex) {
+                    elements.push(line.substring(lastIndex, matchIndex));
+                }
+                
+                if (match[1] !== undefined) {
+                    // Đây là một Link: [text](url)
+                    const linkText = match[1];
+                    const linkUrl = match[2];
+                    const isInternal = linkUrl.startsWith('/');
+                    
+                    elements.push(
+                        <a
+                            key={matchIndex}
+                            href={linkUrl}
+                            onClick={(e) => {
+                                if (isInternal) {
+                                    e.preventDefault();
+                                    navigate(linkUrl);
+                                }
+                            }}
+                            target={isInternal ? '_self' : '_blank'}
+                            rel={isInternal ? '' : 'noopener noreferrer'}
+                            className="text-red-600 dark:text-red-400 font-semibold hover:underline cursor-pointer"
+                        >
+                            {linkText}
+                        </a>
+                    );
+                } else if (match[3] !== undefined) {
+                    // Đây là Bold text: **text**
+                    const boldText = match[3];
+                    elements.push(
+                        <strong key={matchIndex} className="font-bold text-slate-900 dark:text-white">
+                            {boldText}
+                        </strong>
+                    );
+                }
+                
+                lastIndex = regex.lastIndex;
+            }
+            
+            // Thêm text thường còn lại sau match cuối cùng
+            if (lastIndex < line.length) {
+                elements.push(line.substring(lastIndex));
+            }
+            
+            return (
+                <span key={lineIdx}>
+                    {lineIdx > 0 && <br />}
+                    {elements.length > 0 ? elements : line}
+                </span>
+            );
+        });
     };
 
     return (
@@ -258,6 +363,68 @@ const ChatbotWidget = ({ isOpen, onClose }) => {
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
         >
+            <style>{`
+                .markdown-content p {
+                    margin-bottom: 0.5rem;
+                }
+                .markdown-content p:last-child {
+                    margin-bottom: 0;
+                }
+                .markdown-content ul, .markdown-content ol {
+                    margin-bottom: 0.5rem;
+                    padding-left: 1.25rem;
+                }
+                .markdown-content ul {
+                    list-style-type: disc;
+                }
+                .markdown-content ol {
+                    list-style-type: decimal;
+                }
+                .markdown-content li {
+                    margin-bottom: 0.25rem;
+                }
+                .markdown-content code {
+                    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+                    font-size: 0.85em;
+                    color: #da251d;
+                    background-color: #f1f5f9;
+                    padding: 0.1rem 0.3rem;
+                    border-radius: 0.25rem;
+                    border: 1px solid #e2e8f0;
+                }
+                .dark .markdown-content code {
+                    color: #f87171;
+                    background-color: #1e293b;
+                    border-color: #334155;
+                }
+                .markdown-content pre {
+                    background-color: #1e293b;
+                    color: #f8fafc;
+                    padding: 0.75rem;
+                    border-radius: 0.5rem;
+                    overflow-x: auto;
+                    margin-bottom: 0.5rem;
+                    border: 1px solid #334155;
+                }
+                .markdown-content pre code {
+                    background-color: transparent;
+                    color: inherit;
+                    padding: 0;
+                    border-radius: 0;
+                    border: none;
+                }
+                .markdown-content a {
+                    color: #dc2626;
+                    font-weight: 600;
+                    text-decoration: underline;
+                }
+                .dark .markdown-content a {
+                    color: #f87171;
+                }
+                .markdown-content a:hover {
+                    text-decoration: none;
+                }
+            `}</style>
             {/* Header */}
             <div className="bg-gradient-to-r from-red-600 to-red-700 px-5 py-4 flex items-center justify-between flex-shrink-0">
                 <div className="flex items-center gap-3">
@@ -303,7 +470,17 @@ const ChatbotWidget = ({ isOpen, onClose }) => {
                                     className="max-w-[200px] max-h-[150px] object-cover rounded-lg mb-2 shadow-sm border border-black/10 dark:border-white/10" 
                                 />
                             )}
-                            {msg.content && renderContent(msg.content)}
+                            {msg.content && (
+                                msg.role === 'assistant' ? (
+                                    <div 
+                                        className="markdown-content text-slate-700 dark:text-gray-200 text-xs sm:text-sm"
+                                        dangerouslySetInnerHTML={{ __html: marked.parse(msg.content) }}
+                                        onClick={handleContentClick}
+                                    />
+                                ) : (
+                                    renderContent(msg.content)
+                                )
+                            )}
 
                             {/* Save message as note option */}
                             {msg.role === 'assistant' && msg.content && (
@@ -362,8 +539,14 @@ const ChatbotWidget = ({ isOpen, onClose }) => {
             {/* Image Preview Area */}
             {selectedImage && (
                 <div className="px-4 py-2 border-t border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 flex items-center gap-3 relative flex-shrink-0">
-                    <div className="relative w-16 h-16 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700">
-                        <img src={selectedImage.previewUrl} alt="Preview" className="w-full h-full object-cover" />
+                    <div className="relative w-16 h-16 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 flex items-center justify-center bg-slate-50 dark:bg-gray-900/50">
+                        {selectedImage.previewUrl ? (
+                            <img src={selectedImage.previewUrl} alt="Preview" className="w-full h-full object-cover" />
+                        ) : (
+                            <div className="text-2xl select-none">
+                                {selectedImage.mimeType === 'application/pdf' ? '📕' : '📄'}
+                            </div>
+                        )}
                         <button
                             onClick={() => setSelectedImage(null)}
                             className="absolute top-0.5 right-0.5 w-5 h-5 bg-black/70 text-white rounded-full flex items-center justify-center hover:bg-black/90 focus:outline-none transition-colors"
@@ -371,7 +554,12 @@ const ChatbotWidget = ({ isOpen, onClose }) => {
                             <CloseOutlined style={{ fontSize: 10 }} />
                         </button>
                     </div>
-                    <div className="text-xs text-gray-500">Hình ảnh sẵn sàng đính kèm để phân tích</div>
+                    <div className="flex flex-col min-w-0">
+                        <div className="text-xs font-semibold text-slate-700 dark:text-slate-300 truncate max-w-[200px]" title={selectedImage.fileName || 'Tệp đính kèm'}>
+                            {selectedImage.fileName || 'Tệp đính kèm'}
+                        </div>
+                        <div className="text-[10px] text-gray-400">Tệp đã sẵn sàng để gửi cho AI phân tích</div>
+                    </div>
                 </div>
             )}
 

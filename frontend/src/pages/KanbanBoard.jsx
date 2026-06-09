@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { message, Card, Select, Typography, Spin, Badge, Button, Modal, Form, Input, DatePicker, Tag, Tooltip, Dropdown, Row, Col, Space, Divider, Avatar, Mentions } from 'antd';
-import { PlusOutlined, BankOutlined, ProjectOutlined, CalendarOutlined, MoreOutlined, DragOutlined, EditOutlined, DeleteOutlined, UserOutlined, HomeOutlined, FileTextOutlined, LinkOutlined, InfoCircleOutlined, CheckSquareOutlined, RobotOutlined, CloudUploadOutlined, AudioOutlined, PictureOutlined, DownloadOutlined } from '@ant-design/icons';
+import { PlusOutlined, BankOutlined, ProjectOutlined, CalendarOutlined, MoreOutlined, DragOutlined, EditOutlined, DeleteOutlined, UserOutlined, HomeOutlined, FileTextOutlined, LinkOutlined, InfoCircleOutlined, CheckSquareOutlined, RobotOutlined, CloudUploadOutlined, AudioOutlined } from '@ant-design/icons';
 import api from '../utils/api';
 import dayjs from 'dayjs';
 import Cookies from 'js-cookie';
 import MentionEditor from '../components/MentionEditor';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { marked } from 'marked';
 
 const { Title, Text, Paragraph } = Typography;
 const { Option } = Select;
@@ -35,6 +36,7 @@ const KanbanBoard = () => {
   }
 
   const location = useLocation();
+  const navigate = useNavigate();
   const activeTab = location.pathname.includes('/notes') ? 'NOTES' : 'TASKS';
   const [loading, setLoading] = useState(false);
   const [tasks, setTasks] = useState([]);
@@ -292,37 +294,41 @@ const KanbanBoard = () => {
 
 
 
-  // Helper to extract file references from text to render them nicely at the bottom
-  const extractFileAttachments = (text) => {
-    if (!text) return [];
-    const fileRegex = /\@\[(.*?)\]\(entity:file:(.*?)\)/g;
-    const attachments = [];
-    let match;
-    // Reset regex index
-    fileRegex.lastIndex = 0;
-    while ((match = fileRegex.exec(text)) !== null) {
-      attachments.push({ name: match[1], url: match[2] });
+
+
+  // Bắt sự kiện click vào các liên kết trong mô tả/ghi chú
+  const handleContentClick = (e) => {
+    const target = e.target.closest('a');
+    if (target) {
+      const href = target.getAttribute('href');
+      if (href && href.startsWith('/')) {
+        e.preventDefault();
+        e.stopPropagation(); // Ngăn sự kiện click Card trigger modal detail
+        navigate(href);
+      }
     }
-    return attachments;
   };
 
-  // Helper to parse and render bold markdown **abc**
+  // Helper to parse and render markdown (bold, links, code, etc.) inline
   const renderTextWithBold = (text) => {
     if (!text) return null;
-    return text.split('\n').map((line, lineIdx) => (
-      <React.Fragment key={lineIdx}>
-        {lineIdx > 0 && <br />}
-        {line.split('**').map((part, i) =>
-          i % 2 === 1 ? <strong key={i} className="font-bold text-slate-800 dark:text-gray-100">{part}</strong> : part
-        )}
-      </React.Fragment>
-    ));
+    return (
+      <span 
+        className="markdown-inline-content inline"
+        dangerouslySetInnerHTML={{ __html: marked.parseInline(text) }}
+        onClick={handleContentClick}
+      />
+    );
   };
 
   // Regex parser for rendering inline @mentions
   const renderTextWithMentions = (text) => {
     if (!text) return null;
-    const matches = text.split(/(\@\[.*?\]\(entity:\w+:.*?\))/g);
+    
+    // Clean up duplicate audio markup leftover from database records due to old htmlToMarkdown bug
+    const cleanedText = text.replace(/(\@\[.*?\]\(entity:file:.*?\))<audio\s+[^>]*>([\s\S]*?)<\/audio>(?:<\/span>)?/g, '$1');
+
+    const matches = cleanedText.split(/(\@\[.*?\]\(entity:\w+:.*?\))/g);
 
     return matches.map((part, index) => {
       const match = part.match(/^\@\[(.*?)\]\(entity:(\w+):(.*?)\)$/);
@@ -353,7 +359,7 @@ const KanbanBoard = () => {
             return (
               <div 
                 key={index} 
-                className="my-1.5 max-w-[300px] p-2 bg-slate-50 dark:bg-gray-800/80 border border-slate-200 dark:border-gray-700 rounded-lg flex flex-col gap-1 shadow-xs inline-flex align-middle" 
+                className="my-1.5 w-full max-w-full p-2 bg-slate-50 dark:bg-gray-800/80 border border-slate-200 dark:border-gray-700 rounded-lg flex flex-col gap-1 shadow-xs inline-flex align-middle" 
                 onClick={(e) => e.stopPropagation()}
               >
                 <div className="text-[10px] text-slate-500 font-bold truncate flex items-center gap-1">
@@ -400,83 +406,29 @@ const KanbanBoard = () => {
         }
 
         return (
-          <Tag
+          <span
             key={index}
-            color={color}
-            icon={icon}
-            className="cursor-pointer font-medium hover:opacity-85 inline-flex items-center gap-1.5 my-0.5 shadow-sm border max-w-full whitespace-normal break-words"
+            className={`cursor-pointer font-medium hover:opacity-85 inline-flex items-center gap-1 px-1.5 py-0.5 my-0.5 rounded text-[11px] shadow-sm border max-w-full align-middle select-none ${
+              color === 'blue' ? 'bg-blue-50 text-blue-600 border-blue-200 dark:bg-blue-950/20 dark:text-blue-400 dark:border-blue-900' :
+              color === 'green' ? 'bg-green-50 text-green-600 border-green-200 dark:bg-green-950/20 dark:text-green-400 dark:border-green-900' :
+              color === 'purple' ? 'bg-purple-50 text-purple-600 border-purple-200 dark:bg-purple-950/20 dark:text-purple-400 dark:border-purple-900' :
+              'bg-orange-50 text-orange-600 border-orange-200 dark:bg-orange-950/20 dark:text-orange-400 dark:border-orange-900'
+            }`}
             onClick={(e) => {
               e.stopPropagation();
               handleShowEntityPreview(type, parseInt(payload, 10));
             }}
           >
-            {name}
-          </Tag>
+            <span className="shrink-0 flex items-center text-[10px]">{icon}</span>
+            <span className="truncate min-w-0 align-bottom leading-none">{name}</span>
+          </span>
         );
       }
       return <React.Fragment key={index}>{renderTextWithBold(part)}</React.Fragment>;
     });
   };
 
-  // Render file attachment blocks at the bottom of the card beautifully
-  const renderFileAttachmentBlock = (name, url, index) => {
-    const isImage = url.match(/\.(jpeg|jpg|gif|png|webp|svg)/i) || name.toLowerCase().match(/\.(jpeg|jpg|gif|png|webp|svg)$/);
-    const isAudio = url.match(/\.(mp3|wav|ogg|m4a|flac)/i) || name.toLowerCase().match(/\.(mp3|wav|ogg|m4a|flac)$/);
 
-    if (isImage) {
-      return (
-        <div key={index} className="group relative rounded-xl overflow-hidden border border-slate-200 dark:border-gray-700 shadow-sm hover:shadow transition-all w-24 h-16 bg-slate-100 dark:bg-gray-800 shrink-0 select-none" onClick={e => e.stopPropagation()}>
-          <img 
-            src={url} 
-            alt={name} 
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform cursor-pointer"
-            onClick={() => window.open(url, '_blank')}
-          />
-          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
-            <PictureOutlined className="text-white text-base" />
-          </div>
-        </div>
-      );
-    }
-
-    if (isAudio) {
-      return (
-        <div key={index} className="p-2 bg-slate-50 dark:bg-gray-800/80 border border-slate-200 dark:border-gray-700 rounded-xl flex items-center gap-2 shadow-sm w-full" onClick={e => e.stopPropagation()}>
-          <div className="w-8 h-8 rounded-lg bg-red-50 dark:bg-red-950/40 flex items-center justify-center text-red-500 shrink-0">
-            <AudioOutlined />
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="text-[10px] text-slate-500 font-bold truncate">{name}</div>
-            <audio src={url} controls className="w-full h-6 scale-90 origin-left mt-0.5" />
-          </div>
-        </div>
-      );
-    }
-
-    // Document styling
-    let colorClass = 'text-blue-500 bg-blue-50 dark:bg-blue-950/20';
-    if (name.endsWith('.pdf')) {
-      colorClass = 'text-rose-500 bg-rose-50 dark:bg-rose-950/20';
-    } else if (name.endsWith('.xlsx') || name.endsWith('.xls')) {
-      colorClass = 'text-green-500 bg-green-50 dark:bg-green-950/20';
-    }
-
-    return (
-      <div 
-        key={index}
-        onClick={(e) => { e.stopPropagation(); window.open(url, '_blank'); }}
-        className="flex items-center gap-2 p-1.5 rounded-xl border border-slate-200/60 dark:border-gray-700/60 bg-white dark:bg-gray-800 hover:bg-slate-50 dark:hover:bg-gray-700 hover:border-blue-400 dark:hover:border-blue-500 transition-all cursor-pointer w-full"
-      >
-        <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-[10px] shrink-0 ${colorClass}`}>
-          {name.split('.').pop().toUpperCase()}
-        </div>
-        <div className="flex-1 min-w-0 text-left">
-          <div className="text-[11px] font-semibold text-slate-700 dark:text-gray-200 truncate">{name}</div>
-          <div className="text-[9px] text-slate-400 flex items-center gap-0.5"><DownloadOutlined /> Tải xuống</div>
-        </div>
-      </div>
-    );
-  };
 
   const handleShowEntityPreview = (type, id) => {
     let matchedData = null;
@@ -1090,9 +1042,29 @@ const KanbanBoard = () => {
       }
     }
     
+    // Trích xuất file đính kèm đầu tiên (nếu có) để gửi vào chatbox cho AI phân tích
+    let attachedFile = null;
+    if (content) {
+      const fileRegex = /\@\[(.*?)\]\(entity:file:(.*?)\)/g;
+      let match;
+      fileRegex.lastIndex = 0;
+      while ((match = fileRegex.exec(content)) !== null) {
+        const name = match[1];
+        const url = match[2];
+        const isImage = url.match(/\.(jpeg|jpg|gif|png|webp|svg)/i) || name.toLowerCase().match(/\.(jpeg|jpg|gif|png|webp|svg)$/);
+        const isPdf = url.match(/\.pdf/i) || name.toLowerCase().match(/\.pdf$/);
+        const isTxt = url.match(/\.txt/i) || name.toLowerCase().match(/\.txt$/);
+        
+        if (isImage || isPdf || isTxt) {
+          attachedFile = { name, url, type: isImage ? 'image' : (isPdf ? 'pdf' : 'text') };
+          break; // Lấy tệp phù hợp đầu tiên
+        }
+      }
+    }
+
     const prompt = `Tôi có một ${type === 'TASK' ? 'nhiệm vụ' : 'ghi chú'}${relationText} với tiêu đề: "${title}". Nội dung chi tiết: "${content || ''}". Hãy phân tích nội dung này và gợi ý cho tôi các bước tiếp theo cần triển khai.`;
     
-    window.dispatchEvent(new CustomEvent('open-chatbot', { detail: { prompt } }));
+    window.dispatchEvent(new CustomEvent('open-chatbot', { detail: { prompt, attachedFile } }));
   };
 
   const getPriorityColor = (priority) => {
@@ -1103,6 +1075,45 @@ const KanbanBoard = () => {
 
   return (
     <div className="flex flex-col h-[calc(100vh-8rem)] w-full min-w-0">
+      <style>{`
+        .markdown-inline-content p {
+          display: inline;
+          margin: 0;
+        }
+        .markdown-inline-content a {
+          color: #dc2626;
+          font-weight: 600;
+          text-decoration: underline;
+          cursor: pointer;
+        }
+        .dark .markdown-inline-content a {
+          color: #f87171;
+        }
+        .markdown-inline-content a:hover {
+          text-decoration: none;
+        }
+        .markdown-inline-content code {
+          font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+          font-size: 0.85em;
+          color: #da251d;
+          background-color: #f1f5f9;
+          padding: 0.1rem 0.3rem;
+          border-radius: 0.25rem;
+          border: 1px solid #e2e8f0;
+        }
+        .dark .markdown-inline-content code {
+          color: #f87171;
+          background-color: #1e293b;
+          border-color: #334155;
+        }
+        .markdown-inline-content strong {
+          font-weight: 700;
+          color: #1e293b;
+        }
+        .dark .markdown-inline-content strong {
+          color: #f3f4f6;
+        }
+      `}</style>
       {/* Hidden file uploader input */}
       <input
         ref={fileUploaderRef}
@@ -1347,7 +1358,6 @@ const KanbanBoard = () => {
                         const isTouchDragged = touchDraggedItemId === item.id;
                         const isDragged = draggedItemId === item.id;
                         const isOverdue = item.due_date && dayjs(item.due_date).isBefore(dayjs(), 'day') && item.status !== 'Đã hoàn thành';
-                        const fileAttachments = extractFileAttachments(item.description);
 
                         const contextMenuItems = [
                           {
@@ -1419,16 +1429,6 @@ const KanbanBoard = () => {
                                 {item.description && (
                                   <div className="text-xs text-slate-500 dark:text-gray-400 leading-relaxed whitespace-pre-wrap break-words">
                                     {renderTextWithMentions(item.description)}
-                                  </div>
-                                )}
-
-                                {/* Premium file attachments gallery grid at the bottom */}
-                                {fileAttachments.length > 0 && (
-                                  <div className="mt-2 pt-2 border-t border-slate-100 dark:border-gray-700/60" onClick={e => e.stopPropagation()}>
-                                    <div className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Tệp đính kèm ({fileAttachments.length})</div>
-                                    <div className="flex flex-wrap gap-2">
-                                      {fileAttachments.map((f, i) => renderFileAttachmentBlock(f.name, f.url, i))}
-                                    </div>
                                   </div>
                                 )}
 
@@ -1513,7 +1513,6 @@ const KanbanBoard = () => {
               <div className="columns-1 sm:columns-2 md:columns-3 lg:columns-4 gap-6">
                 {filteredAndSortedNotes.map(note => {
                   const stickerColor = STICKY_COLORS.find(c => c.hex === note.color) || STICKY_COLORS[0];
-                  const fileAttachments = extractFileAttachments(note.content);
 
                   return (
                     <div
@@ -1626,15 +1625,6 @@ const KanbanBoard = () => {
                         <div className="flex-1 text-slate-700 dark:text-slate-200 text-xs whitespace-pre-wrap leading-relaxed mb-4 break-words">
                           {renderTextWithMentions(note.content)}
                         </div>
-
-                        {/* Premium file attachments gallery grid at the bottom of Sticky Note */}
-                        {fileAttachments.length > 0 && (
-                          <div className="mt-2 pt-2 border-t border-slate-500/10 mb-3" onClick={e => e.stopPropagation()}>
-                            <div className="flex flex-wrap gap-2">
-                              {fileAttachments.map((f, i) => renderFileAttachmentBlock(f.name, f.url, i))}
-                            </div>
-                          </div>
-                        )}
 
                         {/* Note Footer with Color Switcher & Actions (Google Keep Style) */}
                         <div className="pt-3 border-t border-slate-500/10 flex flex-col gap-2 shrink-0">

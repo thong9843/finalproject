@@ -2,87 +2,35 @@ import React, { useState, useEffect, useImperativeHandle, forwardRef } from 'rea
 import { useEditor, EditorContent, ReactRenderer } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Mention from '@tiptap/extension-mention';
+import Link from '@tiptap/extension-link';
+import { marked } from 'marked';
 import tippy from 'tippy.js';
 
 // Markdown-HTML bidirectional converter helpers
 const markdownToHtml = (markdown) => {
   if (!markdown) return '';
-  let html = markdown;
+  let text = markdown;
   
-  // Convert bold **text** to <strong>text</strong>
-  html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-  
-  // Convert italic *text* to <em>text</em>
-  html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
-  
-  // Convert strike ~~text~~ to <s>text</s>
-  html = html.replace(/~~(.*?)~~/g, '<s>$1</s>');
-  
-  // Convert mentions @[label](entity:type:id)
-  html = html.replace(/@\[(.*?)\]\(entity:(\w+):(.*?)\)/g, (match, label, type, id) => {
+  // Clean up duplicate audio markup leftover from old htmlToMarkdown bug
+  text = text.replace(/(\@\[.*?\]\(entity:file:.*?\))<audio\s+[^>]*>([\s\S]*?)<\/audio>(?:<\/span>)?/g, '$1');
+
+  // Chuyển đổi các nhắc tên @[label](entity:type:id) sang thẻ span trước khi parse marked
+  text = text.replace(/@\[(.*?)\]\(entity:(\w+):(.*?)\)/g, (match, label, type, id) => {
     return `<span data-type="mention" data-id="${type}:${id}" data-label="${label}">@${label}</span>`;
   });
   
-  // Convert markdown lists to HTML ul/ol
-  const lines = html.split('\n');
-  let result = [];
-  let inUl = false;
-  let inOl = false;
-  
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-    const ulMatch = line.match(/^[\s\-\*]*\-\s+(.*)$/) || line.match(/^[\s\-\*]*\*\s+(.*)$/);
-    const olMatch = line.match(/^\s*\d+\.\s+(.*)$/);
-    
-    if (ulMatch) {
-      if (inOl) {
-        result.push('</ol>');
-        inOl = false;
-      }
-      if (!inUl) {
-        result.push('<ul>');
-        inUl = true;
-      }
-      result.push(`<li>${ulMatch[1]}</li>`);
-    } else if (olMatch) {
-      if (inUl) {
-        result.push('</ul>');
-        inUl = false;
-      }
-      if (!inOl) {
-        result.push('<ol>');
-        inOl = true;
-      }
-      result.push(`<li>${olMatch[1]}</li>`);
-    } else {
-      if (inUl) {
-        result.push('</ul>');
-        inUl = false;
-      }
-      if (inOl) {
-        result.push('</ol>');
-        inOl = false;
-      }
-      result.push(line);
-    }
-  }
-  
-  if (inUl) result.push('</ul>');
-  if (inOl) result.push('</ol>');
-  
-  html = result.join('\n');
-  
-  // Convert newlines to <br /> inside paragraphs
-  html = html.replace(/\n/g, '<br />');
-  
-  return html;
+  // Sử dụng thư viện marked chuyển đổi Markdown thô sang HTML cho editor
+  return marked.parse(text);
 };
 
 const htmlToMarkdown = (html) => {
   if (!html) return '';
   let text = html;
   
-  // Convert Tiptap mention spans back to raw markdown format (attribute-order independent)
+  // Loại bỏ thẻ span phụ của audio-label để tránh lỗi regex match nhầm span đóng của nó
+  text = text.replace(/<span\s+[^>]*class=["']audio-label["'][^>]*>([\s\S]*?)<\/span>/g, '');
+
+  // Chuyển đổi ngược lại các thẻ span mention của Tiptap về dạng text thô @[Label](entity:type:id)
   text = text.replace(/<span\s+([^>]*data-type=["']mention["'][^>]*)>(.*?)<\/span>/g, (match, attributesGroup) => {
     const idMatch = attributesGroup.match(/data-id=["']([^'"]*)["']/);
     const labelMatch = attributesGroup.match(/data-label=["']([^'"]*)["']/);
@@ -100,17 +48,20 @@ const htmlToMarkdown = (html) => {
     return match;
   });
   
-  // Convert Tiptap HTML lists back to Markdown lists
+  // Chuyển đổi thẻ HTML link <a href="url">text</a> của Tiptap sang Markdown [text](url)
+  text = text.replace(/<a\s+[^>]*href=["']([^'"]*)["'][^>]*>([\s\S]*?)<\/a>/g, '[$2]($1)');
+
+  // Chuyển đổi danh sách không thứ tự (ul) và có thứ tự (ol) về Markdown
   text = text.replace(/<ul[^>]*>([\s\S]*?)<\/ul>/g, (match, listContent) => {
-    return listContent.replace(/<li[^>]*>([\s\S]*?)<\/li>/g, '- $1\n');
+    return listContent.replace(/<li[^>]*>([\s\S]*?)<\/li>/g, (liMatch, p1) => `- ${p1}\n`).trim() + '\n';
   });
   
   text = text.replace(/<ol[^>]*>([\s\S]*?)<\/ol>/g, (match, listContent) => {
     let index = 1;
-    return listContent.replace(/<li[^>]*>([\s\S]*?)<\/li>/g, () => `${index++}. $1\n`);
+    return listContent.replace(/<li[^>]*>([\s\S]*?)<\/li>/g, (liMatch, p1) => `${index++}. ${p1}\n`).trim() + '\n';
   });
   
-  // Convert bold, italic, and strike tags back to Markdown
+  // Chuyển đổi các tag in đậm, in nghiêng, gạch ngang về Markdown
   text = text
     .replace(/<strong[^>]*>([\s\S]*?)<\/strong>/g, '**$1**')
     .replace(/<b[^>]*>([\s\S]*?)<\/b>/g, '**$1**')
@@ -120,18 +71,24 @@ const htmlToMarkdown = (html) => {
     .replace(/<del[^>]*>([\s\S]*?)<\/del>/g, '~~$1~~')
     .replace(/<strike[^>]*>([\s\S]*?)<\/strike>/g, '~~$1~~');
   
-  // Convert standard Tiptap paragraph tags and breaks to line breaks
+  // Chuyển các khối paragraph <p> của Tiptap về ký tự xuống dòng \n
   text = text
-    .replace(/<\/p><p>/g, '\n')
+    .replace(/<\/p>\s*<p>/g, '\n')
     .replace(/<p>/g, '')
     .replace(/<\/p>/g, '')
-    .replace(/<br\s*\/?>/g, '\n')
+    .replace(/<br\s*\/?>/g, '\n');
+    
+  // Giải mã các thực thể HTML thực tế
+  text = text
     .replace(/&nbsp;/g, ' ')
     .replace(/&amp;/g, '&')
     .replace(/&lt;/g, '<')
     .replace(/&gt;/g, '>');
     
-  return text;
+  // Làm sạch các dòng trống thừa do danh sách sinh ra
+  text = text.replace(/\n{3,}/g, '\n\n');
+  
+  return text.trim();
 };
 
 // SVG Icons for Toolbar
@@ -392,6 +349,12 @@ const MentionEditor = ({ value, onChange, placeholder, onMentionClick, allEnterp
   const editor = useEditor({
     extensions: [
       StarterKit,
+      Link.configure({
+        openOnClick: false,
+        HTMLAttributes: {
+          class: 'text-red-600 dark:text-red-400 font-semibold underline cursor-pointer',
+        },
+      }),
       CustomMention.configure({
         suggestion: {
           allowSpaces: true,

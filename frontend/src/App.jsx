@@ -22,6 +22,7 @@ import Fields from './pages/Fields';
 import Departments from './pages/Departments';
 import BulkDataTool from './pages/BulkDataTool';
 import FileManager from './pages/FileManager';
+import Docs from './pages/Docs';
 import Cookies from 'js-cookie';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
 
@@ -114,6 +115,7 @@ const App = () => {
                             <Route path="enterprises" element={<EnterpriseList />} />
                             <Route path="activities" element={<ActivityList />} />
                             <Route path="settings" element={<Settings />} />
+                            <Route path="docs" element={<Docs />} />
                             <Route path="students" element={<StudentList />} />
                             <Route path="reports/students" element={<ReportStudents />} />
                             <Route path="reports/activities" element={<ReportActivities />} />

@@ -313,6 +313,20 @@ const tools = [
                     required: ['keyword']
                 }
             },
+            {
+                name: 'search_documentation',
+                description: 'Tìm kiếm hướng dẫn sử dụng, quy trình nghiệp vụ hệ thống từ tài liệu hướng dẫn (user manual) của VLU Enterprise Link.',
+                parameters: {
+                    type: 'OBJECT',
+                    properties: {
+                        query: {
+                            type: 'STRING',
+                            description: 'Từ khóa tìm kiếm hướng dẫn sử dụng hoặc câu hỏi về cách dùng phần mềm (ví dụ: gộp trùng lặp, tạo hoạt động, phân công sinh viên,...)',
+                        },
+                    },
+                    required: ['query'],
+                },
+            },
         ],
     },
 ];
@@ -773,6 +787,65 @@ async function update_activity(args) {
     return { requires_confirmation: true, actionType: 'update_activity', data: mergedData };
 }
 
+const fs = require('fs');
+const path = require('path');
+
+async function search_documentation({ query }) {
+    if (!query) return { message: 'Vui lòng cung cấp từ khóa tìm kiếm.' };
+    const kw = query.toLowerCase();
+    const docIds = ['intro', 'accounts', 'enterprises', 'students', 'activities', 'mous', 'tasks', 'notes', 'advanced'];
+    const results = [];
+    const docsDirPath = path.join(__dirname, '../../../frontend/public/docs');
+    
+    for (const id of docIds) {
+        const filepath = path.join(docsDirPath, `${id}.md`);
+        if (fs.existsSync(filepath)) {
+            try {
+                const text = fs.readFileSync(filepath, 'utf8');
+                let matchIdx = text.toLowerCase().indexOf(kw);
+                if (matchIdx !== -1) {
+                    const start = Math.max(0, matchIdx - 150);
+                    const end = Math.min(text.length, matchIdx + kw.length + 150);
+                    let snippet = text.substring(start, end);
+                    if (start > 0) snippet = '...' + snippet;
+                    if (end < text.length) snippet = snippet + '...';
+                    
+                    results.push({
+                        doc_id: id,
+                        title: getDocTitle(id),
+                        snippet: snippet
+                    });
+                }
+            } catch (e) {
+                console.error(`Error reading doc file ${id}:`, e.message);
+            }
+        }
+    }
+    
+    if (results.length === 0) {
+        return { message: 'Không tìm thấy nội dung hướng dẫn phù hợp trong tài liệu.' };
+    }
+    return {
+        results: results,
+        message: 'Dưới đây là nội dung tìm thấy trong tài liệu hướng dẫn. Hãy giải thích và hướng dẫn chi tiết cho người dùng dựa trên thông tin này, đồng thời khuyên họ xem thêm tại trang tài liệu.'
+    };
+}
+
+function getDocTitle(id) {
+    const titles = {
+        intro: 'Giới thiệu chung',
+        accounts: 'Tài khoản hệ thống',
+        enterprises: 'Quản lý Doanh nghiệp (Cty)',
+        students: 'Quản lý Sinh viên (HS)',
+        activities: 'Hoạt động liên kết',
+        mous: 'Biên bản ghi nhớ MOU',
+        tasks: 'Nhiệm vụ Kanban',
+        notes: 'Không gian Ghi chú',
+        advanced: 'Công cụ nâng cao'
+    };
+    return titles[id] || id;
+}
+
 // Map tên tool -> hàm thực thi
 const toolExecutors = {
     get_enterprise_list,
@@ -796,6 +869,7 @@ const toolExecutors = {
     update_enterprise,
     update_student,
     update_activity,
+    search_documentation,
 };
 
 // ---- SYSTEM PROMPT ----
@@ -804,6 +878,10 @@ const SYSTEM_PROMPT = `Bạn là **VLU Assistant** - trợ lý AI thông minh c�
 Nhiệm vụ của bạn:
 - Trả lời câu hỏi về doanh nghiệp, sinh viên thực tập, hoạt động hợp tác, MOU, báo cáo thống kê
 - Sử dụng các tool được cung cấp để truy vấn dữ liệu thực tế từ hệ thống
+- Khi người dùng hỏi về cách dùng phần mềm, quy trình nghiệp vụ hoặc hướng dẫn sử dụng, hãy sử dụng tool 'search_documentation' để tìm nội dung hướng dẫn phù hợp. Sau đó, giải thích cặn kẽ và hướng dẫn chi tiết cho họ, đồng thời gợi ý họ xem thêm tại trang tài liệu bằng cách sử dụng chính xác liên kết định dạng Markdown: \`[Tên tiêu đề mục](/docs?doc=[doc_id]#[anchor-slug])\` (Ví dụ: \`[Không gian Ghi chú](/docs?doc=notes#khong-gian-ghi-chu)\` hoặc \`[Thông tin đăng nhập mặc định](/docs?doc=accounts#thong-tin-dang-nhap-mac-dinh-moi-truong-thu-nghiem)\`).
+  Trong đó:
+  + \`doc_id\` là mã của tài liệu chứa mục đó (ví dụ: intro, accounts, enterprises, students, activities, mous, tasks, notes, advanced) được xác định từ kết quả tìm kiếm của tool 'search_documentation'.
+  + \`anchor-slug\` là anchor trượt được tạo bằng cách chuyển tiêu đề tiếng Việt của mục đó thành chữ thường không dấu, loại bỏ emoji, kí tự đặc biệt và thay khoảng trắng bằng dấu gạch ngang (ví dụ: "🔑 Thông tin đăng nhập mặc định (Môi trường thử nghiệm)" -> "thong-tin-dang-nhap-mac-dinh-moi-truong-thu-nghiem").
 - Thực hiện so sánh, phân tích chuyên sâu các dữ liệu và chỉ số khi được yêu cầu (ví dụ: đối chiếu GPA sinh viên giữa các công ty, tìm kiếm ngành học có tỉ lệ liên kết cao nhất, phân tích biểu đồ, phân tích cấu trúc doanh nghiệp).
 - Khi người dùng muốn THÊM, NHẬP mới hoặc CẬP NHẬT, CHỈNH SỬA một doanh nghiệp, sinh viên, hoặc hoạt động liên kết (hoặc khi nội dung câu hỏi/ghi chú/nhiệm vụ chứa thông tin yêu cầu thêm mới/chỉnh sửa), bạn phải LẬP TỨC gọi các tool tương ứng (create_enterprise, create_student, create_activity, update_enterprise, update_student, update_activity) với các thông tin chi tiết trích xuất được để hiển thị form ngay lập tức trên màn hình (frontend) cho người dùng duyệt, tuyệt đối KHÔNG chỉ trả lời bằng văn bản hỏi lại ý kiến hay đề xuất họ tự đi sửa/tạo.
 - Trả lời bằng tiếng Việt, ngắn gọn, cấu trúc rõ ràng (sử dụng markdown bold, bullet points), thân thiện và dùng emoji phù hợp
@@ -815,7 +893,7 @@ Quy tắc BẢO MẬT & NGHIỆP VỤ nghiêm ngặt:
 3. Không trả lời các câu hỏi ngoài phạm vi nghiệp vụ quản lý liên kết doanh nghiệp của VLU.
 4. Nếu người dùng cung cấp hình ảnh (ví dụ: ảnh bảng dữ liệu, ảnh sơ đồ, ảnh chụp văn bản hoặc ảnh báo cáo), hãy tập trung phân tích kỹ nội dung trong ảnh và kết hợp với dữ liệu hệ thống để trả lời chính xác nhất.
 
-Các trang trong hệ thống: /dashboard, /enterprises, /activities, /students, /kanban, /calendar, /mous, /reports/students, /reports/activities, /settings`;
+Các trang trong hệ thống: /dashboard, /enterprises, /activities, /students, /kanban, /calendar, /mous, /reports/students, /reports/activities, /settings, /docs`;
 
 // ---- MAIN CHAT HANDLER ----
 exports.chat = async (req, res) => {

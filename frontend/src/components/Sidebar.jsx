@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Menu } from 'antd';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { DashboardOutlined, BankOutlined, CalendarOutlined, SettingOutlined, LogoutOutlined, TeamOutlined, BarChartOutlined, AppstoreOutlined, CloseOutlined, ToolOutlined, DatabaseOutlined, FileTextOutlined } from '@ant-design/icons';
+import { DashboardOutlined, BankOutlined, CalendarOutlined, SettingOutlined, LogoutOutlined, TeamOutlined, BarChartOutlined, AppstoreOutlined, CloseOutlined, ToolOutlined, DatabaseOutlined, FileTextOutlined, BookOutlined, FormOutlined } from '@ant-design/icons';
 import Cookies from 'js-cookie';
 import { useTheme } from '../context/ThemeContext';
 
@@ -147,6 +147,16 @@ const Sidebar = ({ isOpen, onClose, collapsed }) => {
 
     const bottomItems = [
         {
+            key: '/docs',
+            icon: <BookOutlined />,
+            label: 'Tài liệu hướng dẫn',
+        },
+        {
+            key: 'survey',
+            icon: <FormOutlined />,
+            label: 'Khảo sát ý kiến',
+        },
+        {
             key: '/settings',
             icon: <SettingOutlined />,
             label: 'Cài đặt',
@@ -163,6 +173,8 @@ const Sidebar = ({ isOpen, onClose, collapsed }) => {
             Cookies.remove('token');
             Cookies.remove('user');
             navigate('/login');
+        } else if (key === 'survey') {
+            window.open('https://forms.gle/vG4hhfUFrPTUNgwY6', '_blank');
         } else if (key.startsWith('/')) {
             navigate(key);
             // Close sidebar on mobile after navigation

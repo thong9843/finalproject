@@ -410,12 +410,13 @@ html.dark .vlu-mentions-input__suggestions__item--focused {
   border-radius: 8px;
   padding: 6px 10px;
   margin: 6px 2px;
-  max-width: 320px;
+  width: 260px;
   vertical-align: middle;
 }
 
 .tiptap-editor-content .mention-audio audio {
   height: 28px;
+  width: 100%;
   vertical-align: middle;
 }
 
