@@ -156,13 +156,112 @@ const ST_SCALES = [
 ];
 
 const ST_FIELDS = [
-    "Phần mềm & Outsource",
-    "Giải pháp CNTT & Chuyển đổi số",
-    "Hạ tầng & Viễn thông",
-    "Tài chính & Fintech",
-    "Phần cứng & Điện tử",
-    "Marketing & Truyền thông",
-    "Khác"
+    // lĩnh vực chung (faculty_id = 0)
+    { name: 'Phần mềm & Outsource',            facultyId: 0 },
+    { name: 'Giải pháp CNTT & Chuyển đổi số',  facultyId: 0 },
+    { name: 'Hạ tầng & Viễn thông',            facultyId: 0 },
+    { name: 'Tài chính & Fintech',             facultyId: 0 },
+    { name: 'Phần cứng & Điện tử',             facultyId: 0 },
+    { name: 'Marketing & Truyền thông',         facultyId: 0 },
+    { name: 'Xây dựng & Kiến trúc',            facultyId: 0 },
+    { name: 'Thiết kế & Mỹ thuật',             facultyId: 0 },
+    { name: 'Y tế & Chăm sóc sức khỏe',        facultyId: 0 },
+    { name: 'Du lịch & Nhà hàng - Khách sạn',  facultyId: 0 },
+    { name: 'Giáo dục & Đào tạo',             facultyId: 0 },
+    { name: 'Pháp lý & Tư vấn',               facultyId: 0 },
+    { name: 'Thương mại & Logistics',          facultyId: 0 },
+    { name: 'Khác',                            facultyId: 0 },
+    // Khoa Công nghệ Thông tin (faculty_id = 1)
+    { name: 'Phát triển Phần mềm (Web/Mobile)',       facultyId: 1 },
+    { name: 'Trí tuệ Nhân tạo & Học máy',            facultyId: 1 },
+    { name: 'An toàn Thông tin & Bảo mật Mạng',      facultyId: 1 },
+    { name: 'Khoa học Dữ liệu & Phân tích',          facultyId: 1 },
+    { name: 'Điện toán Đám mây & DevOps',            facultyId: 1 },
+    // Khoa Quản trị Kinh doanh (faculty_id = 2)
+    { name: 'Quản trị Doanh nghiệp & Nhân sự',       facultyId: 2 },
+    { name: 'Kinh doanh Quốc tế & Xuất nhập khẩu',   facultyId: 2 },
+    { name: 'Chuỗi Cung ứng & Logistics',            facultyId: 2 },
+    { name: 'Khởi nghiệp & Đổi mới sáng tạo',        facultyId: 2 },
+    // Khoa Quan hệ Công chúng (faculty_id = 3)
+    { name: 'Tổ chức Sự kiện & MICE',                facultyId: 3 },
+    { name: 'Quan hệ Truyền thông & Báo chí',         facultyId: 3 },
+    { name: 'Quảng bá Thương hiệu & PR Số',          facultyId: 3 },
+    // Khoa Kiến trúc (faculty_id = 4)
+    { name: 'Thiết kế Kiến trúc Công trình',          facultyId: 4 },
+    { name: 'Quy hoạch Đô thị & Cảnh quan',          facultyId: 4 },
+    { name: 'Thiết kế Nội ngoại thất Không gian',     facultyId: 4 },
+    // Khoa Mỹ thuật (faculty_id = 5)
+    { name: 'Hội họa & Điêu khắc Tạo hình',          facultyId: 5 },
+    { name: 'Mỹ thuật Ứng dụng & Illustration',      facultyId: 5 },
+    { name: 'Nghệ thuật Thị giác & Triển lãm',        facultyId: 5 },
+    // Khoa Thiết kế Công nghiệp (faculty_id = 6)
+    { name: 'Thiết kế Sản phẩm Công nghiệp',         facultyId: 6 },
+    { name: 'Thiết kế Bao bì & Kiểu dáng Hàng tiêu dùng', facultyId: 6 },
+    { name: 'Tạo mẫu Nhanh & In 3D',                 facultyId: 6 },
+    // Khoa Thiết kế Đồ họa (faculty_id = 7)
+    { name: 'Thiết kế Đồ họa & Nhận diện Thương hiệu', facultyId: 7 },
+    { name: 'Thiết kế UI/UX & Truyền thông Số',      facultyId: 7 },
+    { name: 'Sản xuất Nội dung Sáng tạo & Motion',   facultyId: 7 },
+    // Khoa Thiết kế Nội thất (faculty_id = 8)
+    { name: 'Thiết kế Nội thất Nhà ở & Thương mại',  facultyId: 8 },
+    { name: 'Trang trí Không gian & Phong thủy',      facultyId: 8 },
+    { name: 'Sản xuất Nội thất Gỗ & Vật liệu xây dựng', facultyId: 8 },
+    // Khoa Thiết kế Thời trang (faculty_id = 9)
+    { name: 'Thiết kế Thời trang & May mặc cao cấp', facultyId: 9 },
+    { name: 'Công nghệ Dệt may & Phụ liệu thời trang', facultyId: 9 },
+    { name: 'Thương mại Thời trang & Bán lẻ',        facultyId: 9 },
+    // Khoa Kỹ thuật Công trình (faculty_id = 10)
+    { name: 'Thi công & Quản lý Dự án Xây dựng',   facultyId: 10 },
+    { name: 'Vật liệu Xây dựng & Kết cấu Công trình', facultyId: 10 },
+    { name: 'Hạ tầng Giao thông & Thủy lợi',       facultyId: 10 },
+    // Khoa Kỹ thuật Cơ - Điện tử (faculty_id = 11)
+    { name: 'Tự động hóa & Robotics',              facultyId: 11 },
+    { name: 'Kỹ thuật Điện & Điện tử',             facultyId: 11 },
+    { name: 'Thiết bị Công nghiệp & IoT',          facultyId: 11 },
+    // Khoa Kinh tế (faculty_id = 12)
+    { name: 'Phân tích Kinh tế & Nghiên cứu Thị trường', facultyId: 12 },
+    { name: 'Thương mại Quốc tế & Chính sách Kinh tế', facultyId: 12 },
+    { name: 'Đầu tư & Quản lý Tài sản',            facultyId: 12 },
+    // Khoa Marketing (faculty_id = 13)
+    { name: 'Digital Marketing & Social Media',    facultyId: 13 },
+    { name: 'Nghiên cứu Hành vi Tiêu dùng & CRM',  facultyId: 13 },
+    { name: 'Quảng cáo Đa kênh & Performance Ads', facultyId: 13 },
+    // Khoa Tài chính - Kế toán (faculty_id = 14)
+    { name: 'Kiểm toán & Dịch vụ Kế toán',         facultyId: 14 },
+    { name: 'Ngân hàng & Dịch vụ Tài chính',       facultyId: 14 },
+    { name: 'Fintech & Thanh toán Điện tử',         facultyId: 14 },
+    // Khoa Du lịch (faculty_id = 15)
+    { name: 'Lữ hành & Điều hành Tour',             facultyId: 15 },
+    { name: 'Du lịch Sinh thái & Cộng đồng',        facultyId: 15 },
+    { name: 'Hướng dẫn Du lịch Quốc tế',           facultyId: 15 },
+    // Khoa Khách sạn - Nhà hàng (faculty_id = 16)
+    { name: 'Quản lý Khách sạn & Resort',           facultyId: 16 },
+    { name: 'Ẩm thực & Dịch vụ Nhà hàng',          facultyId: 16 },
+    { name: 'Tổ chức Tiệc & Dịch vụ Lưu trú',      facultyId: 16 },
+    // Khoa Luật (faculty_id = 17)
+    { name: 'Luật Doanh nghiệp & Thương mại',       facultyId: 17 },
+    { name: 'Luật Lao động & Bảo hiểm Xã hội',      facultyId: 17 },
+    { name: 'Luật Quốc tế & Trọng tài Thương mại',  facultyId: 17 },
+    // Khoa Ngoại ngữ (faculty_id = 18)
+    { name: 'Dạy học Tiếng Anh & Chứng chỉ Quốc tế', facultyId: 18 },
+    { name: 'Biên dịch & Phiên dịch Thương mại',    facultyId: 18 },
+    { name: 'Bản địa hóa & Văn hóa Đa ngôn ngữ',    facultyId: 18 },
+    // Khoa Truyền thông & Báo chí (faculty_id = 19)
+    { name: 'Báo chí & Sản xuất Nội dung Tin tức',  facultyId: 19 },
+    { name: 'Truyền thông Đa phương tiện & Podcast', facultyId: 19 },
+    { name: 'Sản xuất Phim & Hậu kỳ',               facultyId: 19 },
+    // Khoa Tâm lý học (faculty_id = 20)
+    { name: 'Tham vấn Tâm lý Học đường',            facultyId: 20 },
+    { name: 'Trị liệu Tâm lý Lâm sàng',             facultyId: 20 },
+    { name: 'Phát triển Kỹ năng Sống & Đào tạo Nhân lực', facultyId: 20 },
+    // Khoa Điều dưỡng (faculty_id = 21)
+    { name: 'Chăm sóc Điều dưỡng Bệnh viện',        facultyId: 21 },
+    { name: 'Chăm sóc Sức khỏe Người cao tuổi',     facultyId: 21 },
+    { name: 'Điều dưỡng Cộng đồng & Y tế Dự phòng', facultyId: 21 },
+    // Khoa Dược (faculty_id = 22)
+    { name: 'Dược lâm sàng & Tư vấn Dùng thuốc',    facultyId: 22 },
+    { name: 'Nghiên cứu & Sản xuất Dược phẩm',      facultyId: 22 },
+    { name: 'Kiểm nghiệm Dược liệu & Hóa dược',     facultyId: 22 }
 ];
 
 const ST_ACT_TYPES = [
@@ -176,164 +275,165 @@ const ST_ACT_TYPES = [
 ];
 
 const FACULTY_DEPARTMENTS = {
-    'IT': ['Bộ môn Công nghệ Phần mềm', 'Bộ môn Hệ thống Thông tin'],
-    'BA': ['Bộ môn Quản trị Tổng hợp', 'Bộ môn Kinh doanh Quốc tế'],
-    'PR': ['Bộ môn Quan hệ Công chúng', 'Bộ môn Tổ chức Sự kiện'],
-    'ARCH': ['Bộ môn Thiết kế Kiến trúc', 'Bộ môn Quy hoạch Đô thị'],
-    'FA': ['Bộ môn Hội họa', 'Bộ môn Mỹ thuật Ứng dụng'],
-    'ID': ['Bộ môn Kiểu dáng Công nghiệp', 'Bộ môn Thiết kế Sản phẩm'],
-    'GD': ['Bộ môn Thiết kế Đồ họa', 'Bộ môn Truyền thông Thị giác'],
-    'INT': ['Bộ môn Thiết kế Nội thất', 'Bộ môn Trang trí Không gian'],
-    'FASH': ['Bộ môn Thiết kế Thời trang', 'Bộ môn Công nghệ May'],
-    'CE': ['Bộ môn Kỹ thuật Công trình', 'Bộ môn Quản lý Xây dựng'],
-    'ME': ['Bộ môn Kỹ thuật Cơ - Điện tử', 'Bộ môn Robot học'],
-    'ECO': ['Bộ môn Kinh tế học', 'Bộ môn Kinh tế Quốc tế'],
-    'MARK': ['Bộ môn Marketing', 'Bộ môn Digital Marketing'],
-    'FIN': ['Bộ môn Tài chính - Ngân hàng', 'Bộ môn Kế toán - Kiểm toán'],
-    'TOUR': ['Bộ môn Quản trị Dịch vụ Du lịch', 'Bộ môn Lữ hành'],
-    'HOTEL': ['Bộ môn Quản trị Khách sạn', 'Bộ môn Quản trị Nhà hàng'],
-    'LAW': ['Bộ môn Luật học', 'Bộ môn Luật Kinh tế'],
-    'ENG': ['Bộ môn Tiếng Anh Thương mại', 'Bộ môn Biên - Phiên dịch tiếng Anh'],
-    'COMM': ['Bộ môn Truyền thông Đa phương tiện', 'Bộ môn Báo chí'],
-    'PSY': ['Bộ môn Tâm lý học Tham vấn', 'Bộ môn Tâm lý học Lâm sàng'],
-    'NURS': ['Bộ môn Điều dưỡng Đa khoa', 'Bộ môn Quản lý Điều dưỡng'],
-    'PHARM': ['Bộ môn Dược lâm sàng', 'Bộ môn Hóa dược & Bào chế thuốc']
+    'IT':   ['Bộ môn Công nghệ Phần mềm', 'Bộ môn Hệ thống Thông tin', 'Bộ môn An toàn Thông tin'],
+    'BA':   ['Bộ môn Quản trị Tổng hợp', 'Bộ môn Kinh doanh Quốc tế', 'Bộ môn Khởi nghiệp & Đổi mới'],
+    'PR':   ['Bộ môn Quan hệ Công chúng', 'Bộ môn Tổ chức Sự kiện', 'Bộ môn Truyền thông Số'],
+    'ARCH': ['Bộ môn Thiết kế Kiến trúc', 'Bộ môn Quy hoạch Đô thị', 'Bộ môn Kiến trúc Cảnh quan'],
+    'FA':   ['Bộ môn Hội họa', 'Bộ môn Mỹ thuật Ứng dụng', 'Bộ môn Nghệ thuật Đương đại'],
+    'ID':   ['Bộ môn Kiểu dáng Công nghiệp', 'Bộ môn Thiết kế Sản phẩm', 'Bộ môn Tạo mẫu & Chế tác'],
+    'GD':   ['Bộ môn Thiết kế Đồ họa', 'Bộ môn Truyền thông Thị giác', 'Bộ môn Thiết kế Số & UI/UX'],
+    'INT':  ['Bộ môn Thiết kế Nội thất', 'Bộ môn Trang trí Không gian', 'Bộ môn Vật liệu & Công nghệ Nội thất'],
+    'FASH': ['Bộ môn Thiết kế Thời trang', 'Bộ môn Công nghệ May', 'Bộ môn Thời trang thị trường'],
+    'CE':   ['Bộ môn Kỹ thuật Công trình', 'Bộ môn Quản lý Xây dựng', 'Bộ môn Kết cấu & Vật liệu'],
+    'ME':   ['Bộ môn Kỹ thuật Cơ - Điện tử', 'Bộ môn Robot học', 'Bộ môn Điện tử & Viễn thông'],
+    'ECO':  ['Bộ môn Kinh tế học', 'Bộ môn Kinh tế Quốc tế', 'Bộ môn Kinh tế Phát triển'],
+    'MARK': ['Bộ môn Marketing', 'Bộ môn Digital Marketing', 'Bộ môn Nghiên cứu Thị trường'],
+    'FIN':  ['Bộ môn Tài chính - Ngân hàng', 'Bộ môn Kế toán - Kiểm toán', 'Bộ môn Thuế & Tài chính Công'],
+    'TOUR': ['Bộ môn Quản trị Dịch vụ Du lịch', 'Bộ môn Lữ hành', 'Bộ môn Hướng dẫn Du lịch'],
+    'HOTEL':['Bộ môn Quản trị Khách sạn', 'Bộ môn Quản trị Nhà hàng', 'Bộ môn Nghệ thuật Ẩm thực'],
+    'LAW':  ['Bộ môn Luật học', 'Bộ môn Luật Kinh tế', 'Bộ môn Luật Quốc tế'],
+    'ENG':  ['Bộ môn Tiếng Anh Thương mại', 'Bộ môn Biên - Phiên dịch tiếng Anh', 'Bộ môn Ngôn ngữ và Văn hóa Anh'],
+    'COMM': ['Bộ môn Truyền thông Đa phương tiện', 'Bộ môn Báo chí', 'Bộ môn Sản xuất Phim & TV'],
+    'PSY':  ['Bộ môn Tâm lý học Tham vấn', 'Bộ môn Tâm lý học Lâm sàng', 'Bộ môn Tâm lý học Ứng dụng'],
+    'NURS': ['Bộ môn Điều dưỡng Đa khoa', 'Bộ môn Quản lý Điều dưỡng', 'Bộ môn Điều dưỡng Cộng đồng'],
+    'PHARM':['Bộ môn Dược lâm sàng', 'Bộ môn Hóa dược & Bào chế thuốc', 'Bộ môn Dược liệu & Dược cổ truyền']
 };
 
 const FICTIONAL_COMPANIES = {
     1: [ // IT
-        { name: 'Công ty Cổ phần Giải pháp Công nghệ ViệtTech', scale: 'Tier 1 (Tập đoàn/Global)', domain: 'viettech.vn', fields: ['Phần mềm & Outsource', 'Giải pháp CNTT & Chuyển đổi số'] },
-        { name: 'Tập đoàn Giải pháp Phần mềm AlphaSoft', scale: 'Tier 1 (Tập đoàn/Global)', domain: 'alphasoft.vn', fields: ['Phần mềm & Outsource'] },
-        { name: 'Công ty TNHH Hệ thống Thông tin CloudVibe', scale: 'Tier 2 (SME)', domain: 'cloudvibe.vn', fields: ['Giải pháp CNTT & Chuyển đổi số', 'Hạ tầng & Viễn thông'] },
-        { name: 'Công ty Phát triển Công nghệ ByteCore', scale: 'Tier 3 (Startup/Micro)', domain: 'bytecore.io', fields: ['Phần mềm & Outsource'] }
+        { name: 'Công ty Cổ phần Giải pháp Công nghệ ViệtTech', scale: 'Tier 1 (Tập đoàn/Global)', domain: 'viettech.vn', fields: ['Phần mềm & Outsource', 'Phát triển Phần mềm (Web/Mobile)'] },
+        { name: 'Tập đoàn Giải pháp Phần mềm AlphaSoft', scale: 'Tier 1 (Tập đoàn/Global)', domain: 'alphasoft.vn', fields: ['Phần mềm & Outsource', 'Trí tuệ Nhân tạo & Học máy'] },
+        { name: 'Công ty TNHH Hệ thống Thông tin CloudVibe', scale: 'Tier 2 (SME)', domain: 'cloudvibe.vn', fields: ['Giải pháp CNTT & Chuyển đổi số', 'Điện toán Đám mây & DevOps'] },
+        { name: 'Công ty Phát triển Công nghệ ByteCore', scale: 'Tier 3 (Startup/Micro)', domain: 'bytecore.io', fields: ['Phần mềm & Outsource', 'Khoa học Dữ liệu & Phân tích'] }
     ],
     2: [ // BA
-        { name: 'Tập đoàn Bán lẻ & Phân phối GlobalMart', scale: 'Tier 1 (Tập đoàn/Global)', domain: 'globalmart.vn', fields: ['Khác'] },
-        { name: 'Công ty Cổ phần Logistics và Vận tải Đại Dương', scale: 'Tier 2 (SME)', domain: 'oceantrans.vn', fields: ['Khác'] },
-        { name: 'Công ty Tư vấn Giải pháp Quản trị Doanh nghiệp BizLead', scale: 'Tier 2 (SME)', domain: 'bizlead.vn', fields: ['Khác'] },
-        { name: 'Công ty TNHH Dịch vụ Thương mại ApexGroup', scale: 'Tier 3 (Startup/Micro)', domain: 'apexgroup.com.vn', fields: ['Khác'] }
+        { name: 'Tập đoàn Bán lẻ & Phân phối GlobalMart', scale: 'Tier 1 (Tập đoàn/Global)', domain: 'globalmart.vn', fields: ['Thương mại & Logistics', 'Quản trị Doanh nghiệp & Nhân sự'] },
+        { name: 'Công ty Cổ phần Logistics và Vận tải Đại Dương', scale: 'Tier 2 (SME)', domain: 'oceantrans.vn', fields: ['Thương mại & Logistics', 'Chuỗi Cung ứng & Logistics'] },
+        { name: 'Công ty Tư vấn Giải pháp Quản trị Doanh nghiệp BizLead', scale: 'Tier 2 (SME)', domain: 'bizlead.vn', fields: ['Quản trị Doanh nghiệp & Nhân sự'] },
+        { name: 'Công ty TNHH Dịch vụ Thương mại ApexGroup', scale: 'Tier 3 (Startup/Micro)', domain: 'apexgroup.com.vn', fields: ['Khởi nghiệp & Đổi mới sáng tạo'] }
     ],
     3: [ // PR
-        { name: 'Creative Agency Truyền thông & Sự kiện StarPR', scale: 'Tier 2 (SME)', domain: 'starpr.agency', fields: ['Marketing & Truyền thông'] },
-        { name: 'Công ty Cổ phần Sự kiện BrightEvent', scale: 'Tier 2 (SME)', domain: 'brightevent.vn', fields: ['Marketing & Truyền thông'] },
-        { name: 'Agency Truyền thông và Quảng cáo BuzzMedia', scale: 'Tier 3 (Startup/Micro)', domain: 'buzzmedia.vn', fields: ['Marketing & Truyền thông'] },
-        { name: 'Công ty Tư vấn Thương hiệu VibePR', scale: 'Tier 3 (Startup/Micro)', domain: 'vibepr.vn', fields: ['Marketing & Truyền thông'] }
+        { name: 'Creative Agency Truyền thông & Sự kiện StarPR', scale: 'Tier 2 (SME)', domain: 'starpr.agency', fields: ['Marketing & Truyền thông', 'Tổ chức Sự kiện & MICE'] },
+        { name: 'Công ty Cổ phần Sự kiện BrightEvent', scale: 'Tier 2 (SME)', domain: 'brightevent.vn', fields: ['Tổ chức Sự kiện & MICE'] },
+        { name: 'Agency Truyền thông và Quảng cáo BuzzMedia', scale: 'Tier 3 (Startup/Micro)', domain: 'buzzmedia.vn', fields: ['Marketing & Truyền thông', 'Quảng bá Thương hiệu & PR Số'] },
+        { name: 'Công ty Tư vấn Thương hiệu VibePR', scale: 'Tier 3 (Startup/Micro)', domain: 'vibepr.vn', fields: ['Quan hệ Truyền thông & Báo chí'] }
     ],
     4: [ // ARCH
-        { name: 'Văn phòng Thiết kế Kiến trúc Đất Việt', scale: 'Tier 2 (SME)', domain: 'datvietarch.vn', fields: ['Khác'] },
-        { name: 'Công ty Cổ phần Thiết kế & Quy hoạch Đô thị CanvasArch', scale: 'Tier 2 (SME)', domain: 'canvasarch.com', fields: ['Khác'] },
-        { name: 'Studio Kiến trúc và Cảnh quan GreenSpace', scale: 'Tier 3 (Startup/Micro)', domain: 'greenspace.design', fields: ['Khác'] },
-        { name: 'Công ty Tư vấn Thiết kế và Xây dựng SkyLine', scale: 'Tier 3 (Startup/Micro)', domain: 'skylinearch.vn', fields: ['Khác'] }
+        { name: 'Văn phòng Thiết kế Kiến trúc Đất Việt', scale: 'Tier 2 (SME)', domain: 'datvietarch.vn', fields: ['Xây dựng & Kiến trúc', 'Thiết kế Kiến trúc Công trình'] },
+        { name: 'Công ty Cổ phần Thiết kế & Quy hoạch Đô thị CanvasArch', scale: 'Tier 2 (SME)', domain: 'canvasarch.com', fields: ['Quy hoạch Đô thị & Cảnh quan'] },
+        { name: 'Studio Kiến trúc và Cảnh quan GreenSpace', scale: 'Tier 3 (Startup/Micro)', domain: 'greenspace.design', fields: ['Thiết kế Kiến trúc Công trình', 'Xây dựng & Kiến trúc'] },
+        { name: 'Công ty Tư vấn Thiết kế và Xây dựng SkyLine', scale: 'Tier 3 (Startup/Micro)', domain: 'skylinearch.vn', fields: ['Thiết kế Nội ngoại thất Không gian'] }
     ],
     5: [ // FA
-        { name: 'Phòng tranh và Triển lãm Đông Đô Art Gallery', scale: 'Tier 2 (SME)', domain: 'dongdoart.vn', fields: ['Khác'] },
-        { name: 'Studio Mỹ thuật Sáng tạo ColorSpace', scale: 'Tier 3 (Startup/Micro)', domain: 'colorspace.vn', fields: ['Khác'] },
-        { name: 'Công ty Thiết kế Mỹ thuật Ứng dụng ArtVibe', scale: 'Tier 3 (Startup/Micro)', domain: 'artvibe.design', fields: ['Marketing & Truyền thông'] },
-        { name: 'Phòng Thiết kế Tạo hình FineArt', scale: 'Tier 3 (Startup/Micro)', domain: 'fineart.vn', fields: ['Khác'] }
+        { name: 'Phòng tranh và Triển lãm Đông Đô Art Gallery', scale: 'Tier 2 (SME)', domain: 'dongdoart.vn', fields: ['Thiết kế & Mỹ thuật', 'Nghệ thuật Thị giác & Triển lãm'] },
+        { name: 'Studio Mỹ thuật Sáng tạo ColorSpace', scale: 'Tier 3 (Startup/Micro)', domain: 'colorspace.vn', fields: ['Hội họa & Điêu khắc Tạo hình'] },
+        { name: 'Công ty Thiết kế Mỹ thuật Ứng dụng ArtVibe', scale: 'Tier 3 (Startup/Micro)', domain: 'artvibe.design', fields: ['Mỹ thuật Ứng dụng & Illustration', 'Marketing & Truyền thông'] },
+        { name: 'Phòng Thiết kế Tạo hình FineArt', scale: 'Tier 3 (Startup/Micro)', domain: 'fineart.vn', fields: ['Thiết kế & Mỹ thuật'] }
     ],
     6: [ // ID
-        { name: 'Công ty Thiết kế Kiểu dáng Kiểu Mẫu Việt (VietID)', scale: 'Tier 2 (SME)', domain: 'vietid.design', fields: ['Khác'] },
-        { name: 'Tập đoàn Phát triển Sản phẩm Tiêu dùng Innova', scale: 'Tier 2 (SME)', domain: 'innovaproduct.vn', fields: ['Khác'] },
-        { name: 'Studio Thiết kế Công nghiệp CreativePod', scale: 'Tier 3 (Startup/Micro)', domain: 'creativepod.vn', fields: ['Khác'] },
-        { name: 'Công ty Giải pháp Tạo mẫu Sản phẩm ConceptID', scale: 'Tier 3 (Startup/Micro)', domain: 'conceptid.io', fields: ['Khác'] }
+        { name: 'Công ty Thiết kế Kiểu dáng Kiểu Mẫu Việt (VietID)', scale: 'Tier 2 (SME)', domain: 'vietid.design', fields: ['Thiết kế Sản phẩm Công nghiệp'] },
+        { name: 'Tập đoàn Phát triển Sản phẩm Tiêu dùng Innova', scale: 'Tier 2 (SME)', domain: 'innovaproduct.vn', fields: ['Thiết kế Bao bì & Kiểu dáng Hàng tiêu dùng'] },
+        { name: 'Studio Thiết kế Công nghiệp CreativePod', scale: 'Tier 3 (Startup/Micro)', domain: 'creativepod.vn', fields: ['Thiết kế Sản phẩm Công nghiệp', 'Tạo mẫu Nhanh & In 3D'] },
+        { name: 'Công ty Giải pháp Tạo mẫu Sản phẩm ConceptID', scale: 'Tier 3 (Startup/Micro)', domain: 'conceptid.io', fields: ['Tạo mẫu Nhanh & In 3D'] }
     ],
     7: [ // GD
-        { name: 'Creative Agency Đồ họa PixelArt', scale: 'Tier 2 (SME)', domain: 'pixelart.vn', fields: ['Marketing & Truyền thông'] },
-        { name: 'Studio Thiết kế và Nhận diện Thương hiệu BrandVibe', scale: 'Tier 2 (SME)', domain: 'brandvibe.vn', fields: ['Marketing & Truyền thông'] },
-        { name: 'Công ty TNHH Thiết kế Đồ họa và Quảng cáo RainbowGD', scale: 'Tier 3 (Startup/Micro)', domain: 'rainbowgd.com', fields: ['Marketing & Truyền thông'] },
-        { name: 'Studio Sáng tạo Kỹ thuật số VectorStudio', scale: 'Tier 3 (Startup/Micro)', domain: 'vectorstudio.vn', fields: ['Marketing & Truyền thông'] }
+        { name: 'Creative Agency Đồ họa PixelArt', scale: 'Tier 2 (SME)', domain: 'pixelart.vn', fields: ['Marketing & Truyền thông', 'Thiết kế Đồ họa & Nhận diện Thương hiệu'] },
+        { name: 'Studio Thiết kế và Nhận diện Thương hiệu BrandVibe', scale: 'Tier 2 (SME)', domain: 'brandvibe.vn', fields: ['Thiết kế Đồ họa & Nhận diện Thương hiệu'] },
+        { name: 'Công ty TNHH Thiết kế Đồ họa và Quảng cáo RainbowGD', scale: 'Tier 3 (Startup/Micro)', domain: 'rainbowgd.com', fields: ['Thiết kế UI/UX & Truyền thông Số'] },
+        { name: 'Studio Sáng tạo Kỹ thuật số VectorStudio', scale: 'Tier 3 (Startup/Micro)', domain: 'vectorstudio.vn', fields: ['Sản xuất Nội dung Sáng tạo & Motion'] }
     ],
     8: [ // INT
-        { name: 'Tổng công ty Cổ phần Nội thất ViệtSpace', scale: 'Tier 2 (SME)', domain: 'vietspaceinterior.vn', fields: ['Khác'] },
-        { name: 'Công ty Thiết kế và Trang trí Nhà đẹp DecoStyle', scale: 'Tier 2 (SME)', domain: 'decostyle.vn', fields: ['Khác'] },
-        { name: 'Studio Thiết kế Không gian Sống CozyHome', scale: 'Tier 3 (Startup/Micro)', domain: 'cozyhome.vn', fields: ['Khác'] },
-        { name: 'Xưởng Sản xuất Nội thất Gỗ Mỹ nghệ WoodLand', scale: 'Tier 3 (Startup/Micro)', domain: 'woodland.com.vn', fields: ['Khác'] }
+        { name: 'Tổng công ty Cổ phần Nội thất ViệtSpace', scale: 'Tier 2 (SME)', domain: 'vietspaceinterior.vn', fields: ['Thiết kế & Mỹ thuật', 'Thiết kế Nội thất Nhà ở & Thương mại'] },
+        { name: 'Công ty Thiết kế và Trang trí Nhà đẹp DecoStyle', scale: 'Tier 2 (SME)', domain: 'decostyle.vn', fields: ['Trang trí Không gian & Phong thủy'] },
+        { name: 'Studio Thiết kế Không gian Sống CozyHome', scale: 'Tier 3 (Startup/Micro)', domain: 'cozyhome.vn', fields: ['Thiết kế Nội thất Nhà ở & Thương mại'] },
+        { name: 'Xưởng Sản xuất Nội thất Gỗ Mỹ nghệ WoodLand', scale: 'Tier 3 (Startup/Micro)', domain: 'woodland.com.vn', fields: ['Sản xuất Nội thất Gỗ & Vật liệu xây dựng'] }
     ],
     9: [ // FASH
-        { name: 'Tập đoàn Thiết kế Thời trang ViệtStyle', scale: 'Tier 1 (Tập đoàn/Global)', domain: 'vietstylefashion.vn', fields: ['Khác'] },
-        { name: 'Tổng công ty May mặc Đông Á', scale: 'Tier 2 (SME)', domain: 'dongagarment.vn', fields: ['Khác'] },
-        { name: 'Nhà mốt Thiết kế Haute Couture ChicMode', scale: 'Tier 3 (Startup/Micro)', domain: 'chicmode.vn', fields: ['Khác'] },
-        { name: 'Công ty TNHH May mặc và Thời trang FashionLine', scale: 'Tier 3 (Startup/Micro)', domain: 'fashionline.vn', fields: ['Khác'] }
+        { name: 'Tập đoàn Thiết kế Thời trang ViệtStyle', scale: 'Tier 1 (Tập đoàn/Global)', domain: 'vietstylefashion.vn', fields: ['Thiết kế Thời trang & May mặc cao cấp'] },
+        { name: 'Tổng công ty May mặc Đông Á', scale: 'Tier 2 (SME)', domain: 'dongagarment.vn', fields: ['Công nghệ Dệt may & Phụ liệu thời trang'] },
+        { name: 'Nhà mốt Thiết kế Haute Couture ChicMode', scale: 'Tier 3 (Startup/Micro)', domain: 'chicmode.vn', fields: ['Thiết kế Thời trang & May mặc cao cấp'] },
+        { name: 'Công ty TNHH May mặc và Thời trang FashionLine', scale: 'Tier 3 (Startup/Micro)', domain: 'fashionline.vn', fields: ['Thương mại Thời trang & Bán lẻ'] }
     ],
     10: [ // CE
-        { name: 'Tổng công ty Xây dựng An Phong', scale: 'Tier 1 (Tập đoàn/Global)', domain: 'anphongcons.vn', fields: ['Khác'] },
-        { name: 'Công ty Cổ phần Đầu tư và Xây dựng DeltaCons', scale: 'Tier 2 (SME)', domain: 'deltacons.vn', fields: ['Khác'] },
-        { name: 'Công ty TNHH Xây dựng Hạ tầng Trường Sơn', scale: 'Tier 2 (SME)', domain: 'truongsoninfra.vn', fields: ['Khác'] },
-        { name: 'Công ty Tư vấn và Giám sát Công trình BuildCore', scale: 'Tier 3 (Startup/Micro)', domain: 'buildcore.vn', fields: ['Khác'] }
+        { name: 'Tổng công ty Xây dựng An Phong', scale: 'Tier 1 (Tập đoàn/Global)', domain: 'anphongcons.vn', fields: ['Xây dựng & Kiến trúc', 'Thi công & Quản lý Dự án Xây dựng'] },
+        { name: 'Công ty Cổ phần Đầu tư và Xây dựng DeltaCons', scale: 'Tier 2 (SME)', domain: 'deltacons.vn', fields: ['Vật liệu Xây dựng & Kết cấu Công trình'] },
+        { name: 'Công ty TNHH Xây dựng Hạ tầng Trường Sơn', scale: 'Tier 2 (SME)', domain: 'truongsoninfra.vn', fields: ['Hạ tầng Giao thông & Thủy lợi'] },
+        { name: 'Công ty Tư vấn và Giám sát Công trình BuildCore', scale: 'Tier 3 (Startup/Micro)', domain: 'buildcore.vn', fields: ['Thi công & Quản lý Dự án Xây dựng'] }
     ],
     11: [ // ME
-        { name: 'Công ty Tự động hóa và Thiết bị Robotec', scale: 'Tier 2 (SME)', domain: 'robotec.vn', fields: ['Phần cứng & Điện tử'] },
-        { name: 'Công ty Kỹ thuật Cơ điện Đông Nam', scale: 'Tier 2 (SME)', domain: 'dongnamelectro.vn', fields: ['Phần cứng & Điện tử'] },
-        { name: 'Tập đoàn Công nghệ Phần cứng VinTech', scale: 'Tier 1 (Tập đoàn/Global)', domain: 'vintechhardware.com.vn', fields: ['Phần cứng & Điện tử'] },
-        { name: 'Công ty TNHH Giải pháp Hệ thống AutoSys', scale: 'Tier 3 (Startup/Micro)', domain: 'autosys.vn', fields: ['Phần cứng & Điện tử'] }
+        { name: 'Công ty Tự động hóa và Thiết bị Robotec', scale: 'Tier 2 (SME)', domain: 'robotec.vn', fields: ['Tự động hóa & Robotics'] },
+        { name: 'Công ty Kỹ thuật Cơ điện Đông Nam', scale: 'Tier 2 (SME)', domain: 'dongnamelectro.vn', fields: ['Kỹ thuật Điện & Điện tử'] },
+        { name: 'Tập đoàn Công nghệ Phần cứng VinTech', scale: 'Tier 1 (Tập đoàn/Global)', domain: 'vintechhardware.com.vn', fields: ['Phần cứng & Điện tử', 'Thiết bị Công nghiệp & IoT'] },
+        { name: 'Công ty TNHH Giải pháp Hệ thống AutoSys', scale: 'Tier 3 (Startup/Micro)', domain: 'autosys.vn', fields: ['Tự động hóa & Robotics', 'Thiết bị Công nghiệp & IoT'] }
     ],
     12: [ // ECO
-        { name: 'Viện Nghiên cứu Kinh tế Phát triển Việt Nam', scale: 'Tier 2 (SME)', domain: 'vied.gov.vn', fields: ['Khác'] },
-        { name: 'Công ty Đầu tư và Phân tích Thị trường SafeCapital', scale: 'Tier 2 (SME)', domain: 'safecapital.vn', fields: ['Tài chính & Fintech'] },
-        { name: 'Công ty Cổ phần Thương mại Quốc tế Suntrade', scale: 'Tier 2 (SME)', domain: 'suntrade.vn', fields: ['Khác'] },
-        { name: 'Công ty Tư vấn Phân tích Số liệu Kinh tế EcoAnalytics', scale: 'Tier 3 (Startup/Micro)', domain: 'ecoanalytics.vn', fields: ['Khác'] }
+        { name: 'Viện Nghiên cứu Kinh tế Phát triển Việt Nam', scale: 'Tier 2 (SME)', domain: 'vied.gov.vn', fields: ['Phân tích Kinh tế & Nghiên cứu Thị trường'] },
+        { name: 'Công ty Đầu tư và Phân tích Thị trường SafeCapital', scale: 'Tier 2 (SME)', domain: 'safecapital.vn', fields: ['Tài chính & Fintech', 'Đầu tư & Quản lý Tài sản'] },
+        { name: 'Công ty Cổ phần Thương mại Quốc tế Suntrade', scale: 'Tier 2 (SME)', domain: 'suntrade.vn', fields: ['Thương mại Quốc tế & Chính sách Kinh tế'] },
+        { name: 'Công ty Tư vấn Phân tích Số liệu Kinh tế EcoAnalytics', scale: 'Tier 3 (Startup/Micro)', domain: 'ecoanalytics.vn', fields: ['Phân tích Kinh tế & Nghiên cứu Thị trường'] }
     ],
     13: [ // MARK
-        { name: 'Digital Marketing Agency MaxGrow', scale: 'Tier 2 (SME)', domain: 'maxgrow.agency', fields: ['Marketing & Truyền thông'] },
-        { name: 'Công ty Tư vấn Thương hiệu BrandFirst', scale: 'Tier 2 (SME)', domain: 'brandfirst.vn', fields: ['Marketing & Truyền thông'] },
-        { name: 'Agency Quảng cáo và Tiếp thị SunMedia', scale: 'Tier 2 (SME)', domain: 'sunmedia.vn', fields: ['Marketing & Truyền thông'] },
-        { name: 'Công ty Giải pháp Truyền thông Tiếp thị AdVibe', scale: 'Tier 3 (Startup/Micro)', domain: 'advibe.vn', fields: ['Marketing & Truyền thông'] }
+        { name: 'Digital Marketing Agency MaxGrow', scale: 'Tier 2 (SME)', domain: 'maxgrow.agency', fields: ['Marketing & Truyền thông', 'Digital Marketing & Social Media'] },
+        { name: 'Công ty Tư vấn Thương hiệu BrandFirst', scale: 'Tier 2 (SME)', domain: 'brandfirst.vn', fields: ['Nghiên cứu Hành vi Tiêu dùng & CRM'] },
+        { name: 'Agency Quảng cáo và Tiếp thị SunMedia', scale: 'Tier 2 (SME)', domain: 'sunmedia.vn', fields: ['Marketing & Truyền thông', 'Quảng cáo Đa kênh & Performance Ads'] },
+        { name: 'Công ty Giải pháp Truyền thông Tiếp thị AdVibe', scale: 'Tier 3 (Startup/Micro)', domain: 'advibe.vn', fields: ['Digital Marketing & Social Media'] }
     ],
     14: [ // FIN
-        { name: 'Công ty Kiểm toán Đông Dương (Indochina Audit)', scale: 'Tier 2 (SME)', domain: 'indochinaaudit.vn', fields: ['Tài chính & Fintech'] },
-        { name: 'Công ty Dịch vụ Kế toán và Thuế ViệtTax', scale: 'Tier 2 (SME)', domain: 'viettax.vn', fields: ['Tài chính & Fintech'] },
-        { name: 'Công ty Đầu tư Tài chính SmartCapital', scale: 'Tier 2 (SME)', domain: 'smartcapital.vn', fields: ['Tài chính & Fintech'] },
-        { name: 'Công ty Tư vấn Giải pháp Tài chính FinSecure', scale: 'Tier 3 (Startup/Micro)', domain: 'finsecure.vn', fields: ['Tài chính & Fintech'] }
+        { name: 'Công ty Kiểm toán Đông Dương (Indochina Audit)', scale: 'Tier 2 (SME)', domain: 'indochinaaudit.vn', fields: ['Tài chính & Fintech', 'Kiểm toán & Dịch vụ Kế toán'] },
+        { name: 'Công ty Dịch vụ Kế toán và Thuế ViệtTax', scale: 'Tier 2 (SME)', domain: 'viettax.vn', fields: ['Kiểm toán & Dịch vụ Kế toán'] },
+        { name: 'Công ty Đầu tư Tài chính SmartCapital', scale: 'Tier 2 (SME)', domain: 'smartcapital.vn', fields: ['Ngân hàng & Dịch vụ Tài chính'] },
+        { name: 'Công ty Tư vấn Giải pháp Tài chính FinSecure', scale: 'Tier 3 (Startup/Micro)', domain: 'finsecure.vn', fields: ['Fintech & Thanh toán Điện tử'] }
     ],
     15: [ // TOUR
-        { name: 'Công ty Cổ phần Du lịch Hướng Dương (Sunflower Travel)', scale: 'Tier 2 (SME)', domain: 'sunflowertravel.vn', fields: ['Khác'] },
-        { name: 'Công ty Lữ hành ViệtNam Discovery', scale: 'Tier 2 (SME)', domain: 'vndiscovery.com.vn', fields: ['Khác'] },
-        { name: 'Công ty Dịch vụ và Quản lý Tour VibeTrip', scale: 'Tier 3 (Startup/Micro)', domain: 'vibetrip.vn', fields: ['Khác'] },
-        { name: 'Công ty Du lịch Sinh thái GreenTour', scale: 'Tier 3 (Startup/Micro)', domain: 'greentour.vn', fields: ['Khác'] }
+        { name: 'Công ty Cổ phần Du lịch Hướng Dương (Sunflower Travel)', scale: 'Tier 2 (SME)', domain: 'sunflowertravel.vn', fields: ['Du lịch & Nhà hàng - Khách sạn', 'Lữ hành & Điều hành Tour'] },
+        { name: 'Công ty Lữ hành ViệtNam Discovery', scale: 'Tier 2 (SME)', domain: 'vndiscovery.com.vn', fields: ['Hướng dẫn Du lịch Quốc tế'] },
+        { name: 'Công ty Dịch vụ và Quản lý Tour VibeTrip', scale: 'Tier 3 (Startup/Micro)', domain: 'vibetrip.vn', fields: ['Lữ hành & Điều hành Tour'] },
+        { name: 'Công ty Du lịch Sinh thái GreenTour', scale: 'Tier 3 (Startup/Micro)', domain: 'greentour.vn', fields: ['Du lịch Sinh thái & Cộng đồng'] }
     ],
     16: [ // HOTEL
-        { name: 'Khách sạn Sài Gòn Palace Hotel', scale: 'Tier 2 (SME)', domain: 'saigonpalace.com.vn', fields: ['Khác'] },
-        { name: 'Khu nghỉ dưỡng Bãi Cát Vàng (Gold Sand Resort)', scale: 'Tier 2 (SME)', domain: 'goldsandresort.vn', fields: ['Khác'] },
-        { name: 'Công ty Dịch vụ Ẩm thực Imperial Catering', scale: 'Tier 3 (Startup/Micro)', domain: 'imperialcatering.vn', fields: ['Khác'] },
-        { name: 'Chuỗi Nhà hàng Ẩm thực Việt FineDine', scale: 'Tier 3 (Startup/Micro)', domain: 'finedine.vn', fields: ['Khác'] }
+        { name: 'Khách sạn Sài Gòn Palace Hotel', scale: 'Tier 2 (SME)', domain: 'saigonpalace.com.vn', fields: ['Du lịch & Nhà hàng - Khách sạn', 'Quản lý Khách sạn & Resort'] },
+        { name: 'Khu nghỉ dưỡng Bãi Cát Vàng (Gold Sand Resort)', scale: 'Tier 2 (SME)', domain: 'goldsandresort.vn', fields: ['Quản lý Khách sạn & Resort'] },
+        { name: 'Công ty Dịch vụ Ẩm thực Imperial Catering', scale: 'Tier 3 (Startup/Micro)', domain: 'imperialcatering.vn', fields: ['Tổ chức Tiệc & Dịch vụ Lưu trú'] },
+        { name: 'Chuỗi Nhà hàng Ẩm thực Việt FineDine', scale: 'Tier 3 (Startup/Micro)', domain: 'finedine.vn', fields: ['Ẩm thực & Dịch vụ Nhà hàng'] }
     ],
     17: [ // LAW
-        { name: 'Văn phòng Luật sư Chí Thanh & Cộng sự', scale: 'Tier 2 (SME)', domain: 'chithanhlaw.vn', fields: ['Khác'] },
-        { name: 'Công ty Luật TNHH Minh Anh', scale: 'Tier 2 (SME)', domain: 'minhanhlegal.vn', fields: ['Khác'] },
-        { name: 'Hãng luật Tư vấn Doanh nghiệp LegalTrust', scale: 'Tier 3 (Startup/Micro)', domain: 'legaltrust.vn', fields: ['Khác'] },
-        { name: 'Văn phòng Công chứng LexPartners', scale: 'Tier 3 (Startup/Micro)', domain: 'lexpartners.vn', fields: ['Khác'] }
+        { name: 'Văn phòng Luật sư Chí Thanh & Cộng sự', scale: 'Tier 2 (SME)', domain: 'chithanhlaw.vn', fields: ['Pháp lý & Tư vấn', 'Luật Doanh nghiệp & Thương mại'] },
+        { name: 'Công ty Luật TNHH Minh Anh', scale: 'Tier 2 (SME)', domain: 'minhanhlegal.vn', fields: ['Luật Lao động & Bảo hiểm Xã hội'] },
+        { name: 'Hãng luật Tư vấn Doanh nghiệp LegalTrust', scale: 'Tier 3 (Startup/Micro)', domain: 'legaltrust.vn', fields: ['Luật Doanh nghiệp & Thương mại'] },
+        { name: 'Văn phòng Công chứng LexPartners', scale: 'Tier 3 (Startup/Micro)', domain: 'lexpartners.vn', fields: ['Luật Quốc tế & Trọng tài Thương mại'] }
     ],
     18: [ // ENG
-        { name: 'Hệ thống Anh ngữ Ánh Dương (Sun English)', scale: 'Tier 2 (SME)', domain: 'sunenglish.edu.vn', fields: ['Khác'] },
-        { name: 'Công ty Dịch thuật & Bản địa hóa GlobeTrans', scale: 'Tier 2 (SME)', domain: 'globetrans.vn', fields: ['Khác'] },
-        { name: 'Trung tâm Đào tạo Ngôn ngữ Quốc tế WorldLink', scale: 'Tier 3 (Startup/Micro)', domain: 'worldlink.edu.vn', fields: ['Khác'] },
-        { name: 'Văn phòng Biên dịch và Hiệu đính LingoStudy', scale: 'Tier 3 (Startup/Micro)', domain: 'lingostudy.vn', fields: ['Khác'] }
+        { name: 'Hệ thống Anh ngữ Ánh Dương (Sun English)', scale: 'Tier 2 (SME)', domain: 'sunenglish.edu.vn', fields: ['Giáo dục & Đào tạo', 'Dạy học Tiếng Anh & Chứng chỉ Quốc tế'] },
+        { name: 'Công ty Dịch thuật & Bản địa hóa GlobeTrans', scale: 'Tier 2 (SME)', domain: 'globetrans.vn', fields: ['Biên dịch & Phiên dịch Thương mại'] },
+        { name: 'Trung tâm Đào tạo Ngôn ngữ Quốc tế WorldLink', scale: 'Tier 3 (Startup/Micro)', domain: 'worldlink.edu.vn', fields: ['Giáo dục & Đào tạo', 'Bản địa hóa & Văn hóa Đa ngôn ngữ'] },
+        { name: 'Văn phòng Biên dịch và Hiệu đính LingoStudy', scale: 'Tier 3 (Startup/Micro)', domain: 'lingostudy.vn', fields: ['Biên dịch & Phiên dịch Thương mại'] }
     ],
     19: [ // COMM
-        { name: 'Hãng tin ViệtNam Today', scale: 'Tier 2 (SME)', domain: 'vntoday.vn', fields: ['Marketing & Truyền thông'] },
-        { name: 'Công ty Sản xuất Phim Ảnh ViệtMedia', scale: 'Tier 2 (SME)', domain: 'vietmedia.com.vn', fields: ['Marketing & Truyền thông'] },
-        { name: 'Đài Phát thanh và Truyền hình Á Đông (ADong Broadcast)', scale: 'Tier 2 (SME)', domain: 'adongbroadcast.vn', fields: ['Marketing & Truyền thông'] },
-        { name: 'Kênh Truyền thông Kỹ thuật số BuzzNews', scale: 'Tier 3 (Startup/Micro)', domain: 'buzznews.vn', fields: ['Marketing & Truyền thông'] }
+        { name: 'Hãng tin ViệtNam Today', scale: 'Tier 2 (SME)', domain: 'vntoday.vn', fields: ['Marketing & Truyền thông', 'Báo chí & Sản xuất Nội dung Tin tức'] },
+        { name: 'Công ty Sản xuất Phim ảnh ViệtMedia', scale: 'Tier 2 (SME)', domain: 'vietmedia.com.vn', fields: ['Sản xuất Phim & Hậu kỳ'] },
+        { name: 'Đài Phát thanh và Truyền hình Á Đông (ADong Broadcast)', scale: 'Tier 2 (SME)', domain: 'adongbroadcast.vn', fields: ['Truyền thông Đa phương tiện & Podcast'] },
+        { name: 'Kênh Truyền thông Kỹ thuật số BuzzNews', scale: 'Tier 3 (Startup/Micro)', domain: 'buzznews.vn', fields: ['Báo chí & Sản xuất Nội dung Tin tức'] }
     ],
     20: [ // PSY
-        { name: 'Trung tâm Tham vấn Tâm lý An Nhiên', scale: 'Tier 2 (SME)', domain: 'annhienmind.vn', fields: ['Khác'] },
-        { name: 'Viện Trị liệu Tâm lý Cánh Cửa Mở', scale: 'Tier 2 (SME)', domain: 'opendoorpsy.vn', fields: ['Khác'] },
-        { name: 'Trung tâm Phát triển Kỹ năng sống MindCare', scale: 'Tier 3 (Startup/Micro)', domain: 'mindcare.vn', fields: ['Khác'] },
-        { name: 'Văn phòng Tư vấn Tâm lý ZenTherapy', scale: 'Tier 3 (Startup/Micro)', domain: 'zentherapy.vn', fields: ['Khác'] }
+        { name: 'Trung tâm Tham vấn Tâm lý An Nhiên', scale: 'Tier 2 (SME)', domain: 'annhienmind.vn', fields: ['Tham vấn Tâm lý Học đường'] },
+        { name: 'Viện Trị liệu Tâm lý Cánh Cửa Mở', scale: 'Tier 2 (SME)', domain: 'opendoorpsy.vn', fields: ['Trị liệu Tâm lý Lâm sàng'] },
+        { name: 'Trung tâm Phát triển Kỹ năng sống MindCare', scale: 'Tier 3 (Startup/Micro)', domain: 'mindcare.vn', fields: ['Phát triển Kỹ năng Sống & Đào tạo Nhân lực'] },
+        { name: 'Văn phòng Tư vấn Tâm lý ZenTherapy', scale: 'Tier 3 (Startup/Micro)', domain: 'zentherapy.vn', fields: ['Tham vấn Tâm lý Học đường', 'Trị liệu Tâm lý Lâm sàng'] }
     ],
     21: [ // NURS
-        { name: 'Bệnh viện Đa khoa Vạn Xuân', scale: 'Tier 1 (Tập đoàn/Global)', domain: 'vanxuanhospital.vn', fields: ['Khác'] },
-        { name: 'Trung tâm Chăm sóc Sức khỏe Người cao tuổi An Bình', scale: 'Tier 2 (SME)', domain: 'anbinhcare.vn', fields: ['Khác'] },
-        { name: 'Phòng khám Đa khoa Quốc tế GreenClinic', scale: 'Tier 2 (SME)', domain: 'greenclinic.vn', fields: ['Khác'] },
-        { name: 'Dịch vụ Chăm sóc Y tế tại nhà LifeHealth', scale: 'Tier 3 (Startup/Micro)', domain: 'lifehealth.vn', fields: ['Khác'] }
+        { name: 'Bệnh viện Đa khoa Vạn Xuân', scale: 'Tier 1 (Tập đoàn/Global)', domain: 'vanxuanhospital.vn', fields: ['Y tế & Chăm sóc sức khỏe', 'Chăm sóc Điều dưỡng Bệnh viện'] },
+        { name: 'Trung tâm Chăm sóc Sức khỏe Người cao tuổi An Bình', scale: 'Tier 2 (SME)', domain: 'anbinhcare.vn', fields: ['Chăm sóc Sức khỏe Người cao tuổi'] },
+        { name: 'Phòng khám Đa khoa Quốc tế GreenClinic', scale: 'Tier 2 (SME)', domain: 'greenclinic.vn', fields: ['Y tế & Chăm sóc sức khỏe', 'Điều dưỡng Cộng đồng & Y tế Dự phòng'] },
+        { name: 'Dịch vụ Chăm sóc Y tế tại nhà LifeHealth', scale: 'Tier 3 (Startup/Micro)', domain: 'lifehealth.vn', fields: ['Điều dưỡng Cộng đồng & Y tế Dự phòng'] }
     ],
     22: [ // PHARM
-        { name: 'Hệ thống Nhà thuốc An Tâm Pharma', scale: 'Tier 2 (SME)', domain: 'antampharma.vn', fields: ['Khác'] },
-        { name: 'Công ty Cổ phần Dược phẩm Nam Việt (Navipharm)', scale: 'Tier 2 (SME)', domain: 'navipharm.vn', fields: ['Khác'] },
-        { name: 'Phòng thí nghiệm Nghiên cứu Dược học BioLab', scale: 'Tier 3 (Startup/Micro)', domain: 'biolab.vn', fields: ['Khác'] },
-        { name: 'Công ty Sản xuất Dược liệu MedVina', scale: 'Tier 3 (Startup/Micro)', domain: 'medvina.vn', fields: ['Khác'] }
+        { name: 'Hệ thống Nhà thuốc An Tâm Pharma', scale: 'Tier 2 (SME)', domain: 'antampharma.vn', fields: ['Y tế & Chăm sóc sức khỏe', 'Dược lâm sàng & Tư vấn Dùng thuốc'] },
+        { name: 'Công ty Cổ phần Dược phẩm Nam Việt (Navipharm)', scale: 'Tier 2 (SME)', domain: 'navipharm.vn', fields: ['Nghiên cứu & Sản xuất Dược phẩm'] },
+        { name: 'Phòng thí nghiệm Nghiên cứu Dược học BioLab', scale: 'Tier 3 (Startup/Micro)', domain: 'biolab.vn', fields: ['Kiểm nghiệm Dược liệu & Hóa dược'] },
+        { name: 'Công ty Sản xuất Dược liệu MedVina', scale: 'Tier 3 (Startup/Micro)', domain: 'medvina.vn', fields: ['Nghiên cứu & Sản xuất Dược phẩm'] }
     ]
 };
+
 
 const FACULTY_ACTIVITY_TEMPLATES = {
     1: [ // IT
@@ -604,9 +704,9 @@ async function seed() {
         }
 
         const fieldMap = {};
-        for (const [i, name] of ST_FIELDS.entries()) {
-            await conn.query('INSERT INTO fields (id, name, faculty_id) VALUES (?, ?, 0)', [i + 1, name]);
-            fieldMap[name] = i + 1;
+        for (const [i, field] of ST_FIELDS.entries()) {
+            await conn.query('INSERT INTO fields (id, name, faculty_id) VALUES (?, ?, ?)', [i + 1, field.name, field.facultyId]);
+            fieldMap[field.name] = i + 1;
         }
 
         const actTypeMap = {};
@@ -639,6 +739,14 @@ async function seed() {
         }
         console.log('✔ Fictional departments seeded.');
 
+        // Build a dept count map per faculty (supports 2 or 3 depts)
+        const deptCountMap = {};
+        for (let facId = 1; facId <= 22; facId++) {
+            const profile = FACULTY_PROFILES[facId];
+            const depts = FACULTY_DEPARTMENTS[profile.code] || [];
+            deptCountMap[facId] = depts.length;
+        }
+
         // Keep track of companies per faculty to balance
         const companiesPerFaculty = {};
         for (let i = 1; i <= 22; i++) companiesPerFaculty[i] = [];
@@ -660,8 +768,9 @@ async function seed() {
                 const statuses = ['Đang triển khai', 'Đã ký hợp tác', 'Đàm phán', 'Tiềm năng'];
                 const status = statuses[cIdx % statuses.length];
 
-                // Associate with department of this faculty (round-robin)
-                const deptId = deptMap[`${facId}_${cIdx % 2}`] || null;
+                // Associate with department of this faculty (round-robin across all depts)
+                const numDepts = deptCountMap[facId] || 2;
+                const deptId = deptMap[`${facId}_${cIdx % numDepts}`] || null;
 
                 await conn.query(
                     'INSERT INTO enterprises (id, name, scale_id, is_hcmc, status, department_id, faculty_id) VALUES (?, ?, ?, ?, ?, ?, ?)',

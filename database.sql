@@ -363,14 +363,113 @@ INSERT IGNORE INTO scales (id, name) VALUES
 (2, 'Tier 2 (SME)'),
 (3, 'Tier 3 (Startup/Micro)');
 
-INSERT IGNORE INTO fields (id, name) VALUES
-(1, 'Phần mềm & Outsource'),
-(2, 'Giải pháp CNTT & Chuyển đổi số'),
-(3, 'Hạ tầng & Viễn thông'),
-(4, 'Tài chính & Fintech'),
-(5, 'Phần cứng & Điện tử'),
-(6, 'Marketing & Truyền thông'),
-(7, 'Khác');
+-- Lĩnh vực/Ngành nghề chung (faculty_id = 0 => toàn hệ thống)
+INSERT IGNORE INTO fields (id, name, faculty_id) VALUES
+(1,  'Phần mềm & Outsource',              0),
+(2,  'Giải pháp CNTT & Chuyển đổi số',    0),
+(3,  'Hạ tầng & Viễn thông',              0),
+(4,  'Tài chính & Fintech',               0),
+(5,  'Phần cứng & Điện tử',               0),
+(6,  'Marketing & Truyền thông',           0),
+(7,  'Xây dựng & Kiến trúc',              0),
+(8,  'Thiết kế & Mỹ thuật',               0),
+(9,  'Y tế & Chăm sóc sức khỏe',          0),
+(10, 'Du lịch & Nhà hàng - Khách sạn',    0),
+(11, 'Giáo dục & Đào tạo',               0),
+(12, 'Pháp lý & Tư vấn',                  0),
+(13, 'Thương mại & Logistics',            0),
+(14, 'Khác',                              0),
+-- Lĩnh vực riêng Khoa Công nghệ Thông tin (faculty_id = 1)
+(101, 'Phát triển Phần mềm (Web/Mobile)',         1),
+(102, 'Trí tuệ Nhân tạo & Học máy',              1),
+(103, 'An toàn Thông tin & Bảo mật Mạng',        1),
+(104, 'Khoa học Dữ liệu & Phân tích',            1),
+(105, 'Điện toán Đám mây & DevOps',              1),
+-- Lĩnh vực riêng Khoa Quản trị Kinh doanh (faculty_id = 2)
+(201, 'Quản trị Doanh nghiệp & Nhân sự',         2),
+(202, 'Kinh doanh Quốc tế & Xuất nhập khẩu',     2),
+(203, 'Chuỗi Cung ứng & Logistics',              2),
+(204, 'Khởi nghiệp & Đổi mới sáng tạo',          2),
+-- Lĩnh vực riêng Khoa Quan hệ Công chúng (faculty_id = 3)
+(301, 'Tổ chức Sự kiện & MICE',                  3),
+(302, 'Quan hệ Truyền thông & Báo chí',           3),
+(303, 'Quảng bá Thương hiệu & PR Số',            3),
+-- Lĩnh vực riêng Khoa Kiến trúc (faculty_id = 4)
+(401, 'Thiết kế Kiến trúc Công trình',            4),
+(402, 'Quy hoạch Đô thị & Cảnh quan',            4),
+(403, 'Thiết kế Nội ngoại thất Không gian',       4),
+-- Lĩnh vực riêng Khoa Mỹ thuật (faculty_id = 5)
+(501, 'Hội họa & Điêu khắc Tạo hình',            5),
+(502, 'Mỹ thuật Ứng dụng & Illustration',        5),
+(503, 'Nghệ thuật Thị giác & Triển lãm',          5),
+-- Lĩnh vực riêng Khoa Thiết kế Công nghiệp (faculty_id = 6)
+(601, 'Thiết kế Sản phẩm Công nghiệp',           6),
+(602, 'Thiết kế Bao bì & Kiểu dáng Hàng tiêu dùng', 6),
+(603, 'Tạo mẫu Nhanh & In 3D',                   6),
+-- Lĩnh vực riêng Khoa Thiết kế Đồ họa (faculty_id = 7)
+(701, 'Thiết kế Đồ họa & Nhận diện Thương hiệu', 7),
+(702, 'Thiết kế UI/UX & Truyền thông Số',        7),
+(703, 'Sản xuất Nội dung Sáng tạo & Motion',     7),
+-- Lĩnh vực riêng Khoa Thiết kế Nội thất (faculty_id = 8)
+(801, 'Thiết kế Nội thất Nhà ở & Thương mại',    8),
+(802, 'Trang trí Không gian & Phong thủy',        8),
+(803, 'Sản xuất Nội thất Gỗ & Vật liệu xây dựng', 8),
+-- Lĩnh vực riêng Khoa Thiết kế Thời trang (faculty_id = 9)
+(901, 'Thiết kế Thời trang & May mặc cao cấp',   9),
+(902, 'Công nghệ Dệt may & Phụ liệu thời trang', 9),
+(903, 'Thương mại Thời trang & Bán lẻ',          9),
+-- Lĩnh vực riêng Khoa Kỹ thuật Công trình (faculty_id = 10)
+(1001, 'Thi công & Quản lý Dự án Xây dựng',     10),
+(1002, 'Vật liệu Xây dựng & Kết cấu Công trình', 10),
+(1003, 'Hạ tầng Giao thông & Thủy lợi',         10),
+-- Lĩnh vực riêng Khoa Kỹ thuật Cơ - Điện tử (faculty_id = 11)
+(1101, 'Tự động hóa & Robotics',                11),
+(1102, 'Kỹ thuật Điện & Điện tử',               11),
+(1103, 'Thiết bị Công nghiệp & IoT',            11),
+-- Lĩnh vực riêng Khoa Kinh tế (faculty_id = 12)
+(1201, 'Phân tích Kinh tế & Nghiên cứu Thị trường', 12),
+(1202, 'Thương mại Quốc tế & Chính sách Kinh tế', 12),
+(1203, 'Đầu tư & Quản lý Tài sản',              12),
+-- Lĩnh vực riêng Khoa Marketing (faculty_id = 13)
+(1301, 'Digital Marketing & Social Media',      13),
+(1302, 'Nghiên cứu Hành vi Tiêu dùng & CRM',    13),
+(1303, 'Quảng cáo Đa kênh & Performance Ads',   13),
+-- Lĩnh vực riêng Khoa Tài chính - Kế toán (faculty_id = 14)
+(1401, 'Kiểm toán & Dịch vụ Kế toán',           14),
+(1402, 'Ngân hàng & Dịch vụ Tài chính',         14),
+(1403, 'Fintech & Thanh toán Điện tử',           14),
+-- Lĩnh vực riêng Khoa Du lịch (faculty_id = 15)
+(1501, 'Lữ hành & Điều hành Tour',               15),
+(1502, 'Du lịch Sinh thái & Cộng đồng',          15),
+(1503, 'Hướng dẫn Du lịch Quốc tế',             15),
+-- Lĩnh vực riêng Khoa Khách sạn - Nhà hàng (faculty_id = 16)
+(1601, 'Quản lý Khách sạn & Resort',             16),
+(1602, 'Ẩm thực & Dịch vụ Nhà hàng',            16),
+(1603, 'Tổ chức Tiệc & Dịch vụ Lưu trú',        16),
+-- Lĩnh vực riêng Khoa Luật (faculty_id = 17)
+(1701, 'Luật Doanh nghiệp & Thương mại',         17),
+(1702, 'Luật Lao động & Bảo hiểm Xã hội',        17),
+(1703, 'Luật Quốc tế & Trọng tài Thương mại',    17),
+-- Lĩnh vực riêng Khoa Ngoại ngữ (faculty_id = 18)
+(1801, 'Dạy học Tiếng Anh & Chứng chỉ Quốc tế', 18),
+(1802, 'Biên dịch & Phiên dịch Thương mại',      18),
+(1803, 'Bản địa hóa & Văn hóa Đa ngôn ngữ',      18),
+-- Lĩnh vực riêng Khoa Truyền thông & Báo chí (faculty_id = 19)
+(1901, 'Báo chí & Sản xuất Nội dung Tin tức',    19),
+(1902, 'Truyền thông Đa phương tiện & Podcast',   19),
+(1903, 'Sản xuất Phim & Hậu kỳ',                 19),
+-- Lĩnh vực riêng Khoa Tâm lý học (faculty_id = 20)
+(2001, 'Tham vấn Tâm lý Học đường',              20),
+(2002, 'Trị liệu Tâm lý Lâm sàng',               20),
+(2003, 'Phát triển Kỹ năng Sống & Đào tạo Nhân lực', 20),
+-- Lĩnh vực riêng Khoa Điều dưỡng (faculty_id = 21)
+(2101, 'Chăm sóc Điều dưỡng Bệnh viện',          21),
+(2102, 'Chăm sóc Sức khỏe Người cao tuổi',       21),
+(2103, 'Điều dưỡng Cộng đồng & Y tế Dự phòng',   21),
+-- Lĩnh vực riêng Khoa Dược (faculty_id = 22)
+(2201, 'Dược lâm sàng & Tư vấn Dùng thuốc',      22),
+(2202, 'Nghiên cứu & Sản xuất Dược phẩm',        22),
+(2203, 'Kiểm nghiệm Dược liệu & Hóa dược',       22);
 
 INSERT IGNORE INTO act_types (id, name) VALUES
 (1, 'Tuyển dụng & Thực tập'),
@@ -390,41 +489,6 @@ INSERT IGNORE INTO targets (id, name) VALUES
 (6, 'Giảng viên'),
 (7, 'Tất cả sinh viên');
 
-INSERT IGNORE INTO enterprises (id, name, tax_code, scale_id, is_hcmc, status, faculty_id) VALUES
-(1, 'FPT Software', '0304200420', 1, TRUE, 'Đang triển khai', 1),
-(2, 'VNG Corporation', '0303456789', 1, TRUE, 'Đàm phán', 1),
-(3, 'Unilever Vietnam', '0301112223', 2, TRUE, 'Đang triển khai', 2),
-(4, 'Masan Group', '0309998887', 2, TRUE, 'Tiềm năng', 2);
-
-INSERT IGNORE INTO enterprise_representatives (enterprise_id, title, full_name, role, phone, email, is_primary) VALUES
-(1, 'Ông', 'Nguyễn Văn Hùng', 'HR Director', '02873004666', 'contact@fpt.com', TRUE),
-(2, 'Bà', 'Trần Thị Lan', 'Talent Manager', '02811112222', 'contact@vng.com.vn', TRUE),
-(3, 'Ông', 'Lê Văn Nam', 'HR Manager', '02833334444', 'hr@unilever.com', TRUE),
-(4, 'Bà', 'Phạm Thị Hoa', 'Recruitment Lead', '02855556666', 'hr@masan.com', TRUE);
-
-INSERT IGNORE INTO enterprise_addresses (enterprise_id, building_street, district, province, country, is_main) VALUES
-(1, 'Tòa nhà FPT, Đường số 17A', 'Quận 9', 'TP. Hồ Chí Minh', 'Việt Nam', TRUE),
-(2, '182 Lê Đại Hành', 'Quận 11', 'TP. Hồ Chí Minh', 'Việt Nam', TRUE),
-(3, '156 Nguyễn Lương Bằng', 'Quận 7', 'TP. Hồ Chí Minh', 'Việt Nam', TRUE),
-(4, '9-11 Đoàn Văn Bơ', 'Quận 4', 'TP. Hồ Chí Minh', 'Việt Nam', TRUE);
-
-INSERT IGNORE INTO enterprise_fields (enterprise_id, field_id) VALUES
-(1, 1), (2, 1), (2, 2), (3, 2), (3, 3), (4, 2);
-
-INSERT IGNORE INTO activities (id, enterprise_id, title, detail, start_date, collaboration_date, status, faculty_id) VALUES
-(1, 1, 'Tuyển dụng Fresher ReactJS', 'Tuyển dụng 50 sinh viên năm cuối ngành CNTT', '2024-05-10', '2024-04-01', 'Đã triển khai', 1),
-(2, 1, 'Workshop: Định hướng nghề nghiệp IT', 'Chia sẻ kỹ năng phỏng vấn từ chuyên gia FPT', '2024-03-20', '2024-03-01', 'Đã triển khai', 1),
-(3, 3, 'Thực tập sinh Marketing', 'Chương trình kỳ thực tập mùa hè 2024', '2024-06-01', NULL, 'Đề xuất', 2);
-
-INSERT IGNORE INTO activity_type_map (activity_id, type_id) VALUES (1, 1), (2, 3), (3, 2);
-
-INSERT IGNORE INTO mous (id, mou_code, enterprise_id, signing_date, partner_contact, org_type, country, collaboration_scope, executing_unit_id, vlu_contact, tasks_ay24_25, next_steps, past_activities, related_data, working_dir, activity_id, file_url, faculty_id) VALUES
-(1, 'MOU-FPT-2024-001', 1, '2024-03-15', 'Ông Nguyễn Văn Hùng - HR Director', 'Tập đoàn Công nghệ', 'Việt Nam', 'Hợp tác đào tạo, thực tập sinh viên ngành CNTT; tổ chức hội thảo nghề nghiệp; tuyển dụng sinh viên tốt nghiệp; cung cấp học bổng cho sinh viên xuất sắc; chia sẻ chuyên gia giảng dạy và hướng dẫn luận văn tốt nghiệp.', NULL, 'ThS. Nguyễn Thị Hoa - Trưởng Ban Quan hệ Doanh nghiệp', 'Tuyển 50 thực tập sinh ReactJS/NodeJS học kỳ II/2024; tổ chức 2 buổi workshop định hướng nghề nghiệp (tháng 10 và tháng 12/2024); ký kết chương trình học bổng "FPT Talent" năm 2024.', 'Ký kết biên bản triển khai chi tiết Q2/2025; tổ chức Ngày hội Tuyển dụng FPT × VLU tháng 5/2025; mở rộng hợp tác sang ngành Trí tuệ Nhân tạo và Khoa học Dữ liệu.', 'Ký kết MOU lần đầu năm 2022; tổ chức 3 buổi hội thảo chuyên ngành CNTT (2022-2023); tiếp nhận 30 thực tập sinh mỗi năm học.', 'Đã tiếp nhận 120 sinh viên thực tập từ 2022-2024; 15 sinh viên nhận học bổng FPT Talent; 85% sinh viên được tuyển dụng chính thức sau thực tập.', NULL, 1, NULL, 1);
-
-INSERT IGNORE INTO students (student_code, name, class, major, activity_id, faculty_id) VALUES
-('207CT50111', 'Nguyễn Văn A', 'K26-IT1', 'Kỹ thuật Phần mềm', 1, 1),
-('207CT50112', 'Trần Thị B', 'K26-IT2', 'Khoa học Máy tính', 1, 1),
-('207BA50113', 'Lê Văn C', 'K27-BA1', 'Quản trị Marketing', 3, 2);
 -- 21. tasks (NEW FOR KANBAN V2)
 CREATE TABLE IF NOT EXISTS tasks (
     id INT AUTO_INCREMENT PRIMARY KEY,
