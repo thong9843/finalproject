@@ -128,10 +128,10 @@ TABLE_COUNT=$(mysql -uroot -prootpassword -sse "SELECT COUNT(*) FROM information
 if [ "$TABLE_COUNT" -gt 0 ]; then
     echo "✔ Database is already initialized. Skipping migrations to preserve data."
 else
-    echo "Running database migrations and seeding..."
-    node /app/backend/migrations/run-sql.js
-    node /app/backend/seed.js
-    echo "✔ Database migrations and seeding completed."
+    echo "Running setup script..."
+    node /app/setup.js
+
+    echo "✔ Database migrations, seed and setup completed."
 fi
 
 # Start Node.js Backend Server in background
@@ -143,5 +143,3 @@ node src/index.js &
 echo "Starting Frontend Vite Dev Server on port 8080..."
 cd /app/frontend
 npm run dev -- --host 0.0.0.0 --port 8080
-
-

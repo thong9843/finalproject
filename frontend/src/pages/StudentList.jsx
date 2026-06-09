@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Table, Tag, Card, Row, Col, Statistic, Form, Input, Select, Button, Modal, message, Space, DatePicker, InputNumber, Popover, Badge, Divider, Switch, App as AntApp, Spin, Checkbox, Drawer, Descriptions, Tooltip, Pagination } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, SearchOutlined, SyncOutlined, ClockCircleOutlined, CheckCircleOutlined, TeamOutlined, UploadOutlined, DownloadOutlined, FilterOutlined, SortAscendingOutlined, ClearOutlined, CalendarOutlined, EyeOutlined } from '@ant-design/icons';
+import { PlusOutlined, EditOutlined, DeleteOutlined, SearchOutlined, SyncOutlined, ClockCircleOutlined, CheckCircleOutlined, TeamOutlined, UploadOutlined, DownloadOutlined, FilterOutlined, SortAscendingOutlined, ClearOutlined, CalendarOutlined, EyeOutlined, FileTextOutlined } from '@ant-design/icons';
 import ImportModal from '../components/ImportModal';
 import api from '../utils/api';
 import dayjs from 'dayjs';
@@ -9,6 +9,15 @@ import * as XLSX from 'xlsx';
 import Cookies from 'js-cookie';
 
 const { Option } = Select;
+const { TextArea } = Input;
+
+const STICKY_COLORS = [
+  { name: 'Vàng', hex: '#fef08a' },
+  { name: 'Xanh dương', hex: '#bfdbfe' },
+  { name: 'Xanh lá', hex: '#bbf7d0' },
+  { name: 'Hồng', hex: '#fbcfe8' },
+  { name: 'Tím', hex: '#e9d5ff' },
+];
 
 const StudentList = () => {
     const location = useLocation();
@@ -40,6 +49,13 @@ const StudentList = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(12);
 
+    // Notes states
+    const [isNoteModalVisible, setIsNoteModalVisible] = useState(false);
+    const [currentNoteRecord, setCurrentNoteRecord] = useState(null);
+    const [noteForm] = Form.useForm();
+    const [existingNoteId, setExistingNoteId] = useState(null);
+    const [savingNote, setSavingNote] = useState(false);
+
     useEffect(() => {
         setCurrentPage(1);
     }, [searchText, activeTab, sortOption, dateRange, filterEnterprise, filterMajor, filterGpa, filterFaculty, showDeleted]);
@@ -49,6 +65,64 @@ const StudentList = () => {
     const handleViewDetail = (record) => {
         setSelectedStudent(record);
         setIsDrawerOpen(true);
+    };
+
+    const handleOpenNoteModal = async (record) => {
+        setCurrentNoteRecord(record);
+        setExistingNoteId(null);
+        noteForm.resetFields();
+        noteForm.setFieldsValue({ color: '#fef08a' });
+        setIsNoteModalVisible(true);
+
+        try {
+            const res = await api.get(`/notes/reference?student_id=${record.id}`);
+            if (res.data) {
+                setExistingNoteId(res.data.id);
+                noteForm.setFieldsValue({
+                    title: res.data.title,
+                    content: res.data.content,
+                    color: res.data.color || '#fef08a'
+                });
+            }
+        } catch (error) {
+            console.error('Lỗi khi tải ghi chú:', error);
+        }
+    };
+
+    const handleSaveNote = async (values) => {
+        setSavingNote(true);
+        try {
+            await api.post('/notes/reference', {
+                ...values,
+                student_id: currentNoteRecord.id
+            });
+            message.success('Lưu ghi chú thành công');
+            setIsNoteModalVisible(false);
+            window.dispatchEvent(new Event('refresh-notes'));
+        } catch (error) {
+            message.error(error.response?.data?.message || 'Lỗi khi lưu ghi chú');
+        } finally {
+            setSavingNote(false);
+        }
+    };
+
+    const handleDeleteNote = async () => {
+        if (!existingNoteId) return;
+        modal.confirm({
+            title: 'Xác nhận xóa ghi chú?',
+            content: 'Ghi chú này sẽ bị xóa vĩnh viễn và gỡ bỏ khỏi bảng Kanban.',
+            okButtonProps: { danger: true, className: '!bg-red-600 hover:!bg-red-500 text-white' },
+            onOk: async () => {
+                try {
+                    await api.delete(`/notes/${existingNoteId}`);
+                    message.success('Xóa ghi chú thành công');
+                    setIsNoteModalVisible(false);
+                    window.dispatchEvent(new Event('refresh-notes'));
+                } catch (error) {
+                    message.error('Lỗi khi xóa ghi chú');
+                }
+            }
+        });
     };
 
     useEffect(() => {
@@ -489,6 +563,9 @@ const StudentList = () => {
                 }
                 return (
                     <Space>
+                        <Tooltip title="Ghi chú">
+                            <Button type="text" size="small" icon={<FileTextOutlined className="text-slate-500" />} onClick={() => handleOpenNoteModal(record)} />
+                        </Tooltip>
                         <Tooltip title="Xem chi tiết">
                             <Button type="text" size="small" icon={<EyeOutlined />} onClick={() => handleViewDetail(record)} />
                         </Tooltip>
@@ -792,6 +869,7 @@ const StudentList = () => {
                                     <Space>
                                         {record.is_deleted !== 1 ? (
                                             <>
+                                                <Button type="text" size="small" icon={<FileTextOutlined className="text-slate-500" />} onClick={() => handleOpenNoteModal(record)} />
                                                 <Button type="text" size="small" icon={<EyeOutlined />} onClick={() => handleViewDetail(record)} />
                                                 <Button type="text" size="small" icon={<EditOutlined />} onClick={() => openEditModal(record)} />
                                                 <Button type="text" size="small" danger icon={<DeleteOutlined />} onClick={() => {
@@ -988,6 +1066,48 @@ const StudentList = () => {
                     </div>
                 )}
             </Drawer>
+
+            {/* Note Modal */}
+            <Modal
+                title={<div className="text-lg font-bold flex items-center gap-2">📝 Ghi chú sinh viên: <span className="text-vluRed">{currentNoteRecord?.name}</span></div>}
+                open={isNoteModalVisible}
+                onCancel={() => setIsNoteModalVisible(false)}
+                footer={[
+                    existingNoteId && (
+                        <Button key="delete" danger onClick={handleDeleteNote} className="float-left">
+                            Xóa ghi chú
+                        </Button>
+                    ),
+                    <Button key="cancel" onClick={() => setIsNoteModalVisible(false)}>
+                        Hủy
+                    </Button>,
+                    <Button key="save" type="primary" className="bg-blue-600 hover:bg-blue-500 border-none" loading={savingNote} onClick={() => noteForm.submit()}>
+                        Lưu ghi chú
+                    </Button>
+                ].filter(Boolean)}
+                destroyOnClose
+            >
+                <Form form={noteForm} layout="vertical" onFinish={handleSaveNote} className="mt-4">
+                    <Form.Item name="title" label="Tiêu đề ghi chú">
+                        <Input placeholder="Nhập tiêu đề (tùy chọn)..." className="rounded-lg" />
+                    </Form.Item>
+                    <Form.Item name="content" label="Nội dung ghi chú" rules={[{ required: true, message: 'Vui lòng nhập nội dung ghi chú' }]}>
+                        <TextArea rows={4} placeholder="Nhập nội dung ghi chú..." className="rounded-lg" />
+                    </Form.Item>
+                    <Form.Item name="color" label="Màu sắc thẻ ghi chú" initialValue="#fef08a">
+                        <Select className="rounded-lg">
+                            {STICKY_COLORS.map(c => (
+                                <Option key={c.hex} value={c.hex}>
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-3.5 h-3.5 rounded-full border border-black/15" style={{ backgroundColor: c.hex }} />
+                                        {c.name}
+                                    </div>
+                                </Option>
+                            ))}
+                        </Select>
+                    </Form.Item>
+                </Form>
+            </Modal>
         </div>
     );
 };
