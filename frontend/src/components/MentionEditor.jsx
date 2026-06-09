@@ -51,6 +51,40 @@ const htmlToMarkdown = (html) => {
   // Loại bỏ thẻ span phụ của audio-label để tránh lỗi regex match nhầm span đóng của nó
   text = text.replace(/<span\s+[^>]*class=["']audio-label["'][^>]*>([\s\S]*?)<\/span>/g, '');
 
+  // *** BƯỚC QUAN TRỌNG: Đưa mention span ra khỏi thẻ formatting (strong, em, s, u...) ***
+  // Khi TipTap export HTML, mention thường nằm BÊN TRONG thẻ <strong>/<em>/..., ví dụ:
+  //   <strong>Test <span data-type="mention">...</span></strong>
+  // Nếu giữ nguyên, khi chuyển đổi sẽ tạo ra **Test @[...](entity:...)** 
+  // Khi render lại, `renderTextWithMentions` split tại @[...] → phần trước có **Test mà không có ** đóng → lỗi
+  // Giải pháp: tách mention ra ngoài formatting tag trước khi xử lý
+  const FORMATTING_TAGS_RE = ['strong', 'b', 'em', 'i', 's', 'del', 'strike', 'u'];
+  FORMATTING_TAGS_RE.forEach(tag => {
+    text = text.replace(
+      new RegExp(`(<${tag}(?:\\s[^>]*)?>)([\\s\\S]*?)(<\\/${tag}>)`, 'gi'),
+      (match, open, content, close) => {
+        // Chỉ xử lý nếu content chứa mention span
+        if (!/<span[^>]*data-type=["']mention["']/.test(content)) return match;
+        const mentionRe = /(<span[^>]*data-type=["']mention["'][^>]*>[\s\S]*?<\/span>)/gi;
+        const parts = [];
+        let lastIdx = 0;
+        let m2;
+        mentionRe.lastIndex = 0;
+        while ((m2 = mentionRe.exec(content)) !== null) {
+          const before = content.slice(lastIdx, m2.index);
+          // Chỉ bọc text thực sự (không phải khoảng trắng thuần)
+          if (before.trim()) parts.push(`${open}${before.trimEnd()}${close}`);
+          else if (before) parts.push(before);
+          parts.push(m2[1]); // mention span giữ nguyên
+          lastIdx = m2.index + m2[0].length;
+        }
+        const after = content.slice(lastIdx);
+        if (after.trim()) parts.push(`${open}${after.trimStart()}${close}`);
+        else if (after) parts.push(after);
+        return parts.join('');
+      }
+    );
+  });
+
   // Chuyển đổi ngược lại các thẻ span mention của Tiptap về dạng text thô @[Label](entity:type:id)
   text = text.replace(/<span\s+([^>]*data-type=["']mention["'][^>]*)>(.*?)<\/span>/g, (match, attributesGroup) => {
     const idMatch = attributesGroup.match(/data-id=["']([^'"]*)["']/);
@@ -91,15 +125,16 @@ const htmlToMarkdown = (html) => {
   });
   
   // Chuyển đổi các tag in đậm, in nghiêng, gạch ngang về Markdown
+  // Dùng callback để trim() khoảng trắng bên trong marker → tránh lỗi CommonMark **text ** (space trước ** không hợp lệ)
   text = text
-    .replace(/<strong[^>]*>([\s\S]*?)<\/strong>/g, '**$1**')
-    .replace(/<b[^>]*>([\s\S]*?)<\/b>/g, '**$1**')
-    .replace(/<em[^>]*>([\s\S]*?)<\/em>/g, '*$1*')
-    .replace(/<i[^>]*>([\s\S]*?)<\/i>/g, '*$1*')
-    .replace(/<u[^>]*>([\s\S]*?)<\/u>/g, '<u>$1</u>')
-    .replace(/<s[^>]*>([\s\S]*?)<\/s>/g, '~~$1~~')
-    .replace(/<del[^>]*>([\s\S]*?)<\/del>/g, '~~$1~~')
-    .replace(/<strike[^>]*>([\s\S]*?)<\/strike>/g, '~~$1~~');
+    .replace(/<strong[^>]*>([\s\S]*?)<\/strong>/g, (_, c) => { c = c.trim(); return c ? `**${c}**` : ''; })
+    .replace(/<b[^>]*>([\s\S]*?)<\/b>/g, (_, c) => { c = c.trim(); return c ? `**${c}**` : ''; })
+    .replace(/<em[^>]*>([\s\S]*?)<\/em>/g, (_, c) => { c = c.trim(); return c ? `*${c}*` : ''; })
+    .replace(/<i[^>]*>([\s\S]*?)<\/i>/g, (_, c) => { c = c.trim(); return c ? `*${c}*` : ''; })
+    .replace(/<u[^>]*>([\s\S]*?)<\/u>/g, (_, c) => { c = c.trim(); return c ? `<u>${c}</u>` : ''; })
+    .replace(/<s[^>]*>([\s\S]*?)<\/s>/g, (_, c) => { c = c.trim(); return c ? `~~${c}~~` : ''; })
+    .replace(/<del[^>]*>([\s\S]*?)<\/del>/g, (_, c) => { c = c.trim(); return c ? `~~${c}~~` : ''; })
+    .replace(/<strike[^>]*>([\s\S]*?)<\/strike>/g, (_, c) => { c = c.trim(); return c ? `~~${c}~~` : ''; });
   
   // Chuyển các khối paragraph <p> của Tiptap về ký tự xuống dòng \n để giữ cấu trúc văn bản thô
   // Đầu tiên convert các paragraph trống (như <p><br></p>) sang \n
