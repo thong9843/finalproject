@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { Card, Row, Col, Statistic, Spin, Empty, Segmented, DatePicker, Button, message } from 'antd';
-import { TeamOutlined, CheckCircleOutlined, ClockCircleOutlined, TrophyOutlined, CalendarOutlined, DownloadOutlined, BarChartOutlined } from '@ant-design/icons';
+import { Card, Row, Col, Statistic, Spin, Empty, Segmented, DatePicker, Button, message, Table, Input, Progress, Select, Tag } from 'antd';
+import { TeamOutlined, CheckCircleOutlined, ClockCircleOutlined, TrophyOutlined, CalendarOutlined, DownloadOutlined, BarChartOutlined, SearchOutlined } from '@ant-design/icons';
 import api from '../utils/api';
 import { Bar, Doughnut } from 'react-chartjs-2';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, Title } from 'chart.js';
@@ -8,6 +8,8 @@ import dayjs from 'dayjs';
 import isoWeek from 'dayjs/plugin/isoWeek';
 import quarterOfYear from 'dayjs/plugin/quarterOfYear';
 import * as XLSX from 'xlsx';
+import Cookies from 'js-cookie';
+import { useTheme } from '../context/ThemeContext';
 
 dayjs.extend(isoWeek);
 dayjs.extend(quarterOfYear);
@@ -44,10 +46,41 @@ const getDateRange = (period) => {
 };
 
 const ReportStudents = () => {
+    const { isDark } = useTheme();
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [period, setPeriod] = useState('year');
     const [customRange, setCustomRange] = useState(null);
+    const [enterpriseSearch, setEnterpriseSearch] = useState('');
+
+    const [faculties, setFaculties] = useState([]);
+    const [filterFaculty, setFilterFaculty] = useState(undefined);
+
+    const userCookie = Cookies.get('user');
+    const user = useMemo(() => {
+        try {
+            return userCookie ? JSON.parse(userCookie) : null;
+        } catch (e) {
+            return null;
+        }
+    }, [userCookie]);
+
+    const isAdmin = user && user.role === 'ADMIN';
+
+    useEffect(() => {
+        document.title = "Báo cáo Sinh viên thực tập | VLU Enterprise Link Manager";
+        if (isAdmin) {
+            const fetchFaculties = async () => {
+                try {
+                    const res = await api.get('/structure/faculties');
+                    setFaculties(res.data || []);
+                } catch (e) {
+                    console.error('Error fetching faculties:', e);
+                }
+            };
+            fetchFaculties();
+        }
+    }, [isAdmin]);
 
     const dateRange = useMemo(() => {
         if (period === 'custom' && customRange) {
@@ -57,12 +90,8 @@ const ReportStudents = () => {
     }, [period, customRange]);
 
     useEffect(() => {
-        document.title = "Báo cáo Sinh viên thực tập | VLU Enterprise Link Manager";
-    }, []);
-
-    useEffect(() => {
         fetchData();
-    }, [dateRange]);
+    }, [dateRange, filterFaculty]);
 
     const fetchData = async () => {
         setLoading(true);
@@ -71,6 +100,7 @@ const ReportStudents = () => {
             const [from, to] = dateRange;
             if (from) params.date_from = from.format('YYYY-MM-DD');
             if (to) params.date_to = to.format('YYYY-MM-DD');
+            if (filterFaculty) params.faculty_id = filterFaculty;
             const res = await api.get('/reports/students-by-enterprise', { params });
             setData(res.data);
         } catch (error) {
@@ -121,6 +151,20 @@ const ReportStudents = () => {
         XLSX.writeFile(wb, `BaoCaoSinhVien_${dayjs().format('YYYYMMDD')}.xlsx`);
     };
 
+    const filteredEnterprises = useMemo(() => {
+        if (!data || !data.byEnterprise) return [];
+        return data.byEnterprise.filter(item => 
+            item.enterprise.toLowerCase().includes(enterpriseSearch.toLowerCase())
+        );
+    }, [data, enterpriseSearch]);
+
+    const chartWidth = useMemo(() => {
+        const list = data?.byEnterprise || [];
+        if (list.length === 0) return '100%';
+        const estimatedWidth = list.length * 60; // 60px per company
+        return estimatedWidth > 800 ? `${estimatedWidth}px` : '100%';
+    }, [data]);
+
     if (loading) return <div className="flex justify-center items-center h-96"><Spin size="large" /></div>;
     if (!data) return <Empty description="Không có dữ liệu" />;
 
@@ -153,16 +197,36 @@ const ReportStudents = () => {
         ],
     };
 
+    const textColor = isDark ? '#f3f4f6' : '#374151';
+    const gridColor = isDark ? 'rgba(75, 85, 99, 0.2)' : 'rgba(229, 231, 235, 0.6)';
+
     const barOptions = {
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
-            legend: { position: 'top' },
+            legend: { 
+                position: 'top',
+                labels: { color: textColor, font: { family: 'inherit' } }
+            },
             title: { display: false },
+            tooltip: {
+                backgroundColor: isDark ? '#1f2937' : '#ffffff',
+                titleColor: isDark ? '#f3f4f6' : '#1f2937',
+                bodyColor: isDark ? '#d1d5db' : '#4b5563',
+                borderColor: isDark ? '#374151' : '#e5e7eb',
+                borderWidth: 1,
+            }
         },
         scales: {
-            x: { grid: { display: false } },
-            y: { beginAtZero: true, ticks: { stepSize: 1 } },
+            x: { 
+                grid: { display: false },
+                ticks: { color: textColor }
+            },
+            y: { 
+                beginAtZero: true, 
+                grid: { color: gridColor, borderDash: [4, 4] },
+                ticks: { color: textColor, stepSize: 1 } 
+            },
         },
     };
 
@@ -171,10 +235,10 @@ const ReportStudents = () => {
         datasets: [{
             data: byMajor.map(i => i.count),
             backgroundColor: [
-                '#DA251D', '#1890ff', '#52c41a', '#faad14', 
-                '#722ed1', '#eb2f96', '#13c2c2', '#fa8c16'
+                '#ef4444', '#3b82f6', '#10b981', '#f59e0b', 
+                '#8b5cf6', '#ec4899', '#14b8a6', '#f97316'
             ],
-            borderWidth: 2,
+            borderWidth: isDark ? 0 : 2,
             borderColor: '#fff',
         }],
     };
@@ -183,9 +247,105 @@ const ReportStudents = () => {
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
-            legend: { position: 'right', labels: { boxWidth: 12, padding: 16 } },
+            legend: { 
+                position: 'right', 
+                labels: { 
+                    boxWidth: 12, 
+                    padding: 16,
+                    color: textColor,
+                    font: { family: 'inherit', size: 11 }
+                } 
+            },
+            tooltip: {
+                backgroundColor: isDark ? '#1f2937' : '#ffffff',
+                titleColor: isDark ? '#f3f4f6' : '#1f2937',
+                bodyColor: isDark ? '#d1d5db' : '#4b5563',
+                borderColor: isDark ? '#374151' : '#e5e7eb',
+                borderWidth: 1,
+            }
         },
+        cutout: '60%'
     };
+
+
+
+    const enterpriseColumns = [
+        {
+            title: 'Doanh nghiệp',
+            dataIndex: 'enterprise',
+            key: 'enterprise',
+            sorter: (a, b) => a.enterprise.localeCompare(b.enterprise, 'vi'),
+            render: (text) => <span className="font-semibold text-gray-700 dark:text-gray-200">{text}</span>
+        },
+        {
+            title: 'Tổng số SV',
+            dataIndex: 'total',
+            key: 'total',
+            sorter: (a, b) => a.total - b.total,
+            align: 'center',
+            render: (text) => <span className="font-bold">{text}</span>
+        },
+        {
+            title: 'Đang thực tập',
+            dataIndex: 'active',
+            key: 'active',
+            sorter: (a, b) => a.active - b.active,
+            align: 'center',
+            render: (text) => <Tag color="processing" className="m-0">{text}</Tag>
+        },
+        {
+            title: 'Hoàn thành',
+            dataIndex: 'completed',
+            key: 'completed',
+            sorter: (a, b) => a.completed - b.completed,
+            align: 'center',
+            render: (text) => <Tag color="success" className="m-0">{text}</Tag>
+        },
+        {
+            title: 'Chờ phân công',
+            dataIndex: 'pending',
+            key: 'pending',
+            sorter: (a, b) => a.pending - b.pending,
+            align: 'center',
+            render: (text) => <Tag color="warning" className="m-0">{text}</Tag>
+        },
+        {
+            title: 'Tỉ lệ %',
+            key: 'ratio',
+            sorter: (a, b) => a.total - b.total,
+            width: 150,
+            render: (_, record) => {
+                const totalAll = overview.total || 1;
+                const percent = Math.round((record.total / totalAll) * 100);
+                return <Progress percent={percent} size="small" strokeColor="#1890ff" />;
+            }
+        }
+    ];
+
+    const majorColumns = [
+        {
+            title: 'Ngành học',
+            dataIndex: 'major',
+            key: 'major',
+            render: (text) => <span className="font-medium text-gray-700 dark:text-gray-200">{text}</span>
+        },
+        {
+            title: 'Số lượng',
+            dataIndex: 'count',
+            key: 'count',
+            align: 'center',
+            render: (text) => <span className="font-bold">{text}</span>
+        },
+        {
+            title: 'Tỷ lệ %',
+            key: 'percentage',
+            render: (_, record) => {
+                const totalAll = overview.total || 1;
+                const percent = Math.round((record.count / totalAll) * 100);
+                return <Progress percent={percent} size="small" status="active" strokeColor="#52c41a" />;
+            }
+        }
+    ];
 
     return (
         <div>
@@ -211,38 +371,74 @@ const ReportStudents = () => {
                 </div>
             </div>
 
-            {/* Period Selector */}
-            <div className="bg-gradient-to-r from-slate-50 to-gray-50 dark:from-gray-800/50 dark:to-gray-900/50 rounded-2xl p-4 mb-6 border border-gray-100 dark:border-gray-700 flex flex-col sm:flex-row sm:items-center gap-4">
-                <div className="flex items-center gap-2 text-gray-500 flex-shrink-0">
-                    <CalendarOutlined className="text-lg" />
-                    <span className="text-sm font-medium">Khoảng thời gian:</span>
+            {/* Period & Faculty Selector */}
+            <div className="bg-gradient-to-r from-slate-50 to-gray-50 dark:from-gray-800/50 dark:to-gray-900/50 rounded-2xl p-4 mb-6 border border-gray-100 dark:border-gray-700 flex flex-col lg:flex-row lg:items-center gap-4 justify-between">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-4 flex-1">
+                    <div className="flex items-center gap-2 text-gray-500 flex-shrink-0">
+                        <CalendarOutlined className="text-lg" />
+                        <span className="text-sm font-medium">Khoảng thời gian:</span>
+                    </div>
+                    <div className="w-full sm:w-auto overflow-x-auto whitespace-nowrap pb-2 sm:pb-0 scrollbar-none">
+                        <Segmented
+                            options={periodOptions}
+                            value={period}
+                            onChange={(val) => {
+                                setPeriod(val);
+                                if (val !== 'custom') setCustomRange(null);
+                            }}
+                            className="bg-white dark:bg-gray-800 shadow-sm inline-block sm:inline-flex"
+                        />
+                    </div>
+                    {period === 'custom' && (
+                        <RangePicker
+                            format="DD/MM/YYYY"
+                            value={customRange}
+                            onChange={setCustomRange}
+                            placeholder={['Từ ngày', 'Đến ngày']}
+                            className="rounded-lg w-full sm:w-auto flex-shrink-0"
+                            allowClear={false}
+                        />
+                    )}
                 </div>
-                <div className="w-full sm:w-auto overflow-x-auto whitespace-nowrap pb-2 sm:pb-0 scrollbar-none">
-                    <Segmented
-                        options={periodOptions}
-                        value={period}
-                        onChange={(val) => {
-                            setPeriod(val);
-                            if (val !== 'custom') setCustomRange(null);
-                        }}
-                        className="bg-white dark:bg-gray-800 shadow-sm inline-block sm:inline-flex"
-                    />
+
+                <div className="flex flex-col sm:flex-row sm:items-center gap-4 flex-shrink-0">
+                    {isAdmin ? (
+                        <div className="flex items-center gap-2 w-full sm:w-auto">
+                            <span className="text-sm font-medium text-gray-500 whitespace-nowrap">Khoa/Ngành:</span>
+                            <Select
+                                placeholder="Tất cả các khoa"
+                                allowClear
+                                style={{ width: 220 }}
+                                onChange={(val) => setFilterFaculty(val || undefined)}
+                                value={filterFaculty}
+                                className="rounded-lg"
+                                showSearch
+                                optionFilterProp="children"
+                                filterOption={(input, option) =>
+                                    (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+                                }
+                                options={[
+                                    { value: '', label: 'Tất cả các khoa' },
+                                    ...faculties.map(f => ({ value: f.id, label: f.name }))
+                                ]}
+                            />
+                        </div>
+                    ) : (
+                        user?.faculty_name && (
+                            <div className="flex items-center gap-2">
+                                <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Bộ phận:</span>
+                                <Tag color="red" className="m-0 font-medium px-3 py-1 rounded-full border-0 bg-red-50 text-vluRed dark:bg-red-950/20 dark:text-red-400">
+                                    {user.faculty_name}
+                                </Tag>
+                            </div>
+                        )
+                    )}
+                    {dateRange[0] && dateRange[1] && (
+                        <span className="text-xs text-gray-400 sm:ml-auto">
+                            📅 {getPeriodLabel()}
+                        </span>
+                    )}
                 </div>
-                {period === 'custom' && (
-                    <RangePicker
-                        format="DD/MM/YYYY"
-                        value={customRange}
-                        onChange={setCustomRange}
-                        placeholder={['Từ ngày', 'Đến ngày']}
-                        className="rounded-lg w-full sm:w-auto flex-shrink-0"
-                        allowClear={false}
-                    />
-                )}
-                {dateRange[0] && dateRange[1] && (
-                    <span className="text-xs text-gray-400 sm:ml-auto">
-                        📅 {getPeriodLabel()}
-                    </span>
-                )}
             </div>
 
             {/* Stats Cards */}
@@ -316,12 +512,14 @@ const ReportStudents = () => {
             <Row gutter={[20, 20]}>
                 <Col xs={24} lg={16}>
                     <Card title={<span className="">Số lượng sinh viên thực tập tại từng công ty</span>} className="rounded-xl shadow-sm h-full">
-                        <div style={{ height: 400 }}>
-                            {byEnterprise.length > 0 ? (
-                                <Bar data={barChartData} options={barOptions} />
-                            ) : (
-                                <Empty description="Chưa có dữ liệu trong khoảng thời gian này" className="mt-20" />
-                            )}
+                        <div className="w-full overflow-x-auto scrollbar-thin pb-2">
+                            <div style={{ height: 400, width: chartWidth }}>
+                                {byEnterprise.length > 0 ? (
+                                    <Bar data={barChartData} options={barOptions} />
+                                ) : (
+                                    <Empty description="Chưa có dữ liệu trong khoảng thời gian này" className="mt-20" />
+                                )}
+                            </div>
                         </div>
                     </Card>
                 </Col>
@@ -334,6 +532,58 @@ const ReportStudents = () => {
                                 <Empty description="Chưa có dữ liệu trong khoảng thời gian này" className="mt-20" />
                             )}
                         </div>
+                    </Card>
+                </Col>
+            </Row>
+
+            {/* Detailed Tables Section */}
+            <Row gutter={[20, 20]} className="mt-6 mb-8">
+                <Col xs={24} lg={16}>
+                    <Card 
+                        title={
+                            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 py-1">
+                                <span className="font-bold text-gray-700 dark:text-gray-200 text-base">Chi tiết phân bổ theo doanh nghiệp</span>
+                                <Input
+                                    placeholder="Tìm kiếm doanh nghiệp..."
+                                    prefix={<SearchOutlined className="text-gray-300" />}
+                                    className="w-full sm:w-64 rounded-lg"
+                                    value={enterpriseSearch}
+                                    onChange={e => setEnterpriseSearch(e.target.value)}
+                                    allowClear
+                                />
+                            </div>
+                        }
+                        className="rounded-xl shadow-sm border border-gray-150 dark:border-gray-700"
+                    >
+                        <Table
+                            columns={enterpriseColumns}
+                            dataSource={filteredEnterprises}
+                            rowKey="enterprise"
+                            size="middle"
+                            pagination={{
+                                pageSize: 5,
+                                showSizeChanger: true,
+                                pageSizeOptions: ['5', '10', '20'],
+                                showTotal: (total) => `Tổng số ${total} doanh nghiệp`,
+                            }}
+                            className="student-report-table"
+                            scroll={{ x: 'max-content' }}
+                        />
+                    </Card>
+                </Col>
+                <Col xs={24} lg={8}>
+                    <Card 
+                        title={<span className="font-bold text-gray-700 dark:text-gray-200 text-base">Chi tiết phân bổ theo ngành học</span>}
+                        className="rounded-xl shadow-sm border border-gray-150 dark:border-gray-700 h-full"
+                    >
+                        <Table
+                            columns={majorColumns}
+                            dataSource={byMajor}
+                            rowKey="major"
+                            size="middle"
+                            pagination={false}
+                            className="student-report-table"
+                        />
                     </Card>
                 </Col>
             </Row>

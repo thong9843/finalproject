@@ -8,6 +8,9 @@ exports.getStudentsByEnterprise = async (req, res) => {
         if (req.user.role !== 'ADMIN') {
             facultyFilter = ' AND s.faculty_id = ?';
             params.push(req.user.faculty_id);
+        } else if (req.query.faculty_id) {
+            facultyFilter = ' AND s.faculty_id = ?';
+            params.push(req.query.faculty_id);
         }
 
         // Date range filter
@@ -72,6 +75,9 @@ exports.getActivitiesByEnterprise = async (req, res) => {
         if (req.user.role !== 'ADMIN') {
             facultyFilter = ' AND a.faculty_id = ?';
             params.push(req.user.faculty_id);
+        } else if (req.query.faculty_id) {
+            facultyFilter = ' AND a.faculty_id = ?';
+            params.push(req.query.faculty_id);
         }
 
         // Date range filter

@@ -5,6 +5,7 @@ import api from '../utils/api';
 import dayjs from 'dayjs';
 import Cookies from 'js-cookie';
 import MentionEditor from '../components/MentionEditor';
+import { useLocation } from 'react-router-dom';
 
 const { Title, Text, Paragraph } = Typography;
 const { Option } = Select;
@@ -33,7 +34,8 @@ const KanbanBoard = () => {
     console.error("Failed to parse user cookie", e);
   }
 
-  const [activeTab, setActiveTab] = useState('TASKS'); // 'TASKS' or 'NOTES'
+  const location = useLocation();
+  const activeTab = location.pathname.includes('/notes') ? 'NOTES' : 'TASKS';
   const [loading, setLoading] = useState(false);
   const [tasks, setTasks] = useState([]);
   const [notes, setNotes] = useState([]);
@@ -125,8 +127,14 @@ const KanbanBoard = () => {
     
     // 3. Mention type filter
     if (noteMentionFilter) {
-      const mentionRegex = new RegExp(`entity:${noteMentionFilter}:`, 'i');
-      result = result.filter(n => n.content && mentionRegex.test(n.content));
+      result = result.filter(n => {
+        if (noteMentionFilter === 'enterprise' && n.enterprise_id) return true;
+        if (noteMentionFilter === 'activity' && n.activity_id) return true;
+        if (noteMentionFilter === 'mou' && n.mou_id) return true;
+        if (noteMentionFilter === 'student' && n.student_id) return true;
+        const mentionRegex = new RegExp(`entity:${noteMentionFilter}:`, 'i');
+        return n.content && mentionRegex.test(n.content);
+      });
     }
     
     // 4. Arrange (Sort)
@@ -1067,7 +1075,22 @@ const KanbanBoard = () => {
   const handleRunAiChat = (item, type) => {
     const title = type === 'TASK' ? item.title : (item.title || 'Ghi chú');
     const content = type === 'TASK' ? item.description : item.content;
-    const prompt = `Tôi có một ${type === 'TASK' ? 'nhiệm vụ' : 'ghi chú'} với tiêu đề: "${title}". Nội dung chi tiết: "${content || ''}". Hãy phân tích nội dung này và gợi ý cho tôi các bước tiếp theo cần triển khai.`;
+    
+    let relationText = '';
+    if (type === 'NOTE') {
+      if (item.enterprise_id && item.enterprise_name) {
+        relationText = ` liên kết với Doanh nghiệp "${item.enterprise_name}"`;
+      } else if (item.activity_id && item.activity_title) {
+        relationText = ` liên kết với Hoạt động "${item.activity_title}"`;
+      } else if (item.mou_id && item.mou_code) {
+        const entName = item.mou_enterprise_name ? ` (${item.mou_enterprise_name})` : '';
+        relationText = ` liên kết với Hợp tác MOU "${item.mou_code}${entName}"`;
+      } else if (item.student_id && item.student_name) {
+        relationText = ` liên kết với Sinh viên "${item.student_name}"`;
+      }
+    }
+    
+    const prompt = `Tôi có một ${type === 'TASK' ? 'nhiệm vụ' : 'ghi chú'}${relationText} với tiêu đề: "${title}". Nội dung chi tiết: "${content || ''}". Hãy phân tích nội dung này và gợi ý cho tôi các bước tiếp theo cần triển khai.`;
     
     window.dispatchEvent(new CustomEvent('open-chatbot', { detail: { prompt } }));
   };
@@ -1092,40 +1115,22 @@ const KanbanBoard = () => {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4 shrink-0">
         <div className="flex items-center gap-3">
           <div className="w-12 h-12 bg-red-50 dark:bg-red-950/30 text-vluRed dark:text-red-400 rounded-2xl flex items-center justify-center shadow-sm flex-shrink-0">
-            <CheckSquareOutlined className="text-2xl" />
+            {activeTab === 'TASKS' ? <CheckSquareOutlined className="text-2xl" /> : <FileTextOutlined className="text-2xl" />}
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-slate-800 dark:text-gray-100 m-0">Kanban Board V2</h1>
-            <p className="text-sm text-slate-500 m-0 mt-0.5">Quản lý nhiệm vụ kéo thả và không gian ghi chú tiện ích</p>
+            <h1 className="text-2xl font-bold text-slate-800 dark:text-gray-100 m-0">
+              {activeTab === 'TASKS' ? 'Bảng nhiệm vụ (Kanban)' : 'Không gian ghi chú'}
+            </h1>
+            <p className="text-sm text-slate-500 m-0 mt-0.5">
+              {activeTab === 'TASKS'
+                ? 'Quản lý tiến độ công việc, nhiệm vụ kéo thả và phân công'
+                : 'Lưu trữ ý tưởng, ghi chú nhanh và liên kết thông tin'}
+            </p>
           </div>
         </div>
 
         {/* Tab & Button Controllers */}
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
-          {/* Custom Tabs */}
-          <div className="flex bg-slate-100 dark:bg-gray-800/80 p-1 rounded-xl w-full sm:w-auto border border-slate-200/50 dark:border-gray-700/50">
-            <button
-              onClick={() => setActiveTab('TASKS')}
-              className={`flex-1 sm:flex-none px-5 py-1.5 rounded-lg text-sm font-semibold transition-all ${
-                activeTab === 'TASKS'
-                  ? 'bg-white dark:bg-gray-700 text-slate-800 dark:text-gray-100 shadow-sm'
-                  : 'text-slate-500 hover:text-slate-700 dark:text-gray-400 dark:hover:text-gray-200'
-              }`}
-            >
-              Nhiệm vụ (Tasks)
-            </button>
-            <button
-              onClick={() => setActiveTab('NOTES')}
-              className={`flex-1 sm:flex-none px-5 py-1.5 rounded-lg text-sm font-semibold transition-all ${
-                activeTab === 'NOTES'
-                  ? 'bg-white dark:bg-gray-700 text-slate-800 dark:text-gray-100 shadow-sm'
-                  : 'text-slate-500 hover:text-slate-700 dark:text-gray-400 dark:hover:text-gray-200'
-              }`}
-            >
-              Ghi chú (Notes)
-            </button>
-          </div>
-
           <Button
             type="primary"
             icon={<PlusOutlined />}
@@ -1133,7 +1138,7 @@ const KanbanBoard = () => {
             onClick={activeTab === 'TASKS' ? openAddTaskModal : openAddNoteModal}
             className="bg-vluRed hover:bg-vluRedHover border-none text-white rounded-lg shadow-sm font-medium w-full sm:w-auto"
           >
-            Thêm Mới
+            {activeTab === 'TASKS' ? 'Thêm nhiệm vụ' : 'Thêm ghi chú'}
           </Button>
         </div>
       </div>
@@ -1495,7 +1500,7 @@ const KanbanBoard = () => {
             {notes.length === 0 ? (
               <div className="h-[250px] flex flex-col items-center justify-center text-slate-400">
                 <Paragraph className="text-lg mb-2">Chưa có ghi chú nào được tạo</Paragraph>
-                <Button type="primary" onClick={openAddNoteModal} icon={<PlusOutlined />}>Tạo Ghi Chú Đầu Tiên</Button>
+                <Button type="primary" onClick={openAddNoteModal} icon={<PlusOutlined />} className="bg-vluRed hover:bg-vluRedHover border-none text-white rounded-lg shadow-sm font-medium">Tạo Ghi Chú Đầu Tiên</Button>
               </div>
             ) : filteredAndSortedNotes.length === 0 ? (
               <div className="h-[250px] flex flex-col items-center justify-center text-slate-400">
@@ -1551,9 +1556,69 @@ const KanbanBoard = () => {
                         }`}
                       >
                         {/* Note Header */}
-                        <div className="flex justify-between items-start mb-2.5">
+                        <div className="flex justify-between items-start mb-2.5 bg-transparent">
                           <div className="font-semibold text-slate-800 dark:text-slate-100 text-sm break-words pr-2">
-                            {note.title || 'Ghi chú'}
+                            <div>{note.title || 'Ghi chú'}</div>
+                            {note.enterprise_id && (
+                              <div className="mt-1">
+                                <Tag 
+                                  color="blue" 
+                                  icon={<BankOutlined />} 
+                                  className="cursor-pointer font-medium hover:opacity-85 inline-flex items-center gap-1 my-0.5 shadow-sm border max-w-full whitespace-normal break-words"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleShowEntityPreview('enterprise', note.enterprise_id);
+                                  }}
+                                >
+                                  🏢 Doanh nghiệp: {note.enterprise_name}
+                                </Tag>
+                              </div>
+                            )}
+                            {note.activity_id && (
+                              <div className="mt-1">
+                                <Tag 
+                                  color="green" 
+                                  icon={<ProjectOutlined />} 
+                                  className="cursor-pointer font-medium hover:opacity-85 inline-flex items-center gap-1 my-0.5 shadow-sm border max-w-full whitespace-normal break-words"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleShowEntityPreview('activity', note.activity_id);
+                                  }}
+                                >
+                                  🎯 Hoạt động: {note.activity_title}
+                                </Tag>
+                              </div>
+                            )}
+                            {note.mou_id && (
+                              <div className="mt-1">
+                                <Tag 
+                                  color="purple" 
+                                  icon={<FileTextOutlined />} 
+                                  className="cursor-pointer font-medium hover:opacity-85 inline-flex items-center gap-1 my-0.5 shadow-sm border max-w-full whitespace-normal break-words"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleShowEntityPreview('mou', note.mou_id);
+                                  }}
+                                >
+                                  📜 MOU: {note.mou_code} {note.mou_enterprise_name ? `(${note.mou_enterprise_name})` : ''}
+                                </Tag>
+                              </div>
+                            )}
+                            {note.student_id && (
+                              <div className="mt-1">
+                                <Tag 
+                                  color="orange" 
+                                  icon={<UserOutlined />} 
+                                  className="cursor-pointer font-medium hover:opacity-85 inline-flex items-center gap-1 my-0.5 shadow-sm border max-w-full whitespace-normal break-words"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleShowEntityPreview('student', note.student_id);
+                                  }}
+                                >
+                                  🎓 Sinh viên: {note.student_name}
+                                </Tag>
+                              </div>
+                            )}
                           </div>
                         </div>
 

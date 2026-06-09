@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Table, Tag, Card, Row, Col, Statistic, Form, Input, Select, Button, Modal, message, Space, DatePicker, InputNumber, Popover, Badge, Divider, Switch, App as AntApp, Spin, Checkbox, Drawer, Descriptions, Tooltip } from 'antd';
+import { Table, Tag, Card, Row, Col, Statistic, Form, Input, Select, Button, Modal, message, Space, DatePicker, InputNumber, Popover, Badge, Divider, Switch, App as AntApp, Spin, Checkbox, Drawer, Descriptions, Tooltip, Pagination } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, SearchOutlined, SyncOutlined, ClockCircleOutlined, CheckCircleOutlined, TeamOutlined, UploadOutlined, DownloadOutlined, FilterOutlined, SortAscendingOutlined, ClearOutlined, CalendarOutlined, EyeOutlined } from '@ant-design/icons';
 import ImportModal from '../components/ImportModal';
 import api from '../utils/api';
@@ -37,6 +37,12 @@ const StudentList = () => {
     const [faculties, setFaculties] = useState([]);
     const [filterFaculty, setFilterFaculty] = useState(undefined);
     const [showDeleted, setShowDeleted] = useState(false);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pageSize, setPageSize] = useState(12);
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchText, activeTab, sortOption, dateRange, filterEnterprise, filterMajor, filterGpa, filterFaculty, showDeleted]);
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
     const [selectedStudent, setSelectedStudent] = useState(null);
 
@@ -325,6 +331,8 @@ const StudentList = () => {
         }
     });
 
+    const paginatedData = filteredData.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
     const activeFilterCount = [sortOption, dateRange, filterEnterprise, filterMajor, filterGpa, showDeleted ? true : null, filterFaculty].filter(v => v !== null && v !== undefined).length;
 
     const sortOptions = [
@@ -495,7 +503,7 @@ const StudentList = () => {
     ];
 
     return (
-        <div>
+        <div className={selectedRowKeys.length > 0 ? "pb-24" : ""}>
             {/* Header */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
                 <div className="flex items-center gap-3">
@@ -645,7 +653,7 @@ const StudentList = () => {
                             danger 
                             icon={<DeleteOutlined />} 
                             onClick={handleBulkDelete}
-                            className="flex items-center justify-center font-medium"
+                            className="flex items-center justify-center font-medium !bg-red-600 hover:!bg-red-500 text-white border-0"
                         >
                             Xóa
                         </Button>
@@ -674,7 +682,18 @@ const StudentList = () => {
                     loading={loading}
                     rowClassName={(record) => record.is_deleted === 1 ? 'opacity-65 bg-red-50/20 dark:bg-red-955/10' : ''}
                     scroll={{ x: 'max-content' }}
-                    pagination={{ pageSize: 10, showSizeChanger: false }}
+                    pagination={{
+                        current: currentPage,
+                        pageSize: pageSize,
+                        onChange: (page, size) => {
+                            setCurrentPage(page);
+                            setPageSize(size);
+                        },
+                        showSizeChanger: true,
+                        pageSizeOptions: ['12', '24', '48', '96'],
+                        showTotal: (total) => `Tổng số ${total} sinh viên`,
+                        style: { marginRight: '16px', marginBottom: '16px' }
+                    }}
                     className="student-table"
                     size="middle"
                 />
@@ -682,20 +701,22 @@ const StudentList = () => {
 
             {/* Mobile View */}
             <div className="block md:hidden space-y-4">
-                {!loading && filteredData.length > 0 && (
+                {!loading && paginatedData.length > 0 && (
                     <div className="bg-slate-50 dark:bg-gray-800 p-3 rounded-lg border border-slate-200 dark:border-gray-700 mb-2 flex items-center justify-between">
                         <Checkbox
-                            checked={filteredData.length > 0 && selectedRowKeys.length === filteredData.length}
-                            indeterminate={selectedRowKeys.length > 0 && selectedRowKeys.length < filteredData.length}
+                            checked={paginatedData.length > 0 && paginatedData.every(std => selectedRowKeys.includes(std.id))}
+                            indeterminate={paginatedData.some(std => selectedRowKeys.includes(std.id)) && !paginatedData.every(std => selectedRowKeys.includes(std.id))}
                             onChange={(e) => {
                                 if (e.target.checked) {
-                                    setSelectedRowKeys(filteredData.map(std => std.id));
+                                    const toAdd = paginatedData.filter(std => std.is_deleted !== 1).map(std => std.id);
+                                    setSelectedRowKeys(prev => [...new Set([...prev, ...toAdd])]);
                                 } else {
-                                    setSelectedRowKeys([]);
+                                    const toRemove = paginatedData.map(std => std.id);
+                                    setSelectedRowKeys(prev => prev.filter(id => !toRemove.includes(id)));
                                 }
                             }}
                         >
-                            Chọn tất cả ({filteredData.length} sinh viên)
+                            Chọn tất cả trang này ({paginatedData.length} sinh viên)
                         </Checkbox>
                     </div>
                 )}
@@ -705,7 +726,8 @@ const StudentList = () => {
                 ) : filteredData.length === 0 ? (
                     <Card className="text-center py-6 text-gray-400">Không có dữ liệu</Card>
                 ) : (
-                    filteredData.map(record => {
+                    <>
+                        {paginatedData.map(record => {
                         const isChecked = selectedRowKeys.includes(record.id);
                         return (
                             <Card
@@ -784,7 +806,24 @@ const StudentList = () => {
                             </div>
                         </Card>
                     );
-                }))}
+                })}
+                {filteredData.length > 0 && (
+                    <div className="flex justify-center mt-6 pb-4">
+                        <Pagination
+                            current={currentPage}
+                            pageSize={pageSize}
+                            total={filteredData.length}
+                            onChange={(page, size) => {
+                                setCurrentPage(page);
+                                setPageSize(size);
+                            }}
+                            showSizeChanger
+                            pageSizeOptions={['12', '24', '48', '96']}
+                        />
+                    </div>
+                )}
+                </>
+                )}
             </div>
 
             {/* Modal Form */}

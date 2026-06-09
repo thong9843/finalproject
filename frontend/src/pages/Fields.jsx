@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Table, Button, Modal, Form, Input, message, Space, App as AntApp } from 'antd';
+import { Table, Button, Modal, Form, Input, message, Space, App as AntApp, Select } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, CompassOutlined } from '@ant-design/icons';
 import api from '../utils/api';
 import Cookies from 'js-cookie';
@@ -15,6 +15,7 @@ const Fields = () => {
     const isLecturer = user?.role === 'LECTURER';
 
     const [data, setData] = useState([]);
+    const [faculties, setFaculties] = useState([]);
     const { modal } = AntApp.useApp();
     const [loading, setLoading] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -24,6 +25,9 @@ const Fields = () => {
     useEffect(() => {
         document.title = "Quản lý Lĩnh vực / Ngành nghề | VLU Enterprise Link Manager";
         fetchFields();
+        if (user?.role === 'ADMIN') {
+            fetchFaculties();
+        }
     }, []);
 
     const fetchFields = async () => {
@@ -35,6 +39,15 @@ const Fields = () => {
             message.error('Lỗi khi tải danh sách lĩnh vực');
         } finally {
             setLoading(false);
+        }
+    };
+
+    const fetchFaculties = async () => {
+        try {
+            const res = await api.get('/structure/faculties');
+            setFaculties(res.data || []);
+        } catch (error) {
+            console.error('Lỗi khi tải danh sách khoa:', error);
         }
     };
 
@@ -91,6 +104,12 @@ const Fields = () => {
             dataIndex: 'name',
             key: 'name',
         },
+        {
+            title: 'Khoa áp dụng',
+            dataIndex: 'faculty_name',
+            key: 'faculty_name',
+            render: (text) => text || 'Dùng chung',
+        },
         ...(!isLecturer ? [{
             title: 'Thao tác',
             key: 'action',
@@ -122,7 +141,7 @@ const Fields = () => {
                             size="large"
                             type="primary" 
                             icon={<PlusOutlined />} 
-                            onClick={() => { setEditingId(null); form.resetFields(); setIsModalOpen(true); }}
+                            onClick={() => { setEditingId(null); form.resetFields(); form.setFieldsValue({ faculty_id: 0 }); setIsModalOpen(true); }}
                             className="bg-vluRed hover:bg-vluRedHover border-none text-white rounded-lg shadow-sm font-medium flex-1 sm:flex-initial"
                         >
                             Thêm mới
@@ -154,6 +173,16 @@ const Fields = () => {
                     <Form.Item name="name" label="Tên Lĩnh vực / Ngành nghề" rules={[{ required: true, message: 'Vui lòng nhập tên!' }]}>
                         <Input placeholder="Nhập tên..." size="large" className="rounded-lg" />
                     </Form.Item>
+                    {user?.role === 'ADMIN' && (
+                        <Form.Item name="faculty_id" label="Khoa áp dụng" rules={[{ required: true, message: 'Vui lòng chọn khoa hoặc dùng chung!' }]}>
+                            <Select placeholder="Chọn khoa..." size="large" className="rounded-lg">
+                                <Select.Option value={0}>Dùng chung tất cả các khoa</Select.Option>
+                                {faculties.map(f => (
+                                    <Select.Option key={f.id} value={f.id}>{f.name}</Select.Option>
+                                ))}
+                            </Select>
+                        </Form.Item>
+                    )}
                     <div className="flex justify-end gap-3 pt-4 border-t border-slate-100 dark:border-gray-700 mt-6">
                         <Button onClick={() => setIsModalOpen(false)} size="large" className="rounded-lg">Hủy</Button>
                         <Button type="primary" htmlType="submit" size="large" className="bg-vluRed hover:bg-vluRedHover border-none text-white rounded-lg shadow-sm font-medium">

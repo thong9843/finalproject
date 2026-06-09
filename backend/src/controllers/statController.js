@@ -3,11 +3,18 @@ const pool = require('../config/db');
 exports.getDashboardStats = async (req, res) => {
     try {
         const isAdmin = req.user.role === 'ADMIN';
-        const fid = req.user.faculty_id;
+        let targetFacultyId = null;
+        if (isAdmin) {
+            if (req.query.faculty_id) {
+                targetFacultyId = req.query.faculty_id;
+            }
+        } else {
+            targetFacultyId = req.user.faculty_id;
+        }
 
-        const fFilter = isAdmin ? '' : ' AND faculty_id = ?';
-        const aFFilter = isAdmin ? '' : ' AND a.faculty_id = ?';
-        const p = isAdmin ? [] : [fid];
+        const fFilter = targetFacultyId ? ' AND faculty_id = ?' : '';
+        const aFFilter = targetFacultyId ? ' AND a.faculty_id = ?' : '';
+        const p = targetFacultyId ? [targetFacultyId] : [];
 
         // Date range filter for activities
         const { date_from, date_to } = req.query;

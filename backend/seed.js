@@ -11,7 +11,7 @@ const path = require('path');
 const XLSX = require('xlsx');
 require('dotenv').config({ path: path.join(__dirname, '.env') });
 
-const PASS_HASH = '$2b$10$9FfmKHRV6ffkngWroSCTt.ha.L2GDuFCjxHtqxgMoJfUfHxx5tamy'; // bcrypt of '123456'
+const PASS_HASH = '123456'; // bcrypt of '123456'
 
 // Profiles for the 22 faculties to dynamically rewrite student majors, classes, and advisors
 const FACULTY_PROFILES = {
@@ -175,6 +175,279 @@ const ST_ACT_TYPES = [
     "Khác"
 ];
 
+const FACULTY_DEPARTMENTS = {
+    'IT': ['Bộ môn Công nghệ Phần mềm', 'Bộ môn Hệ thống Thông tin'],
+    'BA': ['Bộ môn Quản trị Tổng hợp', 'Bộ môn Kinh doanh Quốc tế'],
+    'PR': ['Bộ môn Quan hệ Công chúng', 'Bộ môn Tổ chức Sự kiện'],
+    'ARCH': ['Bộ môn Thiết kế Kiến trúc', 'Bộ môn Quy hoạch Đô thị'],
+    'FA': ['Bộ môn Hội họa', 'Bộ môn Mỹ thuật Ứng dụng'],
+    'ID': ['Bộ môn Kiểu dáng Công nghiệp', 'Bộ môn Thiết kế Sản phẩm'],
+    'GD': ['Bộ môn Thiết kế Đồ họa', 'Bộ môn Truyền thông Thị giác'],
+    'INT': ['Bộ môn Thiết kế Nội thất', 'Bộ môn Trang trí Không gian'],
+    'FASH': ['Bộ môn Thiết kế Thời trang', 'Bộ môn Công nghệ May'],
+    'CE': ['Bộ môn Kỹ thuật Công trình', 'Bộ môn Quản lý Xây dựng'],
+    'ME': ['Bộ môn Kỹ thuật Cơ - Điện tử', 'Bộ môn Robot học'],
+    'ECO': ['Bộ môn Kinh tế học', 'Bộ môn Kinh tế Quốc tế'],
+    'MARK': ['Bộ môn Marketing', 'Bộ môn Digital Marketing'],
+    'FIN': ['Bộ môn Tài chính - Ngân hàng', 'Bộ môn Kế toán - Kiểm toán'],
+    'TOUR': ['Bộ môn Quản trị Dịch vụ Du lịch', 'Bộ môn Lữ hành'],
+    'HOTEL': ['Bộ môn Quản trị Khách sạn', 'Bộ môn Quản trị Nhà hàng'],
+    'LAW': ['Bộ môn Luật học', 'Bộ môn Luật Kinh tế'],
+    'ENG': ['Bộ môn Tiếng Anh Thương mại', 'Bộ môn Biên - Phiên dịch tiếng Anh'],
+    'COMM': ['Bộ môn Truyền thông Đa phương tiện', 'Bộ môn Báo chí'],
+    'PSY': ['Bộ môn Tâm lý học Tham vấn', 'Bộ môn Tâm lý học Lâm sàng'],
+    'NURS': ['Bộ môn Điều dưỡng Đa khoa', 'Bộ môn Quản lý Điều dưỡng'],
+    'PHARM': ['Bộ môn Dược lâm sàng', 'Bộ môn Hóa dược & Bào chế thuốc']
+};
+
+const FICTIONAL_COMPANIES = {
+    1: [ // IT
+        { name: 'Công ty Cổ phần Giải pháp Công nghệ ViệtTech', scale: 'Tier 1 (Tập đoàn/Global)', domain: 'viettech.vn', fields: ['Phần mềm & Outsource', 'Giải pháp CNTT & Chuyển đổi số'] },
+        { name: 'Tập đoàn Giải pháp Phần mềm AlphaSoft', scale: 'Tier 1 (Tập đoàn/Global)', domain: 'alphasoft.vn', fields: ['Phần mềm & Outsource'] },
+        { name: 'Công ty TNHH Hệ thống Thông tin CloudVibe', scale: 'Tier 2 (SME)', domain: 'cloudvibe.vn', fields: ['Giải pháp CNTT & Chuyển đổi số', 'Hạ tầng & Viễn thông'] },
+        { name: 'Công ty Phát triển Công nghệ ByteCore', scale: 'Tier 3 (Startup/Micro)', domain: 'bytecore.io', fields: ['Phần mềm & Outsource'] }
+    ],
+    2: [ // BA
+        { name: 'Tập đoàn Bán lẻ & Phân phối GlobalMart', scale: 'Tier 1 (Tập đoàn/Global)', domain: 'globalmart.vn', fields: ['Khác'] },
+        { name: 'Công ty Cổ phần Logistics và Vận tải Đại Dương', scale: 'Tier 2 (SME)', domain: 'oceantrans.vn', fields: ['Khác'] },
+        { name: 'Công ty Tư vấn Giải pháp Quản trị Doanh nghiệp BizLead', scale: 'Tier 2 (SME)', domain: 'bizlead.vn', fields: ['Khác'] },
+        { name: 'Công ty TNHH Dịch vụ Thương mại ApexGroup', scale: 'Tier 3 (Startup/Micro)', domain: 'apexgroup.com.vn', fields: ['Khác'] }
+    ],
+    3: [ // PR
+        { name: 'Creative Agency Truyền thông & Sự kiện StarPR', scale: 'Tier 2 (SME)', domain: 'starpr.agency', fields: ['Marketing & Truyền thông'] },
+        { name: 'Công ty Cổ phần Sự kiện BrightEvent', scale: 'Tier 2 (SME)', domain: 'brightevent.vn', fields: ['Marketing & Truyền thông'] },
+        { name: 'Agency Truyền thông và Quảng cáo BuzzMedia', scale: 'Tier 3 (Startup/Micro)', domain: 'buzzmedia.vn', fields: ['Marketing & Truyền thông'] },
+        { name: 'Công ty Tư vấn Thương hiệu VibePR', scale: 'Tier 3 (Startup/Micro)', domain: 'vibepr.vn', fields: ['Marketing & Truyền thông'] }
+    ],
+    4: [ // ARCH
+        { name: 'Văn phòng Thiết kế Kiến trúc Đất Việt', scale: 'Tier 2 (SME)', domain: 'datvietarch.vn', fields: ['Khác'] },
+        { name: 'Công ty Cổ phần Thiết kế & Quy hoạch Đô thị CanvasArch', scale: 'Tier 2 (SME)', domain: 'canvasarch.com', fields: ['Khác'] },
+        { name: 'Studio Kiến trúc và Cảnh quan GreenSpace', scale: 'Tier 3 (Startup/Micro)', domain: 'greenspace.design', fields: ['Khác'] },
+        { name: 'Công ty Tư vấn Thiết kế và Xây dựng SkyLine', scale: 'Tier 3 (Startup/Micro)', domain: 'skylinearch.vn', fields: ['Khác'] }
+    ],
+    5: [ // FA
+        { name: 'Phòng tranh và Triển lãm Đông Đô Art Gallery', scale: 'Tier 2 (SME)', domain: 'dongdoart.vn', fields: ['Khác'] },
+        { name: 'Studio Mỹ thuật Sáng tạo ColorSpace', scale: 'Tier 3 (Startup/Micro)', domain: 'colorspace.vn', fields: ['Khác'] },
+        { name: 'Công ty Thiết kế Mỹ thuật Ứng dụng ArtVibe', scale: 'Tier 3 (Startup/Micro)', domain: 'artvibe.design', fields: ['Marketing & Truyền thông'] },
+        { name: 'Phòng Thiết kế Tạo hình FineArt', scale: 'Tier 3 (Startup/Micro)', domain: 'fineart.vn', fields: ['Khác'] }
+    ],
+    6: [ // ID
+        { name: 'Công ty Thiết kế Kiểu dáng Kiểu Mẫu Việt (VietID)', scale: 'Tier 2 (SME)', domain: 'vietid.design', fields: ['Khác'] },
+        { name: 'Tập đoàn Phát triển Sản phẩm Tiêu dùng Innova', scale: 'Tier 2 (SME)', domain: 'innovaproduct.vn', fields: ['Khác'] },
+        { name: 'Studio Thiết kế Công nghiệp CreativePod', scale: 'Tier 3 (Startup/Micro)', domain: 'creativepod.vn', fields: ['Khác'] },
+        { name: 'Công ty Giải pháp Tạo mẫu Sản phẩm ConceptID', scale: 'Tier 3 (Startup/Micro)', domain: 'conceptid.io', fields: ['Khác'] }
+    ],
+    7: [ // GD
+        { name: 'Creative Agency Đồ họa PixelArt', scale: 'Tier 2 (SME)', domain: 'pixelart.vn', fields: ['Marketing & Truyền thông'] },
+        { name: 'Studio Thiết kế và Nhận diện Thương hiệu BrandVibe', scale: 'Tier 2 (SME)', domain: 'brandvibe.vn', fields: ['Marketing & Truyền thông'] },
+        { name: 'Công ty TNHH Thiết kế Đồ họa và Quảng cáo RainbowGD', scale: 'Tier 3 (Startup/Micro)', domain: 'rainbowgd.com', fields: ['Marketing & Truyền thông'] },
+        { name: 'Studio Sáng tạo Kỹ thuật số VectorStudio', scale: 'Tier 3 (Startup/Micro)', domain: 'vectorstudio.vn', fields: ['Marketing & Truyền thông'] }
+    ],
+    8: [ // INT
+        { name: 'Tổng công ty Cổ phần Nội thất ViệtSpace', scale: 'Tier 2 (SME)', domain: 'vietspaceinterior.vn', fields: ['Khác'] },
+        { name: 'Công ty Thiết kế và Trang trí Nhà đẹp DecoStyle', scale: 'Tier 2 (SME)', domain: 'decostyle.vn', fields: ['Khác'] },
+        { name: 'Studio Thiết kế Không gian Sống CozyHome', scale: 'Tier 3 (Startup/Micro)', domain: 'cozyhome.vn', fields: ['Khác'] },
+        { name: 'Xưởng Sản xuất Nội thất Gỗ Mỹ nghệ WoodLand', scale: 'Tier 3 (Startup/Micro)', domain: 'woodland.com.vn', fields: ['Khác'] }
+    ],
+    9: [ // FASH
+        { name: 'Tập đoàn Thiết kế Thời trang ViệtStyle', scale: 'Tier 1 (Tập đoàn/Global)', domain: 'vietstylefashion.vn', fields: ['Khác'] },
+        { name: 'Tổng công ty May mặc Đông Á', scale: 'Tier 2 (SME)', domain: 'dongagarment.vn', fields: ['Khác'] },
+        { name: 'Nhà mốt Thiết kế Haute Couture ChicMode', scale: 'Tier 3 (Startup/Micro)', domain: 'chicmode.vn', fields: ['Khác'] },
+        { name: 'Công ty TNHH May mặc và Thời trang FashionLine', scale: 'Tier 3 (Startup/Micro)', domain: 'fashionline.vn', fields: ['Khác'] }
+    ],
+    10: [ // CE
+        { name: 'Tổng công ty Xây dựng An Phong', scale: 'Tier 1 (Tập đoàn/Global)', domain: 'anphongcons.vn', fields: ['Khác'] },
+        { name: 'Công ty Cổ phần Đầu tư và Xây dựng DeltaCons', scale: 'Tier 2 (SME)', domain: 'deltacons.vn', fields: ['Khác'] },
+        { name: 'Công ty TNHH Xây dựng Hạ tầng Trường Sơn', scale: 'Tier 2 (SME)', domain: 'truongsoninfra.vn', fields: ['Khác'] },
+        { name: 'Công ty Tư vấn và Giám sát Công trình BuildCore', scale: 'Tier 3 (Startup/Micro)', domain: 'buildcore.vn', fields: ['Khác'] }
+    ],
+    11: [ // ME
+        { name: 'Công ty Tự động hóa và Thiết bị Robotec', scale: 'Tier 2 (SME)', domain: 'robotec.vn', fields: ['Phần cứng & Điện tử'] },
+        { name: 'Công ty Kỹ thuật Cơ điện Đông Nam', scale: 'Tier 2 (SME)', domain: 'dongnamelectro.vn', fields: ['Phần cứng & Điện tử'] },
+        { name: 'Tập đoàn Công nghệ Phần cứng VinTech', scale: 'Tier 1 (Tập đoàn/Global)', domain: 'vintechhardware.com.vn', fields: ['Phần cứng & Điện tử'] },
+        { name: 'Công ty TNHH Giải pháp Hệ thống AutoSys', scale: 'Tier 3 (Startup/Micro)', domain: 'autosys.vn', fields: ['Phần cứng & Điện tử'] }
+    ],
+    12: [ // ECO
+        { name: 'Viện Nghiên cứu Kinh tế Phát triển Việt Nam', scale: 'Tier 2 (SME)', domain: 'vied.gov.vn', fields: ['Khác'] },
+        { name: 'Công ty Đầu tư và Phân tích Thị trường SafeCapital', scale: 'Tier 2 (SME)', domain: 'safecapital.vn', fields: ['Tài chính & Fintech'] },
+        { name: 'Công ty Cổ phần Thương mại Quốc tế Suntrade', scale: 'Tier 2 (SME)', domain: 'suntrade.vn', fields: ['Khác'] },
+        { name: 'Công ty Tư vấn Phân tích Số liệu Kinh tế EcoAnalytics', scale: 'Tier 3 (Startup/Micro)', domain: 'ecoanalytics.vn', fields: ['Khác'] }
+    ],
+    13: [ // MARK
+        { name: 'Digital Marketing Agency MaxGrow', scale: 'Tier 2 (SME)', domain: 'maxgrow.agency', fields: ['Marketing & Truyền thông'] },
+        { name: 'Công ty Tư vấn Thương hiệu BrandFirst', scale: 'Tier 2 (SME)', domain: 'brandfirst.vn', fields: ['Marketing & Truyền thông'] },
+        { name: 'Agency Quảng cáo và Tiếp thị SunMedia', scale: 'Tier 2 (SME)', domain: 'sunmedia.vn', fields: ['Marketing & Truyền thông'] },
+        { name: 'Công ty Giải pháp Truyền thông Tiếp thị AdVibe', scale: 'Tier 3 (Startup/Micro)', domain: 'advibe.vn', fields: ['Marketing & Truyền thông'] }
+    ],
+    14: [ // FIN
+        { name: 'Công ty Kiểm toán Đông Dương (Indochina Audit)', scale: 'Tier 2 (SME)', domain: 'indochinaaudit.vn', fields: ['Tài chính & Fintech'] },
+        { name: 'Công ty Dịch vụ Kế toán và Thuế ViệtTax', scale: 'Tier 2 (SME)', domain: 'viettax.vn', fields: ['Tài chính & Fintech'] },
+        { name: 'Công ty Đầu tư Tài chính SmartCapital', scale: 'Tier 2 (SME)', domain: 'smartcapital.vn', fields: ['Tài chính & Fintech'] },
+        { name: 'Công ty Tư vấn Giải pháp Tài chính FinSecure', scale: 'Tier 3 (Startup/Micro)', domain: 'finsecure.vn', fields: ['Tài chính & Fintech'] }
+    ],
+    15: [ // TOUR
+        { name: 'Công ty Cổ phần Du lịch Hướng Dương (Sunflower Travel)', scale: 'Tier 2 (SME)', domain: 'sunflowertravel.vn', fields: ['Khác'] },
+        { name: 'Công ty Lữ hành ViệtNam Discovery', scale: 'Tier 2 (SME)', domain: 'vndiscovery.com.vn', fields: ['Khác'] },
+        { name: 'Công ty Dịch vụ và Quản lý Tour VibeTrip', scale: 'Tier 3 (Startup/Micro)', domain: 'vibetrip.vn', fields: ['Khác'] },
+        { name: 'Công ty Du lịch Sinh thái GreenTour', scale: 'Tier 3 (Startup/Micro)', domain: 'greentour.vn', fields: ['Khác'] }
+    ],
+    16: [ // HOTEL
+        { name: 'Khách sạn Sài Gòn Palace Hotel', scale: 'Tier 2 (SME)', domain: 'saigonpalace.com.vn', fields: ['Khác'] },
+        { name: 'Khu nghỉ dưỡng Bãi Cát Vàng (Gold Sand Resort)', scale: 'Tier 2 (SME)', domain: 'goldsandresort.vn', fields: ['Khác'] },
+        { name: 'Công ty Dịch vụ Ẩm thực Imperial Catering', scale: 'Tier 3 (Startup/Micro)', domain: 'imperialcatering.vn', fields: ['Khác'] },
+        { name: 'Chuỗi Nhà hàng Ẩm thực Việt FineDine', scale: 'Tier 3 (Startup/Micro)', domain: 'finedine.vn', fields: ['Khác'] }
+    ],
+    17: [ // LAW
+        { name: 'Văn phòng Luật sư Chí Thanh & Cộng sự', scale: 'Tier 2 (SME)', domain: 'chithanhlaw.vn', fields: ['Khác'] },
+        { name: 'Công ty Luật TNHH Minh Anh', scale: 'Tier 2 (SME)', domain: 'minhanhlegal.vn', fields: ['Khác'] },
+        { name: 'Hãng luật Tư vấn Doanh nghiệp LegalTrust', scale: 'Tier 3 (Startup/Micro)', domain: 'legaltrust.vn', fields: ['Khác'] },
+        { name: 'Văn phòng Công chứng LexPartners', scale: 'Tier 3 (Startup/Micro)', domain: 'lexpartners.vn', fields: ['Khác'] }
+    ],
+    18: [ // ENG
+        { name: 'Hệ thống Anh ngữ Ánh Dương (Sun English)', scale: 'Tier 2 (SME)', domain: 'sunenglish.edu.vn', fields: ['Khác'] },
+        { name: 'Công ty Dịch thuật & Bản địa hóa GlobeTrans', scale: 'Tier 2 (SME)', domain: 'globetrans.vn', fields: ['Khác'] },
+        { name: 'Trung tâm Đào tạo Ngôn ngữ Quốc tế WorldLink', scale: 'Tier 3 (Startup/Micro)', domain: 'worldlink.edu.vn', fields: ['Khác'] },
+        { name: 'Văn phòng Biên dịch và Hiệu đính LingoStudy', scale: 'Tier 3 (Startup/Micro)', domain: 'lingostudy.vn', fields: ['Khác'] }
+    ],
+    19: [ // COMM
+        { name: 'Hãng tin ViệtNam Today', scale: 'Tier 2 (SME)', domain: 'vntoday.vn', fields: ['Marketing & Truyền thông'] },
+        { name: 'Công ty Sản xuất Phim Ảnh ViệtMedia', scale: 'Tier 2 (SME)', domain: 'vietmedia.com.vn', fields: ['Marketing & Truyền thông'] },
+        { name: 'Đài Phát thanh và Truyền hình Á Đông (ADong Broadcast)', scale: 'Tier 2 (SME)', domain: 'adongbroadcast.vn', fields: ['Marketing & Truyền thông'] },
+        { name: 'Kênh Truyền thông Kỹ thuật số BuzzNews', scale: 'Tier 3 (Startup/Micro)', domain: 'buzznews.vn', fields: ['Marketing & Truyền thông'] }
+    ],
+    20: [ // PSY
+        { name: 'Trung tâm Tham vấn Tâm lý An Nhiên', scale: 'Tier 2 (SME)', domain: 'annhienmind.vn', fields: ['Khác'] },
+        { name: 'Viện Trị liệu Tâm lý Cánh Cửa Mở', scale: 'Tier 2 (SME)', domain: 'opendoorpsy.vn', fields: ['Khác'] },
+        { name: 'Trung tâm Phát triển Kỹ năng sống MindCare', scale: 'Tier 3 (Startup/Micro)', domain: 'mindcare.vn', fields: ['Khác'] },
+        { name: 'Văn phòng Tư vấn Tâm lý ZenTherapy', scale: 'Tier 3 (Startup/Micro)', domain: 'zentherapy.vn', fields: ['Khác'] }
+    ],
+    21: [ // NURS
+        { name: 'Bệnh viện Đa khoa Vạn Xuân', scale: 'Tier 1 (Tập đoàn/Global)', domain: 'vanxuanhospital.vn', fields: ['Khác'] },
+        { name: 'Trung tâm Chăm sóc Sức khỏe Người cao tuổi An Bình', scale: 'Tier 2 (SME)', domain: 'anbinhcare.vn', fields: ['Khác'] },
+        { name: 'Phòng khám Đa khoa Quốc tế GreenClinic', scale: 'Tier 2 (SME)', domain: 'greenclinic.vn', fields: ['Khác'] },
+        { name: 'Dịch vụ Chăm sóc Y tế tại nhà LifeHealth', scale: 'Tier 3 (Startup/Micro)', domain: 'lifehealth.vn', fields: ['Khác'] }
+    ],
+    22: [ // PHARM
+        { name: 'Hệ thống Nhà thuốc An Tâm Pharma', scale: 'Tier 2 (SME)', domain: 'antampharma.vn', fields: ['Khác'] },
+        { name: 'Công ty Cổ phần Dược phẩm Nam Việt (Navipharm)', scale: 'Tier 2 (SME)', domain: 'navipharm.vn', fields: ['Khác'] },
+        { name: 'Phòng thí nghiệm Nghiên cứu Dược học BioLab', scale: 'Tier 3 (Startup/Micro)', domain: 'biolab.vn', fields: ['Khác'] },
+        { name: 'Công ty Sản xuất Dược liệu MedVina', scale: 'Tier 3 (Startup/Micro)', domain: 'medvina.vn', fields: ['Khác'] }
+    ]
+};
+
+const FACULTY_ACTIVITY_TEMPLATES = {
+    1: [ // IT
+        { title: 'Chương trình Tuyển dụng Thực tập sinh Lập trình 2025', detail: 'Tuyển dụng sinh viên thực tập các vị trí Frontend, Backend, Mobile và DevOps.', type: 'Tuyển dụng & Thực tập' },
+        { title: 'Hội thảo: Xu hướng Trí tuệ Nhân tạo & Điện toán Đám mây', detail: 'Chia sẻ từ các chuyên gia về ứng dụng AI trong thực tế và các giải pháp hạ tầng đám mây.', type: 'Hội thảo & Đào tạo' },
+        { title: 'Chương trình Tham quan Trải nghiệm Trung tâm Dữ liệu', detail: 'Tổ chức cho sinh viên tham quan thực tế hạ tầng mạng và hệ thống máy chủ.', type: 'Tham quan doanh nghiệp' }
+    ],
+    2: [ // BA
+        { title: 'Tuyển thực tập sinh Quản trị viên Tập sự', detail: 'Tuyển sinh viên thực tập các mảng Quản trị Nhân sự, Chuỗi cung ứng và Phát triển Kinh doanh.', type: 'Tuyển dụng & Thực tập' },
+        { title: 'Workshop: Kỹ năng Lập kế hoạch Kinh doanh Khởi nghiệp', detail: 'Tọa đàm hướng dẫn sinh viên xây dựng mô hình kinh doanh và quản trị rủi ro.', type: 'Hội thảo & Đào tạo' },
+        { title: 'Tọa đàm: Xu hướng Chuyển đổi số trong Quản trị', detail: 'Hội thảo chia sẻ kinh nghiệm vận hành doanh nghiệp thời đại công nghệ số.', type: 'Hội thảo & Đào tạo' }
+    ],
+    3: [ // PR
+        { title: 'Thực tập sinh Điều phối Sự kiện & Quan hệ Công chúng', detail: 'Tuyển dụng sinh viên thực tập hỗ trợ lên kế hoạch và vận hành các dự án sự kiện.', type: 'Tuyển dụng & Thực tập' },
+        { title: 'Workshop: Kỹ năng Viết bài PR và Phát biểu Báo chí', detail: 'Đào tạo kỹ năng thực chiến cho sinh viên ngành truyền thông sự kiện.', type: 'Hội thảo & Đào tạo' },
+        { title: 'Chương trình Tham quan Agency Truyền thông Sáng tạo', detail: 'Tìm hiểu quy trình làm việc thực tế tại văn phòng agency quảng cáo.', type: 'Tham quan doanh nghiệp' }
+    ],
+    4: [ // ARCH
+        { title: 'Thực tập sinh Thiết kế Kiến trúc và Triển khai Bản vẽ', detail: 'Tuyển dụng sinh viên thực tập hỗ trợ vẽ CAD, dựng hình 3D các công trình thực tế.', type: 'Tuyển dụng & Thực tập' },
+        { title: 'Hội thảo chuyên đề: Kiến trúc xanh và Phát triển bền vững', detail: 'Chia sẻ xu hướng thiết kế tối ưu năng lượng và sử dụng vật liệu thân thiện môi trường.', type: 'Hội thảo & Đào tạo' },
+        { title: 'Triển lãm các Đồ án Kiến trúc xuất sắc thường niên', detail: 'Tài trợ tổ chức không gian trưng bày các tác phẩm đồ án tốt nghiệp của sinh viên.', type: 'Tài trợ & Học bổng' }
+    ],
+    5: [ // FA
+        { title: 'Thực tập sinh Mỹ thuật Ứng dụng & Phục dựng Nghệ thuật', detail: 'Hỗ trợ sinh viên thực hành tạo hình và tham gia thiết kế mỹ thuật tại studio.', type: 'Tuyển dụng & Thực tập' },
+        { title: 'Workshop: Trải nghiệm các kỹ thuật Vẽ tranh Sơn dầu hiện đại', detail: 'Buổi thực hành có sự hướng dẫn của họa sĩ đại diện phòng tranh.', type: 'Hội thảo & Đào tạo' },
+        { title: 'Triển lãm Mỹ thuật Giao lưu Nghệ sĩ trẻ', detail: 'Tổ chức sự kiện kết nối giới nghệ thuật với sinh viên mỹ thuật tiềm năng.', type: 'Hội thảo & Đào tạo' }
+    ],
+    6: [ // ID
+        { title: 'Tuyển thực tập sinh Kiểu dáng và Phát triển Sản phẩm', detail: 'Tuyển sinh viên tham gia thiết kế bao bì, kiểu dáng sản phẩm gia dụng và công nghệ.', type: 'Tuyển dụng & Thực tập' },
+        { title: 'Workshop: Quy trình Tạo mẫu Nhanh bằng Công nghệ In 3D', detail: 'Hướng dẫn thực hành tạo mẫu sản phẩm từ bản vẽ ý tưởng.', type: 'Hội thảo & Đào tạo' },
+        { title: 'Hội thảo: Xu hướng Thiết kế Sản phẩm Thông minh', detail: 'Thảo luận về sự giao thoa giữa kiểu dáng công nghiệp và công nghệ số.', type: 'Hội thảo & Đào tạo' }
+    ],
+    7: [ // GD
+        { title: 'Tuyển thực tập sinh Thiết kế Đồ họa và Nhận diện Thương hiệu', detail: 'Thực tập thiết kế ấn phẩm truyền thông, logo và bộ nhận diện thương hiệu.', type: 'Tuyển dụng & Thực tập' },
+        { title: 'Workshop: Tư duy Sáng tạo trong Thiết kế Giao diện UI/UX', detail: 'Chia sẻ kinh nghiệm thiết kế sản phẩm số thân thiện với người dùng.', type: 'Hội thảo & Đào tạo' },
+        { title: 'Talkshow: Xây dựng Portfolio ấn tượng thu hút nhà tuyển dụng', detail: 'Hướng dẫn chuẩn bị hồ sơ năng lực dành cho sinh viên thiết kế đồ họa.', type: 'Hội thảo & Đào tạo' }
+    ],
+    8: [ // INT
+        { title: 'Tuyển thực tập sinh Họa viên Nội thất và Dựng hình 3D', detail: 'Phối hợp triển khai bản vẽ mặt bằng và dựng phối cảnh không gian nội thất.', type: 'Tuyển dụng & Thực tập' },
+        { title: 'Workshop: Cập nhật Xu hướng Vật liệu và Thiết bị Nội thất mới', detail: 'Giới thiệu các dòng vật liệu mới thân thiện môi trường trong kiến tạo không gian.', type: 'Hội thảo & Đào tạo' },
+        { title: 'Chương trình Tham quan Showroom Thiết bị và Xưởng Gỗ', detail: 'Giúp sinh viên tìm hiểu quy trình sản xuất và thi công lắp đặt thực tế.', type: 'Tham quan doanh nghiệp' }
+    ],
+    9: [ // FASH
+        { title: 'Thực tập sinh Thiết kế Thời trang & Trợ lý Stylist', detail: 'Hỗ trợ thiết kế rập, tìm kiếm phụ liệu và chuẩn bị cho bộ sưu tập thời trang.', type: 'Tuyển dụng & Thực tập' },
+        { title: 'Workshop: Kỹ thuật Draping và Cắt may cao cấp trên Ma-nơ-canh', detail: 'Hướng dẫn trực quan kỹ thuật dựng phom dáng 3D hiện đại.', type: 'Hội thảo & Đào tạo' },
+        { title: 'Tài trợ Vải và Phụ liệu cho Đồ án Tốt nghiệp xuất sắc', detail: 'Chương trình tài trợ học bổng và vật tư thiết kế cho sinh viên năm cuối.', type: 'Tài trợ & Học bổng' }
+    ],
+    10: [ // CE
+        { title: 'Tuyển thực tập sinh Kỹ sư Giám sát Công trường Xây dựng', detail: 'Thực tập đo đạc, kiểm tra bản vẽ và giám sát tiến độ thi công thực tế.', type: 'Tuyển dụng & Thực tập' },
+        { title: 'Hội thảo chuyên đề: Công nghệ Quản lý Dự án B.I.M trong Xây dựng', detail: 'Giới thiệu ứng dụng mô hình thông tin công trình vào thực tiễn quản lý.', type: 'Hội thảo & Đào tạo' },
+        { title: 'Tham quan Thực địa Dự án Hạ tầng Giao thông trọng điểm', detail: 'Tổ chức tham quan tìm hiểu quy trình thi công móng cọc và kết cấu dầm.', type: 'Tham quan doanh nghiệp' }
+    ],
+    11: [ // ME
+        { title: 'Tuyển thực tập sinh Cơ - Điện tử và Lập trình Robot', detail: 'Tham gia thiết kế mạch điện, lập trình PLC và vận hành hệ thống tự động hóa.', type: 'Tuyển dụng & Thực tập' },
+        { title: 'Workshop: Chế tạo và Vận hành Thiết bị Bay không người lái (UAV)', detail: 'Buổi trải nghiệm thực hành chế tạo robot tích hợp vi điều khiển.', type: 'Hội thảo & Đào tạo' },
+        { title: 'Tham quan Dây chuyền Sản xuất và Lắp ráp Điện tử thông minh', detail: 'Tìm hiểu quy trình tự động hóa hoàn toàn trong nhà máy sản xuất linh kiện.', type: 'Tham quan doanh nghiệp' }
+    ],
+    12: [ // ECO
+        { title: 'Thực tập sinh Nghiên cứu Thị trường & Phân tích Kinh tế', detail: 'Hỗ trợ thu thập, xử lý và phân tích số liệu kinh tế vĩ mô và vi mô.', type: 'Tuyển dụng & Thực tập' },
+        { title: 'Tọa đàm: Dự báo Biến động Kinh tế toàn cầu và Tác động đến Việt Nam', detail: 'Thảo luận chuyên sâu với các chuyên gia phân tích chính sách kinh tế.', type: 'Hội thảo & Đào tạo' },
+        { title: 'Workshop: Ứng dụng công cụ R và Python trong phân tích số liệu', detail: 'Hướng dẫn sinh viên sử dụng phần mềm phân tích thống kê trong nghiên cứu.', type: 'Hội thảo & Đào tạo' }
+    ],
+    13: [ // MARK
+        { title: 'Tuyển thực tập sinh Content Creator và Digital Marketing', detail: 'Thực tập lên kế hoạch nội dung mạng xã hội, hỗ trợ tối ưu chiến dịch quảng cáo.', type: 'Tuyển dụng & Thực tập' },
+        { title: 'Workshop: Kỹ năng Xây dựng Chiến dịch Quảng cáo đa kênh', detail: 'Chia sẻ các bước tối ưu chi phí quảng cáo Facebook, Google và TikTok.', type: 'Hội thảo & Đào tạo' },
+        { title: 'Tọa đàm: Vai trò của Sáng tạo Nội dung trong Kỷ nguyên số', detail: 'Chia sẻ kỹ năng viết bài chuẩn SEO và sáng tạo kịch bản video ngắn.', type: 'Hội thảo & Đào tạo' }
+    ],
+    14: [ // FIN
+        { title: 'Tuyển thực tập sinh Trợ lý Kiểm toán viên và Kế toán nội bộ', detail: 'Hỗ trợ kiểm tra chứng từ, đối chiếu số liệu và rà soát sổ sách kế toán.', type: 'Tuyển dụng & Thực tập' },
+        { title: 'Workshop: Quy trình Kế toán Thuế và Kê khai Thuế doanh nghiệp', detail: 'Hướng dẫn thực hành báo cáo thuế định kỳ theo quy định pháp luật mới nhất.', type: 'Hội thảo & Đào tạo' },
+        { title: 'Hội thảo: Ứng dụng Công nghệ Blockchain trong Giao dịch Tài chính', detail: 'Tìm hiểu về tương lai của Fintech và tác động đến ngành tài chính ngân hàng.', type: 'Hội thảo & Đào tạo' }
+    ],
+    15: [ // TOUR
+        { title: 'Tuyển thực tập sinh Điều hành Tour và Hướng dẫn viên du lịch', detail: 'Hỗ trợ chuẩn bị hồ sơ đoàn khách, đặt dịch vụ và hướng dẫn thực tế các tour ngắn ngày.', type: 'Tuyển dụng & Thực tập' },
+        { title: 'Chương trình Huấn luyện Nghiệp vụ Lữ hành thực chiến', detail: 'Trải nghiệm dẫn tour giả định dưới sự chấm điểm của chuyên gia du lịch.', type: 'Hội thảo & Đào tạo' },
+        { title: 'Hội thảo: Phát triển Sản phẩm Du lịch Sinh thái bền vững', detail: 'Thảo luận phương pháp thu hút khách quốc tế trải nghiệm du lịch cộng đồng.', type: 'Hội thảo & Đào tạo' }
+    ],
+    16: [ // HOTEL
+        { title: 'Tuyển thực tập sinh Lễ tân, Buồng phòng và Phục vụ bàn', detail: 'Thực tập nghiệp vụ tiêu chuẩn 5 sao tại các bộ phận tiền sảnh và nhà hàng.', type: 'Tuyển dụng & Thực tập' },
+        { title: 'Workshop: Nghệ thuật Pha chế đồ uống và Chế biến Ẩm thực Á-Âu', detail: 'Trải nghiệm lớp học làm bánh và pha chế cocktail cùng bartender chuyên nghiệp.', type: 'Hội thảo & Đào tạo' },
+        { title: 'Tham quan thực tế mô hình Vận hành Khách sạn cao cấp', detail: 'Giới thiệu quy trình check-in/check-out và quản lý nhân sự buồng phòng.', type: 'Tham quan doanh nghiệp' }
+    ],
+    17: [ // LAW
+        { title: 'Tuyển thực tập sinh Pháp lý doanh nghiệp và Trợ lý Luật sư', detail: 'Hỗ trợ soạn thảo hợp đồng thương mại, tra cứu văn bản pháp luật và chuẩn bị hồ sơ tranh tụng.', type: 'Tuyển dụng & Thực tập' },
+        { title: 'Tọa đàm: Kỹ năng Soạn thảo Hợp đồng Thương mại Quốc tế', detail: 'Chia sẻ các điều khoản quan trọng và cách giảm thiểu rủi ro pháp lý.', type: 'Hội thảo & Đào tạo' },
+        { title: 'Hội thảo chuyên đề: Tìm hiểu Luật Đất đai sửa đổi bổ sung', detail: 'Phân tích các tác động mới nhất của luật đất đai đến thị trường bất động sản.', type: 'Hội thảo & Đào tạo' }
+    ],
+    18: [ // ENG
+        { title: 'Tuyển thực tập sinh Giảng dạy Tiếng Anh và Biên phiên dịch', detail: 'Thực tập trợ giảng lớp học tiếng Anh giao tiếp, dịch tài liệu chuyên ngành thương mại.', type: 'Tuyển dụng & Thực tập' },
+        { title: 'Workshop: Kỹ thuật Biên dịch và Bản địa hóa tài liệu đa quốc gia', detail: 'Phương pháp dịch thuật tự nhiên, chính xác các thuật ngữ kinh tế.', type: 'Hội thảo & Đào tạo' },
+        { title: 'Hội thảo: Kỹ năng Giao tiếp Ngoại giao trong môi trường Đa văn hóa', detail: 'Đào tạo kỹ năng làm việc nhóm, đàm phán bằng tiếng Anh chuyên nghiệp.', type: 'Hội thảo & Đào tạo' }
+    ],
+    19: [ // COMM
+        { title: 'Tuyển thực tập sinh Biên tập viên và Kỹ thuật viên dựng hình', detail: 'Hỗ trợ viết kịch bản, thu thập tư liệu báo chí và dựng các clip ngắn truyền thông.', type: 'Tuyển dụng & Thực tập' },
+        { title: 'Workshop: Quy trình Sản xuất Bản tin Truyền hình và Video ngắn', detail: 'Hướng dẫn thực hành các kỹ thuật quay phim, biên tập tin tức trên điện thoại.', type: 'Hội thảo & Đào tạo' },
+        { title: 'Hội thảo: Đạo đức báo chí và phòng chống tin giả trên mạng xã hội', detail: 'Trao đổi về kỹ năng xác thực thông tin và kiểm chứng nguồn tin.', type: 'Hội thảo & Đào tạo' }
+    ],
+    20: [ // PSY
+        { title: 'Tuyển thực tập sinh Tham vấn học đường và Hỗ trợ kỹ năng sống', detail: 'Hỗ trợ tổ chức chuyên đề kỹ năng sống, thực tập tư vấn tâm lý học đường dưới sự giám sát.', type: 'Tuyển dụng & Thực tập' },
+        { title: 'Workshop: Kỹ năng Nhận diện và Sơ cứu tâm lý khủng hoảng tuổi dậy thì', detail: 'Hướng dẫn cách tham vấn và hỗ trợ học sinh vượt qua stress.', type: 'Hội thảo & Đào tạo' },
+        { title: 'Tọa đàm: Ứng dụng Trị liệu Tâm lý Nghệ thuật trong giải tỏa áp lực', detail: 'Giới thiệu phương pháp vẽ tranh, âm nhạc phục vụ chăm sóc sức khỏe tinh thần.', type: 'Hội thảo & Đào tạo' }
+    ],
+    21: [ // NURS
+        { title: 'Tuyển thực tập sinh Điều dưỡng Đa khoa tại Khoa Cấp cứu', detail: 'Thực tập kỹ thuật chăm sóc người bệnh toàn diện, hỗ trợ bác sĩ làm thủ thuật.', type: 'Tuyển dụng & Thực tập' },
+        { title: 'Workshop: Nghiệp vụ Quy trình Cấp cứu ban đầu trong tai nạn giao thông', detail: 'Hướng dẫn thực hành hồi sức tim phổi CPR và cố định vết thương.', type: 'Hội thảo & Đào tạo' },
+        { title: 'Tọa đàm: Kỹ năng Giao tiếp và Chăm sóc người bệnh nặng', detail: 'Rèn luyện thái độ phục vụ và nghệ thuật giao tiếp xoa dịu tinh thần bệnh nhân.', type: 'Hội thảo & Đào tạo' }
+    ],
+    22: [ // PHARM
+        { title: 'Tuyển thực tập sinh Dược sĩ tư vấn và Quản lý Kho dược', detail: 'Thực tập sắp xếp thuốc theo tiêu chuẩn GPP, hỗ trợ tư vấn sử dụng thuốc an toàn.', type: 'Tuyển dụng & Thực tập' },
+        { title: 'Workshop: Quy trình Kiểm nghiệm và Đánh giá chất lượng Dược liệu', detail: 'Hướng dẫn thực hành chiết xuất tinh dầu và hoạt chất từ cây thảo dược.', type: 'Hội thảo & Đào tạo' },
+        { title: 'Hội thảo: Xu hướng ứng dụng Công nghệ Nano trong bào chế thuốc', detail: 'Cập nhật nghiên cứu mới nhất giúp tăng khả năng hấp thu của dược chất.', type: 'Hội thảo & Đào tạo' }
+    ]
+};
+
 // Helper to read CSV from Output_DB
 const outputDbDir = path.join(__dirname, '..', 'Output_DB');
 function readCSV(filename) {
@@ -195,126 +468,38 @@ function readCSV(filename) {
     });
 }
 
-// Helper to classify CSV enterprises to faculties
-function getFacultyForCompany(name, id) {
-    const n = name.toLowerCase();
-    
-    if (n.includes('vietravel') || n.includes('saigontourist') || n.includes('fiditour') || n.includes('du lịch') || n.includes('lữ hành') || n.includes('tour')) {
-        return 15; // TOUR
-    }
-    if (n.includes('khách sạn') || n.includes('nhà hàng') || n.includes('hotel') || n.includes('restaurant') || n.includes('catering')) {
-        return 16; // HOTEL
-    }
-    if (n.includes('luật') || n.includes('law') || n.includes('pháp lý')) {
-        return 17; // LAW
-    }
-    if (n.includes('ngoại ngữ') || n.includes('dịch thuật') || n.includes('english') || n.includes('language') || n.includes('translation')) {
-        return 18; // ENG
-    }
-    if (n.includes('bệnh viện') || n.includes('tâm anh') || n.includes('hospital') || n.includes('điều dưỡng') || n.includes('y tế') || n.includes('nursing')) {
-        return 21; // NURS
-    }
-    if (n.includes('dược') || n.includes('pharma') || n.includes('pharmacity') || n.includes('apothecary')) {
-        return 22; // PHARM
-    }
-    if (n.includes('kiến trúc') || n.includes('architect')) {
-        return 4; // ARCH
-    }
-    if (n.includes('xây dựng') || n.includes('công trình') || n.includes('construction') || n.includes('coteccons') || n.includes('đường bộ') || n.includes('cầu đường')) {
-        return 10; // CE
-    }
-    if (n.includes('mỹ thuật') || n.includes('fine art') || n.includes('tranh') || n.includes('triển lãm')) {
-        return 5; // FA
-    }
-    if (n.includes('thiết kế đồ họa') || n.includes('graphic') || n.includes('cánh cam') || n.includes('canh cam') || n.includes('design')) {
-        return 7; // GD
-    }
-    if (n.includes('nội thất') || n.includes('interior') || n.includes('decor')) {
-        return 8; // INT
-    }
-    if (n.includes('thời trang') || n.includes('fashion') || n.includes('may mặc') || n.includes('nhà bè') || n.includes('textile')) {
-        return 9; // FASH
-    }
-    if (n.includes('thiết kế công nghiệp') || n.includes('industrial design')) {
-        return 6; // ID
-    }
-    if (n.includes('cơ khí') || n.includes('mechatronics') || n.includes('điện tử') || n.includes('robotics') || n.includes('sharp') || n.includes('phần cứng') || n.includes('c&t') || n.includes('hutech')) {
-        return 11; // ME
-    }
-    if (n.includes('acb') || n.includes('chứng khoán') || n.includes('ngân hàng') || n.includes('tài chính') || n.includes('kế toán') || n.includes('finance') || n.includes('audit') || n.includes('tax')) {
-        return 14; // FIN
-    }
-    if (n.includes('kinh tế') || n.includes('economy') || n.includes('đầu tư') || n.includes('investment')) {
-        return 12; // ECO
-    }
-    if (n.includes('marketing') || n.includes('tiếp thị') || n.includes('quảng cáo') || n.includes('tmai sài gòn') || n.includes('ad')) {
-        return 13; // MARK
-    }
-    if (n.includes('truyền thông') || n.includes('báo chí') || n.includes('news') || n.includes('tạp chí') || n.includes('sctv') || n.includes('media') || n.includes('sen vàng') || n.includes('cát tiên sa') || n.includes('cattiensa') || n.includes('senvang')) {
-        return 19; // COMM
-    }
-    if (n.includes('quan hệ công chúng') || n.includes('pr') || n.includes('sự kiện') || n.includes('event')) {
-        return 3; // PR
-    }
-    if (n.includes('tâm lý') || n.includes('psychology') || n.includes('tham vấn') || n.includes('counseling')) {
-        return 20; // PSY
-    }
-    if (n.includes('quản trị') || n.includes('business') || n.includes('unilever') || n.includes('masan') || n.includes('dương gia phát') || n.includes('group') || n.includes('corporation')) {
-        return 2; // BA
-    }
-    
-    // Distribute remaining software/tech companies in a round-robin balanced way
-    const fallbackFaculties = [1, 2, 11, 7, 13, 14];
-    return fallbackFaculties[id % fallbackFaculties.length];
+// Fictional helper generators
+function getFakeRepName(index) {
+    const familyNames = ['Nguyễn', 'Trần', 'Lê', 'Phạm', 'Vũ', 'Hoàng', 'Phan', 'Huỳnh'];
+    const middleNames = ['Văn', 'Thị', 'Hoàng', 'Minh', 'Thanh', 'Ngọc', 'Quốc', 'Kim'];
+    const lastNames = ['Hùng', 'Lan', 'Đạt', 'Duy', 'Hoa', 'Sơn', 'Anh', 'Bình', 'Trang', 'Khánh'];
+
+    const family = familyNames[index % familyNames.length];
+    const middle = middleNames[(index * 3) % middleNames.length];
+    const last = lastNames[(index * 7) % lastNames.length];
+    return `${family} ${middle} ${last}`;
 }
 
-// Enterprise scale mapping heuristics
-function getCompanyHeuristicInfo(name) {
-    const n = name.toLowerCase();
-    let scale = "Tier 2 (SME)";
-    if (/(aws|hitachi|tma|fpt|acb|mobifone|cmc|dxc|vnpt|nashtech|kms|nab|dek|opswat|sharp|sctv|vinasa|vnito|agest|mitek|elca|coteccons|vus|unilever|masan|vietravel|saigontourist|pharmacity)/.test(n)) {
-        scale = "Tier 1 (Tập đoàn/Global)";
-    } else if (/(aircity|beelieve|meta art|namiq|aliniex|1base|payror|palace|decor|phượt)/.test(n)) {
-        scale = "Tier 3 (Startup/Micro)";
-    }
-
-    let fields = [];
-    if (/(software|soft|tech|technology|tma|kms|nashtech|dxc|dek|wata|tps|kyanon|vtimes|engma|fisoft|pizitech|t4tek|mitek|mksol|hitachi|vietai)/.test(n)) {
-        fields.push("Phần mềm & Outsource");
-    }
-    if (/(aws|cloud|solution|giải pháp|cmc|vnpt|smart|số|hệ thống|vnresource|opswat|c\. p|tiên khanh|3ps|alila|alta|cần kiệm)/.test(n)) {
-        fields.push("Giải pháp CNTT & Chuyển đổi số");
-    }
-    if (/(fpt|mobifone|sctv|viễn thông|hạ tầng|mạng)/.test(n)) {
-        fields.push("Hạ tầng & Viễn thông");
-    }
-    if (/(acb|payror|chứng khoán|ngân hàng|aliniex|finance|tài chính|kế toán)/.test(n)) {
-        fields.push("Tài chính & Fintech");
-    }
-    if (/(sharp|điện tử|phần cứng|máy tính|robotics|c&t|phần cứng)/.test(n)) {
-        fields.push("Phần cứng & Điện tử");
-    }
-    if (/(marketing|media|truyền thông|cánh cam|sen vàng|tmai|quảng cáo|tiếp thị|pr|sự kiện|event)/.test(n)) {
-        fields.push("Marketing & Truyền thông");
-    }
-    if (fields.length === 0) fields.push("Khác");
-
-    return { scale, fields };
+function getFakeRepRole(index) {
+    const roles = ['Giám đốc', 'Trưởng phòng Nhân sự', 'Phó Giám đốc', 'Trưởng ban Tuyển dụng', 'Đại diện Hợp tác'];
+    return roles[index % roles.length];
 }
 
-// Helper to determine activity types
-function getActivityTypes(title, detail) {
-    const str = (title + " " + detail).toLowerCase();
-    const types = [];
-    if (str.includes("mou") || str.includes("ký kết")) types.push("Ký kết MOU");
-    if (str.includes("kiểm định") || str.includes("phỏng vấn") || str.includes("khảo sát") || str.includes("đánh giá")) types.push("Kiểm định & Đánh giá");
-    if (str.includes("tuyển dụng") || str.includes("thực tập") || str.includes("việc làm") || str.includes("nhân sự") || str.includes("capstone") || str.includes("kltn") || str.includes("nhận sinh viên") || str.includes("hướng dẫn sinh viên")) types.push("Tuyển dụng & Thực tập");
-    if (str.includes("hội thảo") || str.includes("đào tạo") || str.includes("tọa đàm") || str.includes("môn học") || str.includes("định hướng") || str.includes("chuyên ngành") || str.includes("bảo vệ") || str.includes("tư vấn") || str.includes("giảng dạy")) types.push("Hội thảo & Đào tạo");
-    if (str.includes("học bổng") || str.includes("tặng quà") || str.includes("bánh kem") || str.includes("tặng hoa") || str.includes("tài trợ") || str.includes("tiệc") || str.includes("tri ân")) types.push("Tài trợ & Học bổng");
-    if (str.includes("tham quan") || str.includes("tour")) types.push("Tham quan doanh nghiệp");
+function getFakeBuilding(index) {
+    const buildings = [
+        'Tầng 12, Tòa nhà Alpha, 15 Nguyễn Huệ',
+        'Tòa nhà Pax Sky, 123 Nguyễn Thị Minh Khai',
+        'Phòng 502, Green Building, 456 Điện Biên Phủ',
+        'Lầu 3, Royal Tower, 789 Nguyễn Lương Bằng',
+        'Tầng trệt, Landmark Space, 50 Tô Hiến Thành',
+        'Tòa nhà Saigon Co-working, 88 Phổ Quang'
+    ];
+    return buildings[index % buildings.length];
+}
 
-    if (types.length === 0) types.push("Khác");
-    return types;
+function getFakeDistrict(index) {
+    const districts = ['Quận 1', 'Quận 3', 'Quận 7', 'Quận 10', 'Quận Bình Thạnh', 'TP. Thủ Đức'];
+    return districts[index % districts.length];
 }
 
 // Parser for student SQL files
@@ -326,7 +511,7 @@ function parseStudentSql(filePath) {
     const content = fs.readFileSync(filePath, 'utf8');
     const lines = content.split(/\r?\n/);
     const students = [];
-    
+
     for (const line of lines) {
         const trimmed = line.trim();
         if (trimmed.startsWith('(') && (trimmed.endsWith('),') || trimmed.endsWith(');') || trimmed.endsWith(')'))) {
@@ -336,7 +521,7 @@ function parseStudentSql(filePath) {
             cleanLine = cleanLine.trim();
             if (cleanLine.startsWith('(') && cleanLine.endsWith(')')) {
                 cleanLine = cleanLine.slice(1, -1);
-                
+
                 const values = [];
                 let current = '';
                 let inQuotes = false;
@@ -352,16 +537,16 @@ function parseStudentSql(filePath) {
                     }
                 }
                 values.push(current.trim());
-                
+
                 const parsedValues = values.map(val => {
                     if (val.toUpperCase() === 'NULL') return null;
                     return val;
                 });
-                
+
                 if (parsedValues[0] === 'student_code') {
                     continue;
                 }
-                
+
                 students.push(parsedValues);
             }
         }
@@ -369,64 +554,9 @@ function parseStudentSql(filePath) {
     return students;
 }
 
-// Dictionary of high-quality custom mock companies for empty faculties
-const CUSTOM_MOCK_COMPANIES = {
-    3: [ // PR
-        { name: 'Công ty Truyền thông & Sự kiện Elite PR', status: 'Đã ký hợp tác', rep: 'Bà Nguyễn Thị Minh Thư', repRole: 'PR Director', repEmail: 'thu.nguyen@elitepr.com', address: '12 Nguyễn Huệ, Quận 1, TP.HCM' }
-    ],
-    4: [ // ARCH
-        { name: 'Công ty Cổ phần Thiết kế & Kiến trúc Vạn Xuân (VLU Design)', status: 'Đang triển khai', rep: 'KTS. Nguyễn Văn Dũng', repRole: 'Giám đốc Sáng tạo', repEmail: 'dung.nguyen@vanxuanarch.vn', address: 'Tòa nhà Vạn Xuân, KĐT Him Lam, Quận 7, TP.HCM' }
-    ],
-    5: [ // FA
-        { name: 'Phòng tranh & Đấu giá Mỹ thuật Sài Gòn Art Gallery', status: 'Đã ký hợp tác', rep: 'Ông Lê Huy', repRole: 'Đại diện Mỹ thuật', repEmail: 'huy.le@saigonart.vn', address: '97A Phó Đức Chính, Quận 1, TP.HCM' }
-    ],
-    6: [ // ID
-        { name: 'Công ty Kiểu dáng Công nghiệp & Thiết kế Việt Nam (VietID)', status: 'Tiềm năng', rep: 'Ông Ngô Minh Quân', repRole: 'CEO', repEmail: 'quan.ngo@vietid.design', address: 'Khu Công nghệ cao Quận 9, TP.HCM' }
-    ],
-    8: [ // INT
-        { name: 'Tổng công ty Nội thất & Trang trí Cát Tường', status: 'Đang triển khai', rep: 'Ông Vũ Hoài Nam', repRole: 'Giám đốc kỹ thuật', repEmail: 'nam.vu@cattuonginterior.com', address: '350 Tô Hiến Thành, Quận 10, TP.HCM' }
-    ],
-    9: [ // FASH
-        { name: 'Tổng công ty Cổ phần May Nhà Bè (NBC Group)', status: 'Đã ký hợp tác', rep: 'Bà Phạm Thị Dung', repRole: 'Trưởng phòng Nhân sự', repEmail: 'recruitment@nhabe.com.vn', address: '4 Bến Nghé, Quận 7, TP.HCM' }
-    ],
-    10: [ // CE
-        { name: 'Tổng công ty Xây dựng Coteccons', status: 'Đang triển khai', rep: 'Ông Nguyễn Huy Bình', repRole: 'Trưởng ban nhân sự dự án', repEmail: 'binh.nh@coteccons.vn', address: '236/6 Điện Biên Phủ, Quận Bình Thạnh, TP.HCM' }
-    ],
-    12: [ // ECO
-        { name: 'Viện Nghiên cứu & Phát triển Kinh tế TP.HCM', status: 'Liên hệ', rep: 'TS. Lê Thị Thảo', repRole: 'Trưởng ban Đào tạo', repEmail: 'thaolt@hids.hochiminhcity.gov.vn', address: '28 Lê Quý Đôn, Quận 3, TP.HCM' }
-    ],
-    15: [ // TOUR
-        { name: 'Công ty Cổ phần Du lịch và Tiếp thị Giao thông Vận tải Việt Nam (Vietravel)', status: 'Đã ký hợp tác', rep: 'Ông Nguyễn Quốc Kỳ', repRole: 'Chủ tịch HĐQT', repEmail: 'info@vietravel.com', address: '190 Pasteur, Quận 3, TP.HCM' },
-        { name: 'Công ty TNHH MTV Dịch vụ Lữ hành Saigontourist', status: 'Đang triển khai', rep: 'Ông Nguyễn Hữu Y', repRole: 'Giám đốc Lữ hành', repEmail: 'info@saigontourist.net', address: '45 Lê Thánh Tôn, Quận 1, TP.HCM' },
-        { name: 'Công ty Cổ phần Du lịch Fiditour', status: 'Đang triển khai', rep: 'Ông Trần Thế Dũng', repRole: 'Tổng Giám đốc', repEmail: 'info@fiditour.com', address: '129 Nguyễn Huệ, Quận 1, TP.HCM' }
-    ],
-    16: [ // HOTEL
-        { name: 'Khách sạn Rex Sài Gòn (Rex Hotel)', status: 'Đã ký hợp tác', rep: 'Bà Hoàng Thị F', repRole: 'HR Manager', repEmail: 'hr@rexhotel.com', address: '141 Nguyễn Huệ, Quận 1, TP.HCM' },
-        { name: 'Khách sạn Caravelle Saigon', status: 'Đang triển khai', rep: 'Ông Pierre C.', repRole: 'General Manager', repEmail: 'hr@caravellehotel.com', address: '19 Công trường Lam Sơn, Quận 1, TP.HCM' }
-    ],
-    17: [ // LAW
-        { name: 'Văn phòng Luật sư Vạn Lý & Cộng sự', status: 'Đã ký hợp tác', rep: 'Luật sư Lê Văn Khải', repRole: 'Trưởng văn phòng', repEmail: 'khai.lv@vanlylaw.vn', address: '100 Nguyễn Thị Minh Khai, Quận 3, TP.HCM' },
-        { name: 'Công ty Luật TNHH Luật Việt', status: 'Đàm phán', rep: 'Luật sư Trần Hữu Danh', repRole: 'Partner', repEmail: 'danh.th@luatviet.com', address: 'Tòa nhà Centec, 72 Nguyễn Thị Minh Khai, Quận 3, TP.HCM' }
-    ],
-    18: [ // ENG
-        { name: 'Hệ thống Anh ngữ Hội Việt Mỹ (VUS)', status: 'Đã ký hợp tác', rep: 'Bà Trần Minh Nghĩa', repRole: 'Trưởng bộ phận Học vụ', repEmail: 'academic@vus.edu.vn', address: '189 Nguyễn Thị Minh Khai, Quận 1, TP.HCM' }
-    ],
-    20: [ // PSY
-        { name: 'Trung tâm Tham vấn & Trị liệu Tâm lý Hồn Việt', status: 'Đang triển khai', rep: 'TS. Vương Kiến Quốc', repRole: 'Giám đốc chuyên môn', repEmail: 'counseling@honviet.com.vn', address: '40 Nguyễn Bỉnh Khiêm, Quận 1, TP.HCM' }
-    ],
-    21: [ // NURS
-        { name: 'Bệnh viện Đa khoa Tâm Anh', status: 'Đang triển khai', rep: 'ThS. Nguyễn Y', repRole: 'Trưởng ban Đào tạo & Nghiên cứu', repEmail: 'tuyendung@tamanhhospital.vn', address: '2B Phổ Quang, Quận Tân Bình, TP.HCM' },
-        { name: 'Bệnh viện Quận Bình Thạnh', status: 'Đã ký hợp tác', rep: 'Bà Trần Thị Bích', repRole: 'Phó Giám Đốc', repEmail: 'bv.binhthanh@tphcm.gov.vn', address: '112 Đinh Tiên Hoàng, Quận Bình Thạnh, TP.HCM' }
-    ],
-    22: [ // PHARM
-        { name: 'Hệ thống Nhà thuốc Pharmacity', status: 'Đang triển khai', rep: 'Dược sĩ Đặng Thanh Thắng', repRole: 'Giám đốc Dược phẩm', repEmail: 'thang.dang@pharmacity.vn', address: '248A Nơ Trang Long, Quận Bình Thạnh, TP.HCM' },
-        { name: 'Công ty Cổ phần Dược phẩm OPC', status: 'Đã ký hợp tác', rep: 'Bà Phạm Thị Hoa', repRole: 'Trưởng phòng R&D', repEmail: 'info@opcpharma.com', address: '1017 Hồng Bàng, Quận 6, TP.HCM' }
-    ]
-};
-
 async function seed() {
     console.log('🚀 Starting Consolidated Database Seeder...');
-    
+
     // First setup connection parameters
     const connectionParams = {
         host: process.env.DB_HOST || 'localhost',
@@ -449,7 +579,7 @@ async function seed() {
 
         // Now select the DB for transactional queries
         await conn.query(`USE \`${process.env.DB_NAME || 'vlu_enterprise_link'}\``);
-        
+
         console.log('Disabling foreign key checks and clearing database tables...');
         await conn.query('SET FOREIGN_KEY_CHECKS = 0');
 
@@ -458,7 +588,7 @@ async function seed() {
             'tasks', 'notes', 'action_history', 'workflow_history', 'enterprise_ratings',
             'students', 'mous', 'activity_target_map', 'activity_type_map', 'activities',
             'enterprise_fields', 'enterprise_addresses', 'enterprise_representatives', 'enterprises',
-            'targets', 'act_types', 'scales', 'fields'
+            'departments', 'targets', 'act_types', 'scales', 'fields'
         ];
         for (const table of tablesToClear) {
             await conn.query(`TRUNCATE TABLE \`${table}\``);
@@ -475,7 +605,7 @@ async function seed() {
 
         const fieldMap = {};
         for (const [i, name] of ST_FIELDS.entries()) {
-            await conn.query('INSERT INTO fields (id, name) VALUES (?, ?)', [i + 1, name]);
+            await conn.query('INSERT INTO fields (id, name, faculty_id) VALUES (?, ?, 0)', [i + 1, name]);
             fieldMap[name] = i + 1;
         }
 
@@ -494,103 +624,83 @@ async function seed() {
         }
         console.log('✔ Static reference data seeded.');
 
+        // Step 3.5: Seed Fictional Departments for all 22 faculties
+        console.log('Generating fictional departments...');
+        const deptMap = {}; // Key: `facId_deptIndex`, Value: deptId
+        for (let facId = 1; facId <= 22; facId++) {
+            const profile = FACULTY_PROFILES[facId];
+            const depts = FACULTY_DEPARTMENTS[profile.code] || [`Bộ môn Quản lý ${profile.code}`, `Bộ môn Đào tạo ${profile.code}`];
+            for (let dIdx = 0; dIdx < depts.length; dIdx++) {
+                const name = depts[dIdx];
+                const [res] = await conn.query('INSERT INTO departments (faculty_id, name) VALUES (?, ?)', [facId, name]);
+                const deptId = res.insertId;
+                deptMap[`${facId}_${dIdx}`] = deptId;
+            }
+        }
+        console.log('✔ Fictional departments seeded.');
+
         // Keep track of companies per faculty to balance
         const companiesPerFaculty = {};
         for (let i = 1; i <= 22; i++) companiesPerFaculty[i] = [];
 
-        // Step 4: Import Enterprises from CSV
-        console.log('Importing Enterprises from CSV...');
-        const companiesCSV = readCSV('1_Company.csv');
+        // Step 4: Programmatically Seed Fictional Enterprises per Faculty
+        console.log('Generating fictional enterprises...');
         let insertedEnterprises = 0;
 
-        for (const row of companiesCSV) {
-            if (!row.id || !row.name) continue;
+        for (let facId = 1; facId <= 22; facId++) {
+            const profile = FACULTY_PROFILES[facId];
+            const comps = FICTIONAL_COMPANIES[facId] || [];
 
-            const isHcmc = row.is_hcmc ? (row.is_hcmc.toLowerCase() === 'true' || row.is_hcmc === '1') : false;
-            const info = getCompanyHeuristicInfo(row.name);
-            const scaleId = scaleMap[info.scale] || null;
+            for (let cIdx = 0; cIdx < comps.length; cIdx++) {
+                insertedEnterprises++;
+                const comp = comps[cIdx];
+                const scaleId = scaleMap[comp.scale] || 2; // Default to Tier 2
 
-            // Classify which faculty this company belongs to
-            const facId = getFacultyForCompany(row.name, row.id);
+                // Mix statuses for companies
+                const statuses = ['Đang triển khai', 'Đã ký hợp tác', 'Đàm phán', 'Tiềm năng'];
+                const status = statuses[cIdx % statuses.length];
 
-            // Randomize status for CSV companies to make the boards look alive
-            const statuses = ['Tiềm năng', 'Liên hệ', 'Đàm phán', 'Đề xuất', 'Đã ký hợp tác', 'Đang triển khai'];
-            const status = statuses[row.id % statuses.length];
+                // Associate with department of this faculty (round-robin)
+                const deptId = deptMap[`${facId}_${cIdx % 2}`] || null;
 
-            await conn.query(
-                'INSERT INTO enterprises (id, name, scale_id, is_hcmc, status, faculty_id) VALUES (?, ?, ?, ?, ?, ?)',
-                [row.id, row.name, scaleId, isHcmc, status, facId]
-            );
+                await conn.query(
+                    'INSERT INTO enterprises (id, name, scale_id, is_hcmc, status, department_id, faculty_id) VALUES (?, ?, ?, ?, ?, ?, ?)',
+                    [insertedEnterprises, comp.name, scaleId, true, status, deptId, facId]
+                );
 
-            insertedEnterprises++;
-            companiesPerFaculty[facId].push({ id: row.id, name: row.name, status });
+                companiesPerFaculty[facId].push({ id: insertedEnterprises, name: comp.name, status });
 
-            // Insert representative
-            if (row.rep_name || row.rep_phone || row.rep_email) {
+                // Insert representative
+                const repName = getFakeRepName(cIdx + facId);
+                const repRole = getFakeRepRole(cIdx);
+                const repEmail = `tuyendung@${comp.domain}`;
+                const repPhone = `0903${String(100000 + insertedEnterprises).slice(-6)}`;
+
                 await conn.query(
                     'INSERT INTO enterprise_representatives (enterprise_id, title, full_name, role, phone, email, is_primary) VALUES (?, ?, ?, ?, ?, ?, 1)',
-                    [row.id, row.rep_title || null, row.rep_name || null, row.rep_role || null, row.rep_phone || null, row.rep_email || null]
+                    [insertedEnterprises, cIdx % 2 === 0 ? 'Ông' : 'Bà', repName, repRole, repPhone, repEmail]
                 );
-            }
 
-            // Insert address
-            if (row.address_building || row.address_district || row.address_province) {
+                // Insert address
+                const addressBuilding = getFakeBuilding(cIdx + facId);
+                const addressDistrict = getFakeDistrict(cIdx + facId);
+                const addressProvince = 'TP. Hồ Chí Minh';
+
                 await conn.query(
                     'INSERT INTO enterprise_addresses (enterprise_id, building_street, district, province, country, is_main) VALUES (?, ?, ?, ?, ?, 1)',
-                    [row.id, row.address_building || null, row.address_district || null, row.address_province || null, row.address_country || 'Việt Nam']
+                    [insertedEnterprises, addressBuilding, addressDistrict, addressProvince, 'Việt Nam']
                 );
-            }
 
-            // Insert fields
-            for (const fieldName of info.fields) {
-                const fId = fieldMap[fieldName];
-                if (fId) {
-                    await conn.query('INSERT IGNORE INTO enterprise_fields (enterprise_id, field_id) VALUES (?, ?)', [row.id, fId]);
+                // Insert fields
+                for (const fieldName of comp.fields) {
+                    const fId = fieldMap[fieldName];
+                    if (fId) {
+                        await conn.query('INSERT IGNORE INTO enterprise_fields (enterprise_id, field_id) VALUES (?, ?)', [insertedEnterprises, fId]);
+                    }
                 }
             }
         }
-        console.log(`✔ Imported ${insertedEnterprises} enterprises from CSV.`);
-
-        // Step 5: Supplement custom mock companies for empty faculties
-        console.log('Supplementing custom mock companies for empty faculties...');
-        let supplementId = 1000; // Offset to avoid ID conflicts
-        for (let facId = 1; facId <= 22; facId++) {
-            if (companiesPerFaculty[facId].length === 0 || (CUSTOM_MOCK_COMPANIES[facId] && companiesPerFaculty[facId].length < 2)) {
-                const mocks = CUSTOM_MOCK_COMPANIES[facId] || [
-                    { name: `Công ty TNHH Dịch vụ ${FACULTY_PROFILES[facId].code} VLU`, status: 'Đang triển khai', rep: 'Ông Nguyễn Văn A', repRole: 'Giám đốc', repEmail: 'contact@vlu.vn', address: '45 Nguyễn Khắc Nhu, Quận 1, TP.HCM' }
-                ];
-                
-                for (const mock of mocks) {
-                    supplementId++;
-                    const info = getCompanyHeuristicInfo(mock.name);
-                    const scaleId = scaleMap[info.scale] || 2;
-                    
-                    await conn.query(
-                        'INSERT INTO enterprises (id, name, scale_id, is_hcmc, status, faculty_id) VALUES (?, ?, ?, ?, ?, ?)',
-                        [supplementId, mock.name, scaleId, true, mock.status, facId]
-                    );
-                    insertedEnterprises++;
-                    companiesPerFaculty[facId].push({ id: supplementId, name: mock.name, status: mock.status });
-
-                    // Insert representative
-                    await conn.query(
-                        'INSERT INTO enterprise_representatives (enterprise_id, title, full_name, role, email, is_primary) VALUES (?, ?, ?, ?, ?, 1)',
-                        [supplementId, 'Ông/Bà', mock.rep || 'Người đại diện', mock.repRole || 'Chức vụ', mock.repEmail || 'info@company.com']
-                    );
-
-                    // Insert address
-                    await conn.query(
-                        'INSERT INTO enterprise_addresses (enterprise_id, building_street, country, is_main) VALUES (?, ?, ?, 1)',
-                        [supplementId, mock.address || 'Quận Bình Thạnh, TP.HCM', 'Việt Nam']
-                    );
-
-                    // Insert fields
-                    const fId = fieldMap[info.fields[0]] || 7;
-                    await conn.query('INSERT IGNORE INTO enterprise_fields (enterprise_id, field_id) VALUES (?, ?)', [supplementId, fId]);
-                }
-            }
-        }
-        console.log(`✔ Total enterprises in database: ${insertedEnterprises}.`);
+        console.log(`✔ Generated ${insertedEnterprises} fictional enterprises.`);
 
         // Create a fast map for enterprise -> faculty mapping
         const enterpriseToFacultyMap = {};
@@ -602,81 +712,47 @@ async function seed() {
             }
         }
 
-        // Step 6: Import Activities from CSV
-        console.log('Importing Activities from CSV...');
-        const activitiesCSV = readCSV('4_Activities.csv');
+        // Step 6: Generate Fictional Activities per Faculty
+        console.log('Generating fictional activities...');
         let insertedActivities = 0;
 
-        for (const row of activitiesCSV) {
-            if (!row.id || !row.name || !row.id_company) continue;
-
-            const facId = enterpriseToFacultyMap[row.id_company] || 1; // Default to IT
-            const status = enterpriseToStatusMap[row.id_company] === 'Đang triển khai' ? 'Đã triển khai' : 'Đề xuất';
-
-            // Randomize start date in the past
-            const startYear = 2024 + (row.id % 2);
-            const startMonth = String(1 + (row.id % 12)).padStart(2, '0');
-            const startDate = `${startYear}-${startMonth}-10`;
-
-            const advisorList = FACULTY_PROFILES[facId].advisors;
-            const personInCharge = advisorList[row.id % advisorList.length];
-
-            await conn.query(
-                'INSERT INTO activities (id, enterprise_id, title, detail, start_date, status, person_in_charge, faculty_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-                [row.id, row.id_company, row.name, row.detail || '', startDate, status, personInCharge, facId]
-            );
-            insertedActivities++;
-
-            // Import activity types
-            const actTypes = getActivityTypes(row.name, row.detail || '');
-            for (const typeName of actTypes) {
-                const tId = actTypeMap[typeName];
-                if (tId) {
-                    await conn.query('INSERT IGNORE INTO activity_type_map (activity_id, type_id) VALUES (?, ?)', [row.id, tId]);
-                }
-            }
-
-            // Insert activity targets map (keep original targets)
-            if (row.id_target) {
-                const targets = String(row.id_target).split(',').map(t => t.trim()).filter(Boolean);
-                for (const tId of targets) {
-                    await conn.query('INSERT IGNORE INTO activity_target_map (activity_id, target_id) VALUES (?, ?)', [row.id, tId]);
-                }
-            }
-        }
-        console.log(`✔ Imported ${insertedActivities} activities from CSV.`);
-
-        // Supplement mock activities for custom mock companies
-        console.log('Supplementing custom mock activities...');
-        let activityIdCounter = 1000;
         for (let facId = 1; facId <= 22; facId++) {
-            const facultyCode = FACULTY_PROFILES[facId].code;
-            const companies = companiesPerFaculty[facId];
-            for (const comp of companies) {
-                if (comp.id > 1000) { // Custom mock company
-                    activityIdCounter++;
-                    
-                    const title = `Chương trình Thực tập & Tuyển dụng ${facultyCode} 2025`;
-                    const detail = `Tiếp nhận sinh viên thực tập các ngành thuộc ${FACULTY_PROFILES[facId].majors[0]} tại ${comp.name}.`;
-                    const status = comp.status === 'Đang triển khai' ? 'Đã triển khai' : 'Đề xuất';
-                    const startDate = '2025-02-15';
-                    const person = FACULTY_PROFILES[facId].advisors[0];
+            const profile = FACULTY_PROFILES[facId];
+            const comps = companiesPerFaculty[facId];
+            const templates = FACULTY_ACTIVITY_TEMPLATES[facId] || [];
 
-                    await conn.query(
-                        'INSERT INTO activities (id, enterprise_id, title, detail, start_date, status, person_in_charge, faculty_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-                        [activityIdCounter, comp.id, title, detail, startDate, status, person, facId]
-                    );
+            for (let aIdx = 0; aIdx < templates.length; aIdx++) {
+                insertedActivities++;
+                const template = templates[aIdx];
+                const comp = comps[aIdx % comps.length]; // Link to one of the faculty's companies
 
-                    // Link type 'Tuyển dụng & Thực tập' (id 5 in act_types)
-                    await conn.query('INSERT IGNORE INTO activity_type_map (activity_id, type_id) VALUES (?, 5)', [activityIdCounter]);
-                    // Link target 'Sinh Viên' (id 1 in targets)
-                    await conn.query('INSERT IGNORE INTO activity_target_map (activity_id, target_id) VALUES (?, 1)', [activityIdCounter]);
-                    
-                    insertedActivities++;
+                // Determine activity status based on company status
+                let status = 'Đề xuất';
+                if (comp.status === 'Đang triển khai' || comp.status === 'Đã ký hợp tác') {
+                    status = aIdx === 0 ? 'Đã triển khai' : 'Phê duyệt nội bộ';
                 }
+
+                const startYear = 2024 + (aIdx % 2);
+                const startMonth = String(1 + (aIdx % 12)).padStart(2, '0');
+                const startDate = `${startYear}-${startMonth}-15`;
+
+                const advisor = profile.advisors[aIdx % profile.advisors.length];
+
+                await conn.query(
+                    'INSERT INTO activities (id, enterprise_id, title, detail, start_date, status, person_in_charge, faculty_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+                    [insertedActivities, comp.id, template.title, template.detail, startDate, status, advisor, facId]
+                );
+
+                // Map activity type
+                const tId = actTypeMap[template.type] || actTypeMap['Khác'] || 7;
+                await conn.query('INSERT IGNORE INTO activity_type_map (activity_id, type_id) VALUES (?, ?)', [insertedActivities, tId]);
+
+                // Map activity target
+                const targetId = aIdx === 0 ? 4 : 7; // Link to target 4 (Sinh viên năm 4) or 7 (Tất cả sinh viên)
+                await conn.query('INSERT IGNORE INTO activity_target_map (activity_id, target_id) VALUES (?, ?)', [insertedActivities, targetId]);
             }
         }
-        console.log(`✔ Total activities in database: ${insertedActivities}.`);
+        console.log(`✔ Generated ${insertedActivities} fictional activities.`);
 
         // Create a fast map of activity_id -> faculty_id
         const [activityRows] = await conn.query('SELECT id, faculty_id FROM activities');
@@ -789,28 +865,28 @@ async function seed() {
         for (let facId = 1; facId <= 22; facId++) {
             const profile = FACULTY_PROFILES[facId];
             const comps = companiesPerFaculty[facId];
-            
+
             for (const comp of comps) {
                 // Generate MOU if company status is 'Đã ký hợp tác' or 'Đang triển khai'
                 if (comp.status === 'Đã ký hợp tác' || comp.status === 'Đang triển khai') {
                     insertedMOUs++;
-                    
+
                     const sequenceNum = String(insertedMOUs).padStart(3, '0');
                     const mouCode = `MOU-${profile.code}-2024-${sequenceNum}`;
                     const signingDate = '2024-03-15';
-                    
+
                     // Fetch representative
                     const [repRows] = await conn.query('SELECT full_name, role FROM enterprise_representatives WHERE enterprise_id = ?', [comp.id]);
                     const partnerContact = repRows.length > 0 ? `${repRows[0].full_name} - ${repRows[0].role}` : 'Đại diện đối tác';
-                    
-                    const orgType = comp.id < 10 ? 'Tập đoàn Công nghệ' : 'Doanh nghiệp';
+
+                    const orgType = comp.id % 2 === 0 ? 'Tập đoàn Công nghệ' : 'Doanh nghiệp';
                     const country = 'Việt Nam';
                     const scope = `Hợp tác đào tạo, tiếp nhận sinh viên thực tập ngành ${profile.majors[0]}, tổ chức hội thảo chuyên ngành và tuyển dụng sinh viên tốt nghiệp.`;
-                    
+
                     // Fetch department if exists under this faculty
                     const [deptRows] = await conn.query('SELECT id FROM departments WHERE faculty_id = ? LIMIT 1', [facId]);
                     const deptId = deptRows.length > 0 ? deptRows[0].id : null;
-                    
+
                     const vluContact = profile.advisors[0];
                     const tasks = `Tuyển dụng thực tập sinh học kỳ II/2024; tổ chức workshop định hướng nghề nghiệp.`;
                     const nextSteps = `Ký kết biên bản triển khai chi tiết Q3/2025; mở rộng hợp tác đào tạo.`;
@@ -834,7 +910,7 @@ async function seed() {
 
         // Step 9: Seed Board Data (Kanban Tasks & Notes)
         console.log('Generating board data (Kanban Tasks & Notes) for all faculties...');
-        
+
         // Load all users to assign/create tasks
         const [users] = await conn.query('SELECT id, email, role, faculty_id FROM users');
         let insertedTasks = 0;

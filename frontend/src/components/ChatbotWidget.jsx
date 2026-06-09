@@ -89,11 +89,11 @@ const ChatbotWidget = ({ isOpen, onClose }) => {
             // Action triggers from AI
             if (res.data.action) {
                 const action = res.data.action;
-                if (action.actionType === 'create_enterprise') {
+                if (action.actionType === 'create_enterprise' || action.actionType === 'update_enterprise') {
                     navigate('/enterprises', { state: { openModalWithData: action } });
-                } else if (action.actionType === 'create_student') {
+                } else if (action.actionType === 'create_student' || action.actionType === 'update_student') {
                     navigate('/students', { state: { openModalWithData: action } });
-                } else if (action.actionType === 'create_activity') {
+                } else if (action.actionType === 'create_activity' || action.actionType === 'update_activity') {
                     navigate('/activities', { state: { openModalWithData: action } });
                 }
             }

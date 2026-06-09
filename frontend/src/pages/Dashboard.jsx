@@ -19,6 +19,8 @@ import dayjs from 'dayjs';
 import 'dayjs/locale/vi';
 import isoWeek from 'dayjs/plugin/isoWeek';
 import quarterOfYear from 'dayjs/plugin/quarterOfYear';
+import Cookies from 'js-cookie';
+import { useTheme } from '../context/ThemeContext';
 
 dayjs.locale('vi');
 dayjs.extend(isoWeek);
@@ -57,14 +59,40 @@ const getDateRange = (period) => {
 };
 
 const Dashboard = () => {
+    const { isDark } = useTheme();
     const [stats, setStats] = useState(null);
     const [loading, setLoading] = useState(true);
     const [period, setPeriod] = useState('year');
     const [customRange, setCustomRange] = useState(null);
+    
+    const [faculties, setFaculties] = useState([]);
+    const [filterFaculty, setFilterFaculty] = useState(undefined);
+
+    const userCookie = Cookies.get('user');
+    const user = useMemo(() => {
+        try {
+            return userCookie ? JSON.parse(userCookie) : null;
+        } catch (e) {
+            return null;
+        }
+    }, [userCookie]);
+
+    const isAdmin = user && user.role === 'ADMIN';
 
     useEffect(() => {
         document.title = "Tổng quan | VLU Enterprise Link Manager";
-    }, []);
+        if (isAdmin) {
+            const fetchFaculties = async () => {
+                try {
+                    const res = await api.get('/structure/faculties');
+                    setFaculties(res.data || []);
+                } catch (e) {
+                    console.error('Error fetching faculties:', e);
+                }
+            };
+            fetchFaculties();
+        }
+    }, [isAdmin]);
 
     const dateRange = useMemo(() => {
         if (period === 'custom' && customRange) {
@@ -81,6 +109,7 @@ const Dashboard = () => {
                 const [from, to] = dateRange;
                 if (from) params.date_from = from.format('YYYY-MM-DD');
                 if (to) params.date_to = to.format('YYYY-MM-DD');
+                if (filterFaculty) params.faculty_id = filterFaculty;
                 const { data } = await api.get('/stats/dashboard', { params });
                 setStats(data);
             } catch (error) {
@@ -90,7 +119,7 @@ const Dashboard = () => {
             }
         };
         fetchStats();
-    }, [dateRange]);
+    }, [dateRange, filterFaculty]);
 
     const getPeriodLabel = () => {
         const [from, to] = dateRange;
@@ -122,50 +151,106 @@ const Dashboard = () => {
         {
             title: 'Tổng doanh nghiệp',
             value: totals.totalEnterprises,
-            icon: <BankOutlined className="text-4xl text-white opacity-80 group-hover:scale-110 transition-transform duration-300" />,
-            bg: 'bg-gradient-to-br from-red-500 to-red-600',
-            shadow: 'shadow-red-200 dark:shadow-none'
+            icon: <BankOutlined />,
+            bg: 'from-red-50 to-red-100/30 dark:from-red-950/20 dark:to-red-900/10',
+            borderL: 'border-l-red-500',
+            borderTheme: 'border-red-900/30',
+            iconBoxBg: 'from-red-500 to-rose-600',
+            textTitle: 'text-red-650/80',
+            textValue: 'text-red-800 dark:text-red-400',
+            bgIconColor: 'text-red-600 dark:text-red-400',
+            shadowColor: 'shadow-red-200'
         },
         {
             title: 'Đang hợp tác',
             value: totals.collaboratingEnterprises,
-            icon: <CheckCircleOutlined className="text-4xl text-white opacity-80 group-hover:scale-110 transition-transform duration-300" />,
-            bg: 'bg-gradient-to-br from-emerald-400 to-emerald-600',
-            shadow: 'shadow-emerald-200 dark:shadow-none'
+            icon: <CheckCircleOutlined />,
+            bg: 'from-emerald-50 to-emerald-100/30 dark:from-emerald-950/20 dark:to-emerald-900/10',
+            borderL: 'border-l-emerald-500',
+            borderTheme: 'border-emerald-900/30',
+            iconBoxBg: 'from-emerald-500 to-teal-600',
+            textTitle: 'text-emerald-600/80',
+            textValue: 'text-emerald-800 dark:text-emerald-400',
+            bgIconColor: 'text-emerald-600 dark:text-emerald-400',
+            shadowColor: 'shadow-emerald-200'
         },
         {
             title: `Hoạt động (${getPeriodTitle()})`,
             value: totals.activitiesCount,
-            icon: <AppstoreOutlined className="text-4xl text-white opacity-80 group-hover:scale-110 transition-transform duration-300" />,
-            bg: 'bg-gradient-to-br from-blue-500 to-blue-600',
-            shadow: 'shadow-blue-200 dark:shadow-none'
+            icon: <AppstoreOutlined />,
+            bg: 'from-blue-50 to-blue-100/30 dark:from-blue-950/20 dark:to-blue-900/10',
+            borderL: 'border-l-blue-500',
+            borderTheme: 'border-blue-900/30',
+            iconBoxBg: 'from-blue-500 to-indigo-650',
+            textTitle: 'text-blue-600/80',
+            textValue: 'text-blue-800 dark:text-blue-400',
+            bgIconColor: 'text-blue-600 dark:text-blue-400',
+            shadowColor: 'shadow-blue-200'
         },
         {
             title: 'Sinh viên tham gia',
             value: totals.totalStudents,
-            icon: <TeamOutlined className="text-4xl text-white opacity-80 group-hover:scale-110 transition-transform duration-300" />,
-            bg: 'bg-gradient-to-br from-purple-500 to-purple-600',
-            shadow: 'shadow-purple-200 dark:shadow-none'
+            icon: <TeamOutlined />,
+            bg: 'from-purple-50 to-purple-100/30 dark:from-purple-950/20 dark:to-purple-900/10',
+            borderL: 'border-l-purple-500',
+            borderTheme: 'border-purple-900/30',
+            iconBoxBg: 'from-purple-500 to-violet-650',
+            textTitle: 'text-purple-600/80',
+            textValue: 'text-purple-800 dark:text-purple-400',
+            bgIconColor: 'text-purple-600 dark:text-purple-400',
+            shadowColor: 'shadow-purple-200'
         }
     ];
+
+    const textColor = isDark ? '#f3f4f6' : '#374151';
+    const gridColor = isDark ? 'rgba(75, 85, 99, 0.2)' : 'rgba(229, 231, 235, 0.6)';
 
     // Chart Options
     const doughnutOptions = {
         maintainAspectRatio: false,
         plugins: {
-            legend: { position: 'bottom', labels: { usePointStyle: true, padding: 20 } }
+            legend: { 
+                position: 'bottom', 
+                labels: { 
+                    usePointStyle: true, 
+                    padding: 16,
+                    color: textColor,
+                    font: { family: 'inherit', size: 11 }
+                } 
+            },
+            tooltip: {
+                backgroundColor: isDark ? '#1f2937' : '#ffffff',
+                titleColor: isDark ? '#f3f4f6' : '#1f2937',
+                bodyColor: isDark ? '#d1d5db' : '#4b5563',
+                borderColor: isDark ? '#374151' : '#e5e7eb',
+                borderWidth: 1,
+            }
         },
-        cutout: '70%'
+        cutout: '72%'
     };
 
     const barOptions = {
         maintainAspectRatio: false,
         plugins: {
-            legend: { display: false }
+            legend: { display: false },
+            tooltip: {
+                backgroundColor: isDark ? '#1f2937' : '#ffffff',
+                titleColor: isDark ? '#f3f4f6' : '#1f2937',
+                bodyColor: isDark ? '#d1d5db' : '#4b5563',
+                borderColor: isDark ? '#374151' : '#e5e7eb',
+                borderWidth: 1,
+            }
         },
         scales: {
-            y: { beginAtZero: true, grid: { borderDash: [4, 4] } },
-            x: { grid: { display: false } }
+            y: { 
+                beginAtZero: true, 
+                grid: { color: gridColor, borderDash: [4, 4] },
+                ticks: { color: textColor, stepSize: 1 }
+            },
+            x: { 
+                grid: { display: false },
+                ticks: { color: textColor }
+            }
         }
     };
 
@@ -173,11 +258,25 @@ const Dashboard = () => {
         indexAxis: 'y',
         maintainAspectRatio: false,
         plugins: {
-            legend: { display: false }
+            legend: { display: false },
+            tooltip: {
+                backgroundColor: isDark ? '#1f2937' : '#ffffff',
+                titleColor: isDark ? '#f3f4f6' : '#1f2937',
+                bodyColor: isDark ? '#d1d5db' : '#4b5563',
+                borderColor: isDark ? '#374151' : '#e5e7eb',
+                borderWidth: 1,
+            }
         },
         scales: {
-            x: { beginAtZero: true, grid: { borderDash: [4, 4] } },
-            y: { grid: { display: false } }
+            x: { 
+                beginAtZero: true, 
+                grid: { color: gridColor, borderDash: [4, 4] },
+                ticks: { color: textColor, stepSize: 1 }
+            },
+            y: { 
+                grid: { display: false },
+                ticks: { color: textColor }
+            }
         }
     };
 
@@ -186,9 +285,9 @@ const Dashboard = () => {
         labels: charts.enterpriseByScale?.map(item => item.scale) || [],
         datasets: [{
             data: charts.enterpriseByScale?.map(item => item.count) || [],
-            backgroundColor: ['#1890ff', '#52c41a', '#faad14', '#f5222d'],
+            backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444'],
             borderWidth: 0,
-            hoverOffset: 4
+            hoverOffset: 6
         }]
     };
 
@@ -196,9 +295,9 @@ const Dashboard = () => {
         labels: charts.activityTypes?.map(item => item.type) || [],
         datasets: [{
             data: charts.activityTypes?.map(item => item.count) || [],
-            backgroundColor: ['#DA251D', '#7ce228ff', '#ffa39e', '#13b3cfff', '#a80772ff', '#18ff4a71', '#faad14'],
+            backgroundColor: ['#ef4444', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#14b8a6'],
             borderWidth: 0,
-            hoverOffset: 4
+            hoverOffset: 6
         }]
     };
 
@@ -207,7 +306,12 @@ const Dashboard = () => {
         datasets: [{
             label: 'Số lượng',
             data: charts.enterpriseByStatus?.map(item => item.count) || [],
-            backgroundColor: 'rgba(218, 37, 29, 0.8)',
+            backgroundColor: charts.enterpriseByStatus?.map(item => {
+                if (item.status === 'Đang triển khai' || item.status === 'Đang hợp tác') return '#10b981';
+                if (item.status === 'Đã ký kết') return '#3b82f6';
+                if (item.status === 'Đề xuất' || item.status === 'Chờ ký') return '#f59e0b';
+                return '#ef4444';
+            }) || '#3b82f6',
             borderRadius: 6,
             barThickness: 24
         }]
@@ -218,7 +322,7 @@ const Dashboard = () => {
         datasets: [{
             label: 'Doanh nghiệp',
             data: charts.enterpriseByFields?.map(item => item.count) || [],
-            backgroundColor: 'rgba(24, 144, 255, 0.7)',
+            backgroundColor: 'rgba(59, 130, 246, 0.85)',
             borderRadius: 4,
             barThickness: 16
         }]
@@ -238,55 +342,91 @@ const Dashboard = () => {
                 </div>
             </div>
 
-            {/* Period Selector */}
-            <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 mb-8 border border-gray-100 dark:border-gray-700 shadow-sm flex flex-col sm:flex-row sm:items-center gap-4">
-                <div className="flex items-center gap-2 text-gray-500 flex-shrink-0">
-                    <CalendarOutlined className="text-lg" />
-                    <span className="text-sm font-medium">Khoảng thời gian:</span>
+            {/* Period & Faculty Selector */}
+            <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 mb-8 border border-gray-100 dark:border-gray-700 shadow-sm flex flex-col lg:flex-row lg:items-center gap-4 justify-between">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-4 flex-1">
+                    <div className="flex items-center gap-2 text-gray-500 flex-shrink-0">
+                        <CalendarOutlined className="text-lg" />
+                        <span className="text-sm font-medium">Khoảng thời gian:</span>
+                    </div>
+                    <div className="w-full sm:w-auto overflow-x-auto whitespace-nowrap pb-2 sm:pb-0 scrollbar-none">
+                        <Segmented
+                            options={periodOptions}
+                            value={period}
+                            onChange={(val) => {
+                                setPeriod(val);
+                                if (val !== 'custom') setCustomRange(null);
+                            }}
+                            className="bg-gray-50 dark:bg-gray-800/50 inline-block sm:inline-flex"
+                        />
+                    </div>
+                    {period === 'custom' && (
+                        <RangePicker
+                            format="DD/MM/YYYY"
+                            value={customRange}
+                            onChange={setCustomRange}
+                            placeholder={['Từ ngày', 'Đến ngày']}
+                            className="rounded-lg w-full sm:w-auto flex-shrink-0"
+                            allowClear={false}
+                        />
+                    )}
                 </div>
-                <div className="w-full sm:w-auto overflow-x-auto whitespace-nowrap pb-2 sm:pb-0 scrollbar-none">
-                    <Segmented
-                        options={periodOptions}
-                        value={period}
-                        onChange={(val) => {
-                            setPeriod(val);
-                            if (val !== 'custom') setCustomRange(null);
-                        }}
-                        className="bg-gray-50 dark:bg-gray-800/50 inline-block sm:inline-flex"
-                    />
+                
+                <div className="flex flex-col sm:flex-row sm:items-center gap-4 flex-shrink-0">
+                    {isAdmin ? (
+                        <div className="flex items-center gap-2 w-full sm:w-auto">
+                            <span className="text-sm font-medium text-gray-500 whitespace-nowrap">Khoa/Ngành:</span>
+                            <Select
+                                placeholder="Tất cả các khoa"
+                                allowClear
+                                style={{ width: 220 }}
+                                onChange={(val) => setFilterFaculty(val || undefined)}
+                                value={filterFaculty}
+                                className="rounded-lg"
+                                showSearch
+                                optionFilterProp="children"
+                                filterOption={(input, option) =>
+                                    (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+                                }
+                                options={[
+                                    { value: '', label: 'Tất cả các khoa' },
+                                    ...faculties.map(f => ({ value: f.id, label: f.name }))
+                                ]}
+                            />
+                        </div>
+                    ) : (
+                        user?.faculty_name && (
+                            <div className="flex items-center gap-2">
+                                <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Bộ phận:</span>
+                                <Tag color="red" className="m-0 font-medium px-3 py-1 rounded-full border-0 bg-red-50 text-vluRed dark:bg-red-950/20 dark:text-red-400">
+                                    {user.faculty_name}
+                                </Tag>
+                            </div>
+                        )
+                    )}
+                    {dateRange[0] && dateRange[1] && (
+                        <span className="text-xs text-gray-400 ml-auto">
+                            📅 {getPeriodLabel()}
+                        </span>
+                    )}
                 </div>
-                {period === 'custom' && (
-                    <RangePicker
-                        format="DD/MM/YYYY"
-                        value={customRange}
-                        onChange={setCustomRange}
-                        placeholder={['Từ ngày', 'Đến ngày']}
-                        className="rounded-lg w-full sm:w-auto flex-shrink-0"
-                        allowClear={false}
-                    />
-                )}
-                {dateRange[0] && dateRange[1] && (
-                    <span className="text-xs text-gray-400 ml-auto">
-                        📅 {getPeriodLabel()}
-                    </span>
-                )}
             </div>
 
             {/* KPI Cards */}
             <Row gutter={[16, 16]} className="mb-8">
                 {kpiCards.map((kpi, idx) => (
                     <Col xs={12} sm={12} xl={6} key={idx}>
-                        <div className={`group relative overflow-hidden rounded-2xl ${kpi.bg} p-4 sm:p-6 shadow-md sm:shadow-lg ${kpi.shadow} transition-all duration-300 hover:-translate-y-1 hover:shadow-xl cursor-default`}>
-                            <div className="absolute -right-4 -top-4 opacity-20 transition-transform duration-500 group-hover:rotate-12 group-hover:scale-110">
-                                {React.cloneElement(kpi.icon, { className: 'text-6xl sm:text-8xl' })}
+                        <div className={`group relative overflow-hidden bg-gradient-to-br ${kpi.bg} rounded-2xl p-5 border-l-4 ${kpi.borderL} border border-slate-100 dark:${kpi.borderTheme} transition-all duration-300 hover:-translate-y-1 hover:shadow-md cursor-default`}>
+                            <div className="absolute -right-2 -bottom-2 opacity-10 transition-transform duration-500 group-hover:scale-110">
+                                {React.cloneElement(kpi.icon, { className: `text-6xl ${kpi.bgIconColor}` })}
                             </div>
-                            <div className="relative z-10 flex justify-between items-center">
-                                <div>
-                                    <p className="text-white/90 text-xs sm:text-sm font-medium mb-1">{kpi.title}</p>
-                                    <h3 className="text-xl sm:text-3xl md:text-4xl font-bold text-white m-0 leading-none">{kpi.value}</h3>
+                            <div className="flex items-center gap-3.5 relative z-10">
+                                <div className={`w-12 h-12 bg-gradient-to-br ${kpi.iconBoxBg} rounded-xl flex items-center justify-center shadow-md ${kpi.shadowColor} dark:shadow-none group-hover:scale-105 transition-transform duration-300`}>
+                                    {React.cloneElement(kpi.icon, { className: 'text-white text-lg' })}
                                 </div>
-                                <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm hidden sm:block">
-                                    {kpi.icon}
+                                <div>
+                                    <div className={`text-2xl sm:text-3xl font-extrabold ${kpi.textValue} leading-none mb-1`}>{kpi.value}</div>
+                                    <div className={`text-xs font-semibold ${kpi.textTitle} uppercase tracking-wider`}>{kpi.title}</div>
                                 </div>
                             </div>
                         </div>

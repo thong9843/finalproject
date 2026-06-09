@@ -126,7 +126,7 @@ const importEnterprises = async (req, res) => {
                 if (fieldStr) {
                     const fieldNames = fieldStr.split(',').map(s => s.trim()).filter(Boolean);
                     for (const fn of fieldNames) {
-                        const [fRows] = await conn.query('SELECT id FROM fields WHERE name LIKE ? LIMIT 1', [`%${fn}%`]);
+                        const [fRows] = await conn.query('SELECT id FROM fields WHERE name LIKE ? AND (faculty_id = 0 OR faculty_id = ?) LIMIT 1', [`%${fn}%`, facultyId || 0]);
                         if (fRows.length > 0) {
                             await conn.query('INSERT IGNORE INTO enterprise_fields (enterprise_id, field_id) VALUES (?, ?)', [enterpriseId, fRows[0].id]);
                         }
@@ -479,10 +479,10 @@ const aiParseRow = async (req, res) => {
         if (comp.field_names && Array.isArray(comp.field_names)) {
             for (const fn of comp.field_names) {
                 let field_id = null;
-                const [fRows] = await conn.query('SELECT id FROM fields WHERE name = ?', [fn]);
+                const [fRows] = await conn.query('SELECT id FROM fields WHERE name = ? AND (faculty_id = 0 OR faculty_id = ?)', [fn, facultyId || 0]);
                 if (fRows.length > 0) field_id = fRows[0].id;
                 else {
-                    const [fRes] = await conn.query('INSERT INTO fields (name) VALUES (?)', [fn]);
+                    const [fRes] = await conn.query('INSERT INTO fields (name, faculty_id) VALUES (?, ?)', [fn, facultyId || 0]);
                     field_id = fRes.insertId;
                 }
                 await conn.query('INSERT IGNORE INTO enterprise_fields (enterprise_id, field_id) VALUES (?, ?)', [enterpriseId, field_id]);

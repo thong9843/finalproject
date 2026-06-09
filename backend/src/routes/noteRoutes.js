@@ -6,6 +6,9 @@ const { verifyToken } = require('../middlewares/auth');
 // Apply verifyToken middleware to all note routes
 router.use(verifyToken);
 
+router.get('/reference', noteController.getByReference);
+router.post('/reference', noteController.saveReference);
+
 router.get('/', noteController.getAll);
 router.post('/', noteController.create);
 router.put('/:id', noteController.update);

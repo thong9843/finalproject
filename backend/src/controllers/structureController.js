@@ -45,7 +45,14 @@ exports.getScales = async (req, res) => {
 
 exports.getFields = async (req, res) => {
     try {
-        const [rows] = await pool.query('SELECT * FROM fields ORDER BY id ASC');
+        let query = 'SELECT f.*, fac.name AS faculty_name FROM fields f LEFT JOIN faculties fac ON f.faculty_id = fac.id';
+        let params = [];
+        if (req.user && req.user.role !== 'ADMIN') {
+            query += ' WHERE f.faculty_id = 0 OR f.faculty_id = ?';
+            params.push(req.user.faculty_id);
+        }
+        query += ' ORDER BY f.id ASC';
+        const [rows] = await pool.query(query, params);
         res.status(200).json(rows);
     } catch (error) {
         res.status(500).json({ message: error.message });
@@ -126,9 +133,17 @@ exports.deleteActivityType = async (req, res) => {
 // Fields CRUD
 exports.createField = async (req, res) => {
     try {
-        const { name } = req.body;
+        const { name, faculty_id } = req.body;
         if (!name) return res.status(400).json({ message: 'Tên lĩnh vực không được để trống' });
-        const [result] = await pool.query('INSERT INTO fields (name) VALUES (?)', [name]);
+
+        let finalFacultyId = faculty_id;
+        if (req.user.role !== 'ADMIN') {
+            finalFacultyId = req.user.faculty_id;
+        } else if (finalFacultyId === undefined) {
+            finalFacultyId = 0; // Default to shared (0) for admin
+        }
+
+        const [result] = await pool.query('INSERT INTO fields (name, faculty_id) VALUES (?, ?)', [name, finalFacultyId]);
         res.status(201).json({ message: 'Thêm mới thành công', id: result.insertId });
     } catch (error) {
         res.status(500).json({ message: error.message });
@@ -138,9 +153,30 @@ exports.createField = async (req, res) => {
 exports.updateField = async (req, res) => {
     try {
         const { id } = req.params;
-        const { name } = req.body;
+        const { name, faculty_id } = req.body;
         if (!name) return res.status(400).json({ message: 'Tên lĩnh vực không được để trống' });
-        const [result] = await pool.query('UPDATE fields SET name = ? WHERE id = ?', [name, id]);
+
+        // Check ownership if not admin
+        if (req.user.role !== 'ADMIN') {
+            const [field] = await pool.query('SELECT faculty_id FROM fields WHERE id = ?', [id]);
+            if (field.length === 0) return res.status(404).json({ message: 'Không tìm thấy lĩnh vực' });
+            if (field[0].faculty_id !== req.user.faculty_id) {
+                return res.status(403).json({ message: 'Bạn không có quyền chỉnh sửa lĩnh vực của khoa khác hoặc lĩnh vực dùng chung' });
+            }
+        }
+
+        let query = 'UPDATE fields SET name = ?';
+        let params = [name];
+        
+        if (req.user.role === 'ADMIN' && faculty_id !== undefined) {
+            query += ', faculty_id = ?';
+            params.push(faculty_id);
+        }
+        
+        query += ' WHERE id = ?';
+        params.push(id);
+
+        const [result] = await pool.query(query, params);
         if (result.affectedRows === 0) {
             return res.status(404).json({ message: 'Không tìm thấy lĩnh vực' });
         }
@@ -154,6 +190,16 @@ exports.updateField = async (req, res) => {
 exports.deleteField = async (req, res) => {
     try {
         const { id } = req.params;
+
+        // Check ownership if not admin
+        if (req.user.role !== 'ADMIN') {
+            const [field] = await pool.query('SELECT faculty_id FROM fields WHERE id = ?', [id]);
+            if (field.length === 0) return res.status(404).json({ message: 'Không tìm thấy lĩnh vực' });
+            if (field[0].faculty_id !== req.user.faculty_id) {
+                return res.status(403).json({ message: 'Bạn không có quyền xóa lĩnh vực của khoa khác hoặc lĩnh vực dùng chung' });
+            }
+        }
+
         const [result] = await pool.query('DELETE FROM fields WHERE id = ?', [id]);
         if (result.affectedRows === 0) {
             return res.status(404).json({ message: 'Không tìm thấy lĩnh vực' });

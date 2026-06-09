@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Menu } from 'antd';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { DashboardOutlined, BankOutlined, CalendarOutlined, SettingOutlined, LogoutOutlined, TeamOutlined, BarChartOutlined, AppstoreOutlined, CloseOutlined, ToolOutlined, DatabaseOutlined } from '@ant-design/icons';
+import { DashboardOutlined, BankOutlined, CalendarOutlined, SettingOutlined, LogoutOutlined, TeamOutlined, BarChartOutlined, AppstoreOutlined, CloseOutlined, ToolOutlined, DatabaseOutlined, FileTextOutlined } from '@ant-design/icons';
 import Cookies from 'js-cookie';
 import { useTheme } from '../context/ThemeContext';
 
@@ -36,9 +36,14 @@ const Sidebar = ({ isOpen, onClose, collapsed }) => {
             label: 'Trang chủ',
         },
         {
-            key: '/kanban',
+            key: '/tasks',
             icon: <AppstoreOutlined />,
-            label: 'Kanban Board',
+            label: 'Nhiệm vụ',
+        },
+        {
+            key: '/notes',
+            icon: <FileTextOutlined />,
+            label: 'Ghi chú',
         },
         {
             key: '/calendar',

@@ -107,7 +107,9 @@ const App = () => {
                         <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
                             <Route index element={<Navigate to="/dashboard" replace />} />
                             <Route path="dashboard" element={<Dashboard />} />
-                            <Route path="kanban" element={<KanbanBoard />} />
+                            <Route path="kanban" element={<Navigate to="/tasks" replace />} />
+                            <Route path="tasks" element={<KanbanBoard />} />
+                            <Route path="notes" element={<KanbanBoard />} />
                             <Route path="calendar" element={<CalendarView />} />
                             <Route path="enterprises" element={<EnterpriseList />} />
                             <Route path="activities" element={<ActivityList />} />

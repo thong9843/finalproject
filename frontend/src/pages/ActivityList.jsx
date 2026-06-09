@@ -6,7 +6,7 @@ import {
     UploadOutlined, DownloadOutlined, PlusOutlined, CheckCircleOutlined,
     TeamOutlined, SearchOutlined, SortAscendingOutlined, CalendarOutlined,
     FilterOutlined, ClearOutlined, AppstoreOutlined, UnorderedListOutlined,
-    DeleteOutlined, BankOutlined, EditOutlined
+    DeleteOutlined, BankOutlined, EditOutlined, FileTextOutlined
 } from '@ant-design/icons';
 import ImportModal from '../components/ImportModal';
 import api from '../utils/api';
@@ -15,6 +15,14 @@ import * as XLSX from 'xlsx';
 import Cookies from 'js-cookie';
 
 const { Option } = Select;
+
+const STICKY_COLORS = [
+  { name: 'Vàng', hex: '#fef08a' },
+  { name: 'Xanh dương', hex: '#bfdbfe' },
+  { name: 'Xanh lá', hex: '#bbf7d0' },
+  { name: 'Hồng', hex: '#fbcfe8' },
+  { name: 'Tím', hex: '#e9d5ff' },
+];
 
 const ActivityList = () => {
     const location = useLocation();
@@ -35,6 +43,13 @@ const ActivityList = () => {
     const [loading, setLoading] = useState(false);
     const [isModalVisible, setIsModalVisible] = useState(false);
     const [showImport, setShowImport] = useState(false);
+    
+    // Notes states
+    const [isNoteModalVisible, setIsNoteModalVisible] = useState(false);
+    const [currentNoteRecord, setCurrentNoteRecord] = useState(null);
+    const [noteForm] = Form.useForm();
+    const [existingNoteId, setExistingNoteId] = useState(null);
+    const [savingNote, setSavingNote] = useState(false);
     const [activityTypes, setActivityTypes] = useState([]);
     const [targets, setTargets] = useState([]);
     const [form] = Form.useForm();
@@ -70,6 +85,64 @@ const ActivityList = () => {
         fetchTargets();
         if (user?.role === 'ADMIN') fetchFaculties();
     }, []);
+
+    const handleOpenNoteModal = async (record) => {
+        setCurrentNoteRecord(record);
+        setExistingNoteId(null);
+        noteForm.resetFields();
+        noteForm.setFieldsValue({ color: '#fef08a' });
+        setIsNoteModalVisible(true);
+
+        try {
+            const res = await api.get(`/notes/reference?activity_id=${record.id}`);
+            if (res.data) {
+                setExistingNoteId(res.data.id);
+                noteForm.setFieldsValue({
+                    title: res.data.title,
+                    content: res.data.content,
+                    color: res.data.color || '#fef08a'
+                });
+            }
+        } catch (error) {
+            console.error('Lỗi khi tải ghi chú:', error);
+        }
+    };
+
+    const handleSaveNote = async (values) => {
+        setSavingNote(true);
+        try {
+            await api.post('/notes/reference', {
+                ...values,
+                activity_id: currentNoteRecord.id
+            });
+            message.success('Lưu ghi chú thành công');
+            setIsNoteModalVisible(false);
+            window.dispatchEvent(new Event('refresh-notes'));
+        } catch (error) {
+            message.error(error.response?.data?.message || 'Lỗi khi lưu ghi chú');
+        } finally {
+            setSavingNote(false);
+        }
+    };
+
+    const handleDeleteNote = async () => {
+        if (!existingNoteId) return;
+        modal.confirm({
+            title: 'Xác nhận xóa ghi chú?',
+            content: 'Ghi chú này sẽ bị xóa vĩnh viễn và gỡ bỏ khỏi bảng Kanban.',
+            okButtonProps: { danger: true, className: '!bg-red-600 hover:!bg-red-500 text-white' },
+            onOk: async () => {
+                try {
+                    await api.delete(`/notes/${existingNoteId}`);
+                    message.success('Xóa ghi chú thành công');
+                    setIsNoteModalVisible(false);
+                    window.dispatchEvent(new Event('refresh-notes'));
+                } catch (error) {
+                    message.error('Lỗi khi xóa ghi chú');
+                }
+            }
+        });
+    };
 
     const fetchFaculties = async () => {
         try {
@@ -127,6 +200,21 @@ const ActivityList = () => {
                     }).catch(err => console.error('Failed to load enterprises for matching:', err));
                 }
 
+                setIsModalVisible(true);
+                navigate(location.pathname, { replace: true, state: {} });
+            } else if (actionType === 'update_activity') {
+                setEditingId(data.id);
+                form.resetFields();
+                form.setFieldsValue({
+                    ...data,
+                    type_ids: data.type_ids ? (typeof data.type_ids === 'string' ? data.type_ids.split(',').map(Number) : data.type_ids) : [],
+                    target_ids: data.target_ids ? (typeof data.target_ids === 'string' ? data.target_ids.split(',').map(Number) : data.target_ids) : [],
+                    start_date: data.start_date ? dayjs(data.start_date) : null,
+                    end_date: data.end_date ? dayjs(data.end_date) : null,
+                    start_time: data.start_time ? dayjs(`1970-01-01 ${data.start_time}`) : null,
+                    end_time: data.end_time ? dayjs(`1970-01-01 ${data.end_time}`) : null,
+                    collaboration_date: data.collaboration_date ? dayjs(data.collaboration_date) : null,
+                });
                 setIsModalVisible(true);
                 navigate(location.pathname, { replace: true, state: {} });
             }
@@ -533,7 +621,7 @@ const ActivityList = () => {
         {
             title: 'Thao tác',
             key: 'action',
-            width: 120,
+            width: 150,
             fixed: 'right',
             align: 'center',
             render: (_, record) => {
@@ -554,6 +642,7 @@ const ActivityList = () => {
                 }
                 return (
                     <Space size="middle" className="action-buttons">
+                        <Button type="text" icon={<FileTextOutlined className="text-slate-500" />} onClick={() => handleOpenNoteModal(record)} title="Ghi chú" />
                         {!isLecturer && (
                             <Button type="text" className="text-blue-500 p-0" icon={<EditOutlined />} onClick={() => {
                                 setEditingId(record.id);
@@ -725,36 +814,44 @@ const ActivityList = () => {
                                     <Option value="Đã triển khai">Đã triển khai</Option>
                                     <Option value="Đã kết thúc">Đã kết thúc</Option>
                                 </Select>
-                                {!isLecturer && (
-                                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <Tooltip title="Chỉnh sửa">
-                                            <button className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-400 hover:text-blue-500 hover:bg-blue-50:bg-blue-900/30 transition-all"
-                                                onClick={() => {
-                                                    setEditingId(item.id);
-                                                    form.setFieldsValue({
-                                                        ...item,
-                                                        type_ids: item.type_ids ? item.type_ids.split(',').map(Number) : [],
-                                                        target_ids: item.target_ids ? item.target_ids.split(',').map(Number) : [],
-                                                        start_date: item.start_date ? dayjs(item.start_date) : null,
-                                                        end_date: item.end_date ? dayjs(item.end_date) : null,
-                                                        start_time: item.start_time ? dayjs(`1970-01-01 ${item.start_time}`) : null,
-                                                        end_time: item.end_time ? dayjs(`1970-01-01 ${item.end_time}`) : null,
-                                                        collaboration_date: item.collaboration_date ? dayjs(item.collaboration_date) : null,
-                                                        faculty_id: item.faculty_id,
-                                                    });
-                                                    setIsModalVisible(true);
-                                                }}>
-                                                <EditOutlined style={{ fontSize: 13 }} />
-                                            </button>
-                                        </Tooltip>
-                                        <Tooltip title="Xóa">
-                                            <button className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50:bg-red-900/30 transition-all"
-                                                onClick={() => modal.confirm({ title: 'Xác nhận xóa hoạt động này?', okButtonProps: { danger: true, className: '!bg-red-600 hover:!bg-red-500 text-white' }, onOk: () => handleDelete(item.id) })}>
-                                                <DeleteOutlined style={{ fontSize: 13 }} />
-                                            </button>
-                                        </Tooltip>
-                                    </div>
-                                )}
+                                <div className="flex gap-1 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <Tooltip title="Ghi chú">
+                                        <button className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-500 hover:text-blue-500 hover:bg-slate-50 dark:hover:bg-gray-700 transition-all"
+                                            onClick={() => handleOpenNoteModal(item)}>
+                                            <FileTextOutlined style={{ fontSize: 13 }} />
+                                        </button>
+                                    </Tooltip>
+                                    {!isLecturer && (
+                                        <>
+                                            <Tooltip title="Chỉnh sửa">
+                                                <button className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-400 hover:text-blue-500 hover:bg-slate-50 dark:hover:bg-gray-700 transition-all"
+                                                    onClick={() => {
+                                                        setEditingId(item.id);
+                                                        form.setFieldsValue({
+                                                            ...item,
+                                                            type_ids: item.type_ids ? item.type_ids.split(',').map(Number) : [],
+                                                            target_ids: item.target_ids ? item.target_ids.split(',').map(Number) : [],
+                                                            start_date: item.start_date ? dayjs(item.start_date) : null,
+                                                            end_date: item.end_date ? dayjs(item.end_date) : null,
+                                                            start_time: item.start_time ? dayjs(`1970-01-01 ${item.start_time}`) : null,
+                                                            end_time: item.end_time ? dayjs(`1970-01-01 ${item.end_time}`) : null,
+                                                            collaboration_date: item.collaboration_date ? dayjs(item.collaboration_date) : null,
+                                                            faculty_id: item.faculty_id,
+                                                        });
+                                                        setIsModalVisible(true);
+                                                    }}>
+                                                    <EditOutlined style={{ fontSize: 13 }} />
+                                                </button>
+                                            </Tooltip>
+                                            <Tooltip title="Xóa">
+                                                <button className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-slate-50 dark:hover:bg-gray-700 transition-all"
+                                                    onClick={() => modal.confirm({ title: 'Xác nhận xóa hoạt động này?', okButtonProps: { danger: true, className: '!bg-red-600 hover:!bg-red-500 text-white' }, onOk: () => handleDelete(item.id) })}>
+                                                    <DeleteOutlined style={{ fontSize: 13 }} />
+                                                </button>
+                                            </Tooltip>
+                                        </>
+                                    )}
+                                </div>
                             </>
                         )}
                     </div>
@@ -780,7 +877,7 @@ const ActivityList = () => {
     );
 
     return (
-        <div>
+        <div className={!isLecturer && selectedActivities.length > 0 ? "pb-24" : ""}>
             {/* Header */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
                 <div className="flex items-center gap-3">
@@ -1032,7 +1129,7 @@ const ActivityList = () => {
                             danger 
                             icon={<DeleteOutlined />} 
                             onClick={handleBulkDelete}
-                            className="flex items-center justify-center font-medium"
+                            className="flex items-center justify-center font-medium !bg-red-600 hover:!bg-red-500 text-white border-0"
                         >
                             Xóa
                         </Button>
@@ -1281,6 +1378,48 @@ const ActivityList = () => {
                     </div>
                 )}
             </Drawer>
+
+            {/* Note Modal */}
+            <Modal
+                title={<div className="text-lg font-bold flex items-center gap-2">📝 Ghi chú hoạt động: <span className="text-vluRed">{currentNoteRecord?.title}</span></div>}
+                open={isNoteModalVisible}
+                onCancel={() => setIsNoteModalVisible(false)}
+                footer={[
+                    existingNoteId && (
+                        <Button key="delete" danger onClick={handleDeleteNote} className="float-left">
+                            Xóa ghi chú
+                        </Button>
+                    ),
+                    <Button key="cancel" onClick={() => setIsNoteModalVisible(false)}>
+                        Hủy
+                    </Button>,
+                    <Button key="save" type="primary" className="bg-blue-600 hover:bg-blue-500 border-none" loading={savingNote} onClick={() => noteForm.submit()}>
+                        Lưu ghi chú
+                    </Button>
+                ].filter(Boolean)}
+                destroyOnClose
+            >
+                <Form form={noteForm} layout="vertical" onFinish={handleSaveNote} className="mt-4">
+                    <Form.Item name="title" label="Tiêu đề ghi chú">
+                        <Input placeholder="Nhập tiêu đề (tùy chọn)..." className="rounded-lg" />
+                    </Form.Item>
+                    <Form.Item name="content" label="Nội dung ghi chú" rules={[{ required: true, message: 'Vui lòng nhập nội dung ghi chú' }]}>
+                        <Input.TextArea rows={4} placeholder="Nhập nội dung ghi chú..." className="rounded-lg" />
+                    </Form.Item>
+                    <Form.Item name="color" label="Màu sắc thẻ ghi chú" initialValue="#fef08a">
+                        <Select className="rounded-lg">
+                            {STICKY_COLORS.map(c => (
+                                <Option key={c.hex} value={c.hex}>
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-3.5 h-3.5 rounded-full border border-black/15" style={{ backgroundColor: c.hex }} />
+                                        {c.name}
+                                    </div>
+                                </Option>
+                            ))}
+                        </Select>
+                    </Form.Item>
+                </Form>
+            </Modal>
         </div>
     );
 };

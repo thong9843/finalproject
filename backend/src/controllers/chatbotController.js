@@ -258,6 +258,61 @@ const tools = [
                     required: ['title']
                 }
             },
+            {
+                name: 'update_enterprise',
+                description: 'Yêu cầu cập nhật thông tin của một doanh nghiệp trong hệ thống. AI trích xuất từ khóa tìm kiếm (tên hoặc mã số thuế hiện tại của doanh nghiệp cần cập nhật) và các trường thông tin thay đổi như điện thoại đại diện, email đại diện, trạng thái, v.v. để hiển thị form cập nhật.',
+                parameters: {
+                    type: 'OBJECT',
+                    properties: {
+                        keyword: { type: 'STRING', description: 'Tên hoặc mã số thuế hiện tại của doanh nghiệp cần cập nhật' },
+                        name: { type: 'STRING', description: 'Tên mới của doanh nghiệp (nếu có yêu cầu đổi tên)' },
+                        tax_code: { type: 'STRING', description: 'Mã số thuế mới (nếu có)' },
+                        status: { type: 'STRING', description: 'Trạng thái mới: Tiềm năng | Liên hệ | Đàm phán | Đề xuất | Đã ký hợp tác | Đang triển khai | Đã hoàn thành | Đã tạm ngưng (nếu có)' },
+                        rep_title: { type: 'STRING', description: 'Danh xưng đại diện mới (Anh, Chị, Mr, Ms) (nếu có)' },
+                        rep_full_name: { type: 'STRING', description: 'Họ tên đại diện mới (nếu có)' },
+                        rep_role: { type: 'STRING', description: 'Chức vụ đại diện mới (nếu có)' },
+                        rep_phone: { type: 'STRING', description: 'Số điện thoại đại diện mới (nếu có)' },
+                        rep_email: { type: 'STRING', description: 'Email đại diện mới (nếu có)' },
+                        building_street: { type: 'STRING', description: 'Địa chỉ đường/số nhà mới (nếu có)' },
+                        district: { type: 'STRING', description: 'Quận/Huyện mới (nếu có)' },
+                        province: { type: 'STRING', description: 'Tỉnh/Thành phố mới (nếu có)' },
+                        country: { type: 'STRING', description: 'Quốc gia mới (nếu có)' }
+                    },
+                    required: ['keyword']
+                }
+            },
+            {
+                name: 'update_student',
+                description: 'Yêu cầu cập nhật thông tin của một sinh viên thực tập trong hệ thống. AI trích xuất MSSV hoặc tên hiện tại của sinh viên để tìm kiếm, và các trường thông tin thay đổi như GPA, trạng thái, lớp, v.v.',
+                parameters: {
+                    type: 'OBJECT',
+                    properties: {
+                        keyword: { type: 'STRING', description: 'Tên hoặc Mã số sinh viên (MSSV) hiện tại của sinh viên cần cập nhật' },
+                        student_code: { type: 'STRING', description: 'Mã số sinh viên (MSSV) mới (nếu có)' },
+                        name: { type: 'STRING', description: 'Họ tên mới của sinh viên (nếu có)' },
+                        major: { type: 'STRING', description: 'Ngành học mới (nếu có)' },
+                        class: { type: 'STRING', description: 'Lớp học mới (nếu có)' },
+                        gpa: { type: 'NUMBER', description: 'Điểm GPA mới (nếu có)' },
+                        status: { type: 'STRING', description: 'Trạng thái mới: Chờ phân công | Đang thực tập | Hoàn thành | Đã nghỉ (nếu có)' }
+                    },
+                    required: ['keyword']
+                }
+            },
+            {
+                name: 'update_activity',
+                description: 'Yêu cầu cập nhật thông tin hoạt động hợp tác giữa VLU và doanh nghiệp. AI trích xuất tên hoạt động hiện tại để tìm kiếm, và các thông tin thay đổi như người phụ trách, trạng thái, tên doanh nghiệp liên kết mới, v.v.',
+                parameters: {
+                    type: 'OBJECT',
+                    properties: {
+                        keyword: { type: 'STRING', description: 'Tên hoạt động hiện tại cần cập nhật' },
+                        title: { type: 'STRING', description: 'Tên hoạt động mới (nếu có)' },
+                        person_in_charge: { type: 'STRING', description: 'Người phụ trách mới phía nhà trường (nếu có)' },
+                        status: { type: 'STRING', description: 'Trạng thái mới: Đề xuất | Phê duyệt nội bộ | Đã triển khai | Đã kết thúc (nếu có)' },
+                        enterprise_name: { type: 'STRING', description: 'Tên doanh nghiệp liên kết mới (nếu có)' }
+                    },
+                    required: ['keyword']
+                }
+            },
         ],
     },
 ];
@@ -595,6 +650,129 @@ async function create_activity(args) {
     return { requires_confirmation: true, actionType: 'create_activity', data: args };
 }
 
+async function update_enterprise(args) {
+    const { keyword } = args;
+    if (!keyword) {
+        return { error: 'Thiếu từ khóa để tìm doanh nghiệp cần cập nhật' };
+    }
+    const [enterprises] = await pool.query(`
+        SELECT e.*,
+               rep.title as rep_title, rep.full_name as rep_full_name, rep.role as rep_role, rep.phone as rep_phone, rep.email as rep_email,
+               addr.building_street, addr.district, addr.province, addr.country,
+               GROUP_CONCAT(DISTINCT ef.field_id) as field_ids
+        FROM enterprises e
+        LEFT JOIN enterprise_representatives rep ON rep.enterprise_id = e.id AND rep.is_primary = 1
+        LEFT JOIN enterprise_addresses addr ON addr.enterprise_id = e.id AND addr.is_main = 1
+        LEFT JOIN enterprise_fields ef ON ef.enterprise_id = e.id
+        WHERE (e.name LIKE ? OR e.tax_code = ?) AND e.is_deleted = 0
+        GROUP BY e.id
+        LIMIT 1
+    `, [`%${keyword}%`, keyword]);
+
+    if (enterprises.length === 0) {
+        return { error: `Không tìm thấy doanh nghiệp có tên hoặc mã số thuế khớp với '${keyword}'` };
+    }
+
+    const enterprise = enterprises[0];
+    const mergedData = {
+        id: enterprise.id,
+        name: args.name !== undefined ? args.name : enterprise.name,
+        tax_code: args.tax_code !== undefined ? args.tax_code : enterprise.tax_code,
+        status: args.status !== undefined ? args.status : enterprise.status,
+        scale_id: args.scale_id !== undefined ? args.scale_id : enterprise.scale_id,
+        is_hcmc: args.is_hcmc !== undefined ? args.is_hcmc : enterprise.is_hcmc,
+        department_id: enterprise.department_id,
+        faculty_id: enterprise.faculty_id,
+        field_ids: enterprise.field_ids,
+        rep_title: args.rep_title !== undefined ? args.rep_title : enterprise.rep_title,
+        rep_full_name: args.rep_full_name !== undefined ? args.rep_full_name : enterprise.rep_full_name,
+        rep_role: args.rep_role !== undefined ? args.rep_role : enterprise.rep_role,
+        rep_phone: args.rep_phone !== undefined ? args.rep_phone : enterprise.rep_phone,
+        rep_email: args.rep_email !== undefined ? args.rep_email : enterprise.rep_email,
+        building_street: args.building_street !== undefined ? args.building_street : enterprise.building_street,
+        district: args.district !== undefined ? args.district : enterprise.district,
+        province: args.province !== undefined ? args.province : enterprise.province,
+        country: args.country !== undefined ? args.country : enterprise.country,
+    };
+
+    return { requires_confirmation: true, actionType: 'update_enterprise', data: mergedData };
+}
+
+async function update_student(args) {
+    const { keyword } = args;
+    if (!keyword) {
+        return { error: 'Thiếu từ khóa để tìm sinh viên cần cập nhật' };
+    }
+    const [students] = await pool.query(`
+        SELECT * FROM students 
+        WHERE (name LIKE ? OR student_code = ?) AND is_deleted = 0
+        LIMIT 1
+    `, [`%${keyword}%`, keyword]);
+
+    if (students.length === 0) {
+        return { error: `Không tìm thấy sinh viên có tên hoặc MSSV khớp với '${keyword}'` };
+    }
+
+    const student = students[0];
+    const mergedData = {
+        ...student,
+        student_code: args.student_code !== undefined ? args.student_code : student.student_code,
+        name: args.name !== undefined ? args.name : student.name,
+        major: args.major !== undefined ? args.major : student.major,
+        class: args.class !== undefined ? args.class : student.class,
+        gpa: args.gpa !== undefined ? args.gpa : student.gpa,
+        status: args.status !== undefined ? args.status : student.status,
+    };
+
+    return { requires_confirmation: true, actionType: 'update_student', data: mergedData };
+}
+
+async function update_activity(args) {
+    const { keyword } = args;
+    if (!keyword) {
+        return { error: 'Thiếu từ khóa để tìm hoạt động cần cập nhật' };
+    }
+    const [activities] = await pool.query(`
+        SELECT a.*, e.name as enterprise_name,
+               GROUP_CONCAT(DISTINCT atm.type_id) as type_ids,
+               GROUP_CONCAT(DISTINCT atm2.target_id) as target_ids
+        FROM activities a
+        LEFT JOIN enterprises e ON a.enterprise_id = e.id
+        LEFT JOIN activity_type_map atm ON atm.activity_id = a.id
+        LEFT JOIN activity_target_map atm2 ON atm2.activity_id = a.id
+        WHERE a.title LIKE ? AND a.is_deleted = 0
+        GROUP BY a.id
+        LIMIT 1
+    `, [`%${keyword}%`]);
+
+    if (activities.length === 0) {
+        return { error: `Không tìm thấy hoạt động có tên khớp với '${keyword}'` };
+    }
+
+    const activity = activities[0];
+    
+    let enterpriseId = activity.enterprise_id;
+    let enterpriseName = activity.enterprise_name;
+    if (args.enterprise_name) {
+        const [ents] = await pool.query('SELECT id, name FROM enterprises WHERE name LIKE ? AND is_deleted = 0 LIMIT 1', [`%${args.enterprise_name}%`]);
+        if (ents.length > 0) {
+            enterpriseId = ents[0].id;
+            enterpriseName = ents[0].name;
+        }
+    }
+
+    const mergedData = {
+        ...activity,
+        title: args.title !== undefined ? args.title : activity.title,
+        person_in_charge: args.person_in_charge !== undefined ? args.person_in_charge : activity.person_in_charge,
+        status: args.status !== undefined ? args.status : activity.status,
+        enterprise_id: enterpriseId,
+        enterprise_name: enterpriseName,
+    };
+
+    return { requires_confirmation: true, actionType: 'update_activity', data: mergedData };
+}
+
 // Map tên tool -> hàm thực thi
 const toolExecutors = {
     get_enterprise_list,
@@ -615,6 +793,9 @@ const toolExecutors = {
     create_enterprise,
     create_student,
     create_activity,
+    update_enterprise,
+    update_student,
+    update_activity,
 };
 
 // ---- SYSTEM PROMPT ----
@@ -624,12 +805,12 @@ Nhiệm vụ của bạn:
 - Trả lời câu hỏi về doanh nghiệp, sinh viên thực tập, hoạt động hợp tác, MOU, báo cáo thống kê
 - Sử dụng các tool được cung cấp để truy vấn dữ liệu thực tế từ hệ thống
 - Thực hiện so sánh, phân tích chuyên sâu các dữ liệu và chỉ số khi được yêu cầu (ví dụ: đối chiếu GPA sinh viên giữa các công ty, tìm kiếm ngành học có tỉ lệ liên kết cao nhất, phân tích biểu đồ, phân tích cấu trúc doanh nghiệp).
-- Khi người dùng muốn THÊM hoặc NHẬP mới một doanh nghiệp, sinh viên, hoặc hoạt động liên kết (hoặc khi nội dung câu hỏi/ghi chú/nhiệm vụ của người dùng chứa các thông tin yêu cầu thêm mới/mô tả thực thể mới chưa có trong hệ thống), bạn phải LẬP TỨC gọi các tool tương ứng (create_enterprise, create_student hoặc create_activity) với các thông tin chi tiết trích xuất được để hiển thị form thêm mới ngay lập tức trên màn hình (frontend) cho người dùng duyệt, tuyệt đối KHÔNG chỉ trả lời bằng văn bản hỏi lại ý kiến hay đề xuất họ tự đi tạo.
+- Khi người dùng muốn THÊM, NHẬP mới hoặc CẬP NHẬT, CHỈNH SỬA một doanh nghiệp, sinh viên, hoặc hoạt động liên kết (hoặc khi nội dung câu hỏi/ghi chú/nhiệm vụ chứa thông tin yêu cầu thêm mới/chỉnh sửa), bạn phải LẬP TỨC gọi các tool tương ứng (create_enterprise, create_student, create_activity, update_enterprise, update_student, update_activity) với các thông tin chi tiết trích xuất được để hiển thị form ngay lập tức trên màn hình (frontend) cho người dùng duyệt, tuyệt đối KHÔNG chỉ trả lời bằng văn bản hỏi lại ý kiến hay đề xuất họ tự đi sửa/tạo.
 - Trả lời bằng tiếng Việt, ngắn gọn, cấu trúc rõ ràng (sử dụng markdown bold, bullet points), thân thiện và dùng emoji phù hợp
 - Luôn hướng dẫn người dùng đến trang phù hợp nếu họ muốn xem thêm chi tiết
 
 Quy tắc BẢO MẬT & NGHIỆP VỤ nghiêm ngặt:
-1. Bạn KHÔNG được trực tiếp thực hiện các câu lệnh ghi SQL (INSERT, UPDATE, DELETE). Đối với các tác vụ thêm dữ liệu mới, bạn phải gọi các tool tạo yêu cầu (create_...) để hệ thống hiển thị form xác nhận (modal) cho người dùng tự duyệt ở frontend.
+1. Bạn KHÔNG được trực tiếp thực hiện các câu lệnh ghi SQL (INSERT, UPDATE, DELETE). Đối với các tác vụ thêm hoặc cập nhật dữ liệu, bạn phải gọi các tool tạo/cập nhật yêu cầu (create_..., update_...) để hệ thống hiển thị form xác nhận (modal) cho người dùng tự duyệt ở frontend.
 2. Từ chối trả lời một cách lịch sự bất kỳ câu hỏi nào yêu cầu thông tin nhạy cảm của hệ thống như mật khẩu, mã băm (hash), token bí mật, cấu hình máy chủ hoặc tài khoản đăng nhập của người dùng.
 3. Không trả lời các câu hỏi ngoài phạm vi nghiệp vụ quản lý liên kết doanh nghiệp của VLU.
 4. Nếu người dùng cung cấp hình ảnh (ví dụ: ảnh bảng dữ liệu, ảnh sơ đồ, ảnh chụp văn bản hoặc ảnh báo cáo), hãy tập trung phân tích kỹ nội dung trong ảnh và kết hợp với dữ liệu hệ thống để trả lời chính xác nhất.

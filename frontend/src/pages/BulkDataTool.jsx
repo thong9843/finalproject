@@ -214,7 +214,7 @@ const BulkDataTool = () => {
     ];
 
     return (
-        <div className="space-y-6">
+        <div className={hasSelected ? "space-y-6 pb-24" : "space-y-6"}>
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
                 <div className="flex items-center gap-3">
                     <div className="w-10 h-10 sm:w-12 sm:h-12 bg-red-50 dark:bg-red-950/30 text-vluRed dark:text-red-400 rounded-xl sm:rounded-2xl flex items-center justify-center shadow-sm flex-shrink-0">
@@ -333,7 +333,7 @@ const BulkDataTool = () => {
                             icon={<DeleteOutlined />} 
                             onClick={handleBulkDelete}
                             loading={actionLoading}
-                            className="rounded-lg font-medium"
+                            className="rounded-lg font-medium !bg-red-600 hover:!bg-red-500 text-white border-0"
                         >
                             Xóa
                         </Button>

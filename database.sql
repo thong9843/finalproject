@@ -51,7 +51,8 @@ CREATE TABLE IF NOT EXISTS scales (
 -- 6. fields (NEW)
 CREATE TABLE IF NOT EXISTS fields (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(255) NOT NULL
+    name VARCHAR(255) NOT NULL,
+    faculty_id INT DEFAULT 0
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 7. act_types (NEW)
@@ -289,73 +290,73 @@ INSERT IGNORE INTO faculties (id, cluster_id, name, code) VALUES
 (22, 3, 'Khoa Dược', 'PHARM');
 
 INSERT IGNORE INTO users (id, full_name, email, password, role, faculty_id) VALUES
-(1, 'System Admin', 'admin@vlu.edu.vn', '$2b$10$9FfmKHRV6ffkngWroSCTt.ha.L2GDuFCjxHtqxgMoJfUfHxx5tamy', 'ADMIN', NULL),
+(1, 'System Admin', 'admin@vlu.edu.vn', '$2b$10$NAO3LBQuVGlv/47lZGXsq.jVL0zAgF/SLuUL8uueNjgxWDY8A2Rn.', 'ADMIN', NULL),
 -- IT (id: 1)
-(2, 'Quản lý Khoa Công nghệ Thông tin', 'manager.it@vlu.edu.vn', '$2b$10$9FfmKHRV6ffkngWroSCTt.ha.L2GDuFCjxHtqxgMoJfUfHxx5tamy', 'FACULTY_MANAGER', 1),
-(3, 'Giảng viên Khoa Công nghệ Thông tin', 'lecturer.it@vlu.edu.vn', '$2b$10$9FfmKHRV6ffkngWroSCTt.ha.L2GDuFCjxHtqxgMoJfUfHxx5tamy', 'LECTURER', 1),
+(2, 'Quản lý Khoa Công nghệ Thông tin', 'manager.it@vlu.edu.vn', '$2b$10$NAO3LBQuVGlv/47lZGXsq.jVL0zAgF/SLuUL8uueNjgxWDY8A2Rn.', 'FACULTY_MANAGER', 1),
+(3, 'Giảng viên Khoa Công nghệ Thông tin', 'lecturer.it@vlu.edu.vn', '$2b$10$NAO3LBQuVGlv/47lZGXsq.jVL0zAgF/SLuUL8uueNjgxWDY8A2Rn.', 'LECTURER', 1),
 -- BA (id: 2)
-(4, 'Quản lý Khoa Quản trị Kinh doanh', 'manager.ba@vlu.edu.vn', '$2b$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW', 'FACULTY_MANAGER', 2),
-(5, 'Giảng viên Khoa Quản trị Kinh doanh', 'lecturer.ba@vlu.edu.vn', '$2b$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW', 'LECTURER', 2),
+(4, 'Quản lý Khoa Quản trị Kinh doanh', 'manager.ba@vlu.edu.vn', '$2b$10$NAO3LBQuVGlv/47lZGXsq.jVL0zAgF/SLuUL8uueNjgxWDY8A2Rn.', 'FACULTY_MANAGER', 2),
+(5, 'Giảng viên Khoa Quản trị Kinh doanh', 'lecturer.ba@vlu.edu.vn', '$2b$10$NAO3LBQuVGlv/47lZGXsq.jVL0zAgF/SLuUL8uueNjgxWDY8A2Rn.', 'LECTURER', 2),
 -- PR (id: 3)
-(6, 'Quản lý Khoa Quan hệ Công chúng', 'manager.pr@vlu.edu.vn', '$2b$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW', 'FACULTY_MANAGER', 3),
-(7, 'Giảng viên Khoa Quan hệ Công chúng', 'lecturer.pr@vlu.edu.vn', '$2b$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW', 'LECTURER', 3),
+(6, 'Quản lý Khoa Quan hệ Công chúng', 'manager.pr@vlu.edu.vn', '$2b$10$NAO3LBQuVGlv/47lZGXsq.jVL0zAgF/SLuUL8uueNjgxWDY8A2Rn.', 'FACULTY_MANAGER', 3),
+(7, 'Giảng viên Khoa Quan hệ Công chúng', 'lecturer.pr@vlu.edu.vn', '$2b$10$NAO3LBQuVGlv/47lZGXsq.jVL0zAgF/SLuUL8uueNjgxWDY8A2Rn.', 'LECTURER', 3),
 -- ARCH (id: 4)
-(8, 'Quản lý Khoa Kiến trúc', 'manager.arch@vlu.edu.vn', '$2b$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW', 'FACULTY_MANAGER', 4),
-(9, 'Giảng viên Khoa Kiến trúc', 'lecturer.arch@vlu.edu.vn', '$2b$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW', 'LECTURER', 4),
+(8, 'Quản lý Khoa Kiến trúc', 'manager.arch@vlu.edu.vn', '$2b$10$NAO3LBQuVGlv/47lZGXsq.jVL0zAgF/SLuUL8uueNjgxWDY8A2Rn.', 'FACULTY_MANAGER', 4),
+(9, 'Giảng viên Khoa Kiến trúc', 'lecturer.arch@vlu.edu.vn', '$2b$10$NAO3LBQuVGlv/47lZGXsq.jVL0zAgF/SLuUL8uueNjgxWDY8A2Rn.', 'LECTURER', 4),
 -- FA (id: 5)
-(10, 'Quản lý Khoa Mỹ thuật', 'manager.fa@vlu.edu.vn', '$2b$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW', 'FACULTY_MANAGER', 5),
-(11, 'Giảng viên Khoa Mỹ thuật', 'lecturer.fa@vlu.edu.vn', '$2b$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW', 'LECTURER', 5),
+(10, 'Quản lý Khoa Mỹ thuật', 'manager.fa@vlu.edu.vn', '$2b$10$NAO3LBQuVGlv/47lZGXsq.jVL0zAgF/SLuUL8uueNjgxWDY8A2Rn.', 'FACULTY_MANAGER', 5),
+(11, 'Giảng viên Khoa Mỹ thuật', 'lecturer.fa@vlu.edu.vn', '$2b$10$NAO3LBQuVGlv/47lZGXsq.jVL0zAgF/SLuUL8uueNjgxWDY8A2Rn.', 'LECTURER', 5),
 -- ID (id: 6)
-(12, 'Quản lý Khoa Thiết kế Công nghiệp', 'manager.id@vlu.edu.vn', '$2b$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW', 'FACULTY_MANAGER', 6),
-(13, 'Giảng viên Khoa Thiết kế Công nghiệp', 'lecturer.id@vlu.edu.vn', '$2b$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW', 'LECTURER', 6),
+(12, 'Quản lý Khoa Thiết kế Công nghiệp', 'manager.id@vlu.edu.vn', '$2b$10$NAO3LBQuVGlv/47lZGXsq.jVL0zAgF/SLuUL8uueNjgxWDY8A2Rn.', 'FACULTY_MANAGER', 6),
+(13, 'Giảng viên Khoa Thiết kế Công nghiệp', 'lecturer.id@vlu.edu.vn', '$2b$10$NAO3LBQuVGlv/47lZGXsq.jVL0zAgF/SLuUL8uueNjgxWDY8A2Rn.', 'LECTURER', 6),
 -- GD (id: 7)
-(14, 'Quản lý Khoa Thiết kế Đồ họa', 'manager.gd@vlu.edu.vn', '$2b$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW', 'FACULTY_MANAGER', 7),
-(15, 'Giảng viên Khoa Thiết kế Đồ họa', 'lecturer.gd@vlu.edu.vn', '$2b$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW', 'LECTURER', 7),
+(14, 'Quản lý Khoa Thiết kế Đồ họa', 'manager.gd@vlu.edu.vn', '$2b$10$NAO3LBQuVGlv/47lZGXsq.jVL0zAgF/SLuUL8uueNjgxWDY8A2Rn.', 'FACULTY_MANAGER', 7),
+(15, 'Giảng viên Khoa Thiết kế Đồ họa', 'lecturer.gd@vlu.edu.vn', '$2b$10$NAO3LBQuVGlv/47lZGXsq.jVL0zAgF/SLuUL8uueNjgxWDY8A2Rn.', 'LECTURER', 7),
 -- INT (id: 8)
-(16, 'Quản lý Khoa Thiết kế Nội thất', 'manager.int@vlu.edu.vn', '$2b$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW', 'FACULTY_MANAGER', 8),
-(17, 'Giảng viên Khoa Thiết kế Nội thất', 'lecturer.int@vlu.edu.vn', '$2b$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW', 'LECTURER', 8),
+(16, 'Quản lý Khoa Thiết kế Nội thất', 'manager.int@vlu.edu.vn', '$2b$10$NAO3LBQuVGlv/47lZGXsq.jVL0zAgF/SLuUL8uueNjgxWDY8A2Rn.', 'FACULTY_MANAGER', 8),
+(17, 'Giảng viên Khoa Thiết kế Nội thất', 'lecturer.int@vlu.edu.vn', '$2b$10$NAO3LBQuVGlv/47lZGXsq.jVL0zAgF/SLuUL8uueNjgxWDY8A2Rn.', 'LECTURER', 8),
 -- FASH (id: 9)
-(18, 'Quản lý Khoa Thiết kế Thời trang', 'manager.fash@vlu.edu.vn', '$2b$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW', 'FACULTY_MANAGER', 9),
-(19, 'Giảng viên Khoa Thiết kế Thời trang', 'lecturer.fash@vlu.edu.vn', '$2b$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW', 'LECTURER', 9),
+(18, 'Quản lý Khoa Thiết kế Thời trang', 'manager.fash@vlu.edu.vn', '$2b$10$NAO3LBQuVGlv/47lZGXsq.jVL0zAgF/SLuUL8uueNjgxWDY8A2Rn.', 'FACULTY_MANAGER', 9),
+(19, 'Giảng viên Khoa Thiết kế Thời trang', 'lecturer.fash@vlu.edu.vn', '$2b$10$NAO3LBQuVGlv/47lZGXsq.jVL0zAgF/SLuUL8uueNjgxWDY8A2Rn.', 'LECTURER', 9),
 -- CE (id: 10)
-(20, 'Quản lý Khoa Kỹ thuật Công trình', 'manager.ce@vlu.edu.vn', '$2b$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW', 'FACULTY_MANAGER', 10),
-(21, 'Giảng viên Khoa Kỹ thuật Công trình', 'lecturer.ce@vlu.edu.vn', '$2b$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW', 'LECTURER', 10),
+(20, 'Quản lý Khoa Kỹ thuật Công trình', 'manager.ce@vlu.edu.vn', '$2b$10$NAO3LBQuVGlv/47lZGXsq.jVL0zAgF/SLuUL8uueNjgxWDY8A2Rn.', 'FACULTY_MANAGER', 10),
+(21, 'Giảng viên Khoa Kỹ thuật Công trình', 'lecturer.ce@vlu.edu.vn', '$2b$10$NAO3LBQuVGlv/47lZGXsq.jVL0zAgF/SLuUL8uueNjgxWDY8A2Rn.', 'LECTURER', 10),
 -- ME (id: 11)
-(22, 'Quản lý Khoa Kỹ thuật Cơ - Điện tử', 'manager.me@vlu.edu.vn', '$2b$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW', 'FACULTY_MANAGER', 11),
-(23, 'Giảng viên Khoa Kỹ thuật Cơ - Điện tử', 'lecturer.me@vlu.edu.vn', '$2b$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW', 'LECTURER', 11),
+(22, 'Quản lý Khoa Kỹ thuật Cơ - Điện tử', 'manager.me@vlu.edu.vn', '$2b$10$NAO3LBQuVGlv/47lZGXsq.jVL0zAgF/SLuUL8uueNjgxWDY8A2Rn.', 'FACULTY_MANAGER', 11),
+(23, 'Giảng viên Khoa Kỹ thuật Cơ - Điện tử', 'lecturer.me@vlu.edu.vn', '$2b$10$NAO3LBQuVGlv/47lZGXsq.jVL0zAgF/SLuUL8uueNjgxWDY8A2Rn.', 'LECTURER', 11),
 -- ECO (id: 12)
-(24, 'Quản lý Khoa Kinh tế', 'manager.eco@vlu.edu.vn', '$2b$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW', 'FACULTY_MANAGER', 12),
-(25, 'Giảng viên Khoa Kinh tế', 'lecturer.eco@vlu.edu.vn', '$2b$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW', 'LECTURER', 12),
+(24, 'Quản lý Khoa Kinh tế', 'manager.eco@vlu.edu.vn', '$2b$10$NAO3LBQuVGlv/47lZGXsq.jVL0zAgF/SLuUL8uueNjgxWDY8A2Rn.', 'FACULTY_MANAGER', 12),
+(25, 'Giảng viên Khoa Kinh tế', 'lecturer.eco@vlu.edu.vn', '$2b$10$NAO3LBQuVGlv/47lZGXsq.jVL0zAgF/SLuUL8uueNjgxWDY8A2Rn.', 'LECTURER', 12),
 -- MARK (id: 13)
-(26, 'Quản lý Khoa Marketing', 'manager.mark@vlu.edu.vn', '$2b$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW', 'FACULTY_MANAGER', 13),
-(27, 'Giảng viên Khoa Marketing', 'lecturer.mark@vlu.edu.vn', '$2b$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW', 'LECTURER', 13),
+(26, 'Quản lý Khoa Marketing', 'manager.mark@vlu.edu.vn', '$2b$10$NAO3LBQuVGlv/47lZGXsq.jVL0zAgF/SLuUL8uueNjgxWDY8A2Rn.', 'FACULTY_MANAGER', 13),
+(27, 'Giảng viên Khoa Marketing', 'lecturer.mark@vlu.edu.vn', '$2b$10$NAO3LBQuVGlv/47lZGXsq.jVL0zAgF/SLuUL8uueNjgxWDY8A2Rn.', 'LECTURER', 13),
 -- FIN (id: 14)
-(28, 'Quản lý Khoa Tài chính - Kế toán', 'manager.fin@vlu.edu.vn', '$2b$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW', 'FACULTY_MANAGER', 14),
-(29, 'Giảng viên Khoa Tài chính - Kế toán', 'lecturer.fin@vlu.edu.vn', '$2b$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW', 'LECTURER', 14),
+(28, 'Quản lý Khoa Tài chính - Kế toán', 'manager.fin@vlu.edu.vn', '$2b$10$NAO3LBQuVGlv/47lZGXsq.jVL0zAgF/SLuUL8uueNjgxWDY8A2Rn.', 'FACULTY_MANAGER', 14),
+(29, 'Giảng viên Khoa Tài chính - Kế toán', 'lecturer.fin@vlu.edu.vn', '$2b$10$NAO3LBQuVGlv/47lZGXsq.jVL0zAgF/SLuUL8uueNjgxWDY8A2Rn.', 'LECTURER', 14),
 -- TOUR (id: 15)
-(30, 'Quản lý Khoa Du lịch', 'manager.tour@vlu.edu.vn', '$2b$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW', 'FACULTY_MANAGER', 15),
-(31, 'Giảng viên Khoa Du lịch', 'lecturer.tour@vlu.edu.vn', '$2b$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW', 'LECTURER', 15),
+(30, 'Quản lý Khoa Du lịch', 'manager.tour@vlu.edu.vn', '$2b$10$NAO3LBQuVGlv/47lZGXsq.jVL0zAgF/SLuUL8uueNjgxWDY8A2Rn.', 'FACULTY_MANAGER', 15),
+(31, 'Giảng viên Khoa Du lịch', 'lecturer.tour@vlu.edu.vn', '$2b$10$NAO3LBQuVGlv/47lZGXsq.jVL0zAgF/SLuUL8uueNjgxWDY8A2Rn.', 'LECTURER', 15),
 -- HOTEL (id: 16)
-(32, 'Quản lý Khoa Khách sạn - Nhà hàng', 'manager.hotel@vlu.edu.vn', '$2b$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW', 'FACULTY_MANAGER', 16),
-(33, 'Giảng viên Khoa Khách sạn - Nhà hàng', 'lecturer.hotel@vlu.edu.vn', '$2b$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW', 'LECTURER', 16),
+(32, 'Quản lý Khoa Khách sạn - Nhà hàng', 'manager.hotel@vlu.edu.vn', '$2b$10$NAO3LBQuVGlv/47lZGXsq.jVL0zAgF/SLuUL8uueNjgxWDY8A2Rn.', 'FACULTY_MANAGER', 16),
+(33, 'Giảng viên Khoa Khách sạn - Nhà hàng', 'lecturer.hotel@vlu.edu.vn', '$2b$10$NAO3LBQuVGlv/47lZGXsq.jVL0zAgF/SLuUL8uueNjgxWDY8A2Rn.', 'LECTURER', 16),
 -- LAW (id: 17)
-(34, 'Quản lý Khoa Luật', 'manager.law@vlu.edu.vn', '$2b$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW', 'FACULTY_MANAGER', 17),
-(35, 'Giảng viên Khoa Luật', 'lecturer.law@vlu.edu.vn', '$2b$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW', 'LECTURER', 17),
+(34, 'Quản lý Khoa Luật', 'manager.law@vlu.edu.vn', '$2b$10$NAO3LBQuVGlv/47lZGXsq.jVL0zAgF/SLuUL8uueNjgxWDY8A2Rn.', 'FACULTY_MANAGER', 17),
+(35, 'Giảng viên Khoa Luật', 'lecturer.law@vlu.edu.vn', '$2b$10$NAO3LBQuVGlv/47lZGXsq.jVL0zAgF/SLuUL8uueNjgxWDY8A2Rn.', 'LECTURER', 17),
 -- ENG (id: 18)
-(36, 'Quản lý Khoa Ngoại ngữ', 'manager.eng@vlu.edu.vn', '$2b$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW', 'FACULTY_MANAGER', 18),
-(37, 'Giảng viên Khoa Ngoại ngữ', 'lecturer.eng@vlu.edu.vn', '$2b$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW', 'LECTURER', 18),
+(36, 'Quản lý Khoa Ngoại ngữ', 'manager.eng@vlu.edu.vn', '$2b$10$NAO3LBQuVGlv/47lZGXsq.jVL0zAgF/SLuUL8uueNjgxWDY8A2Rn.', 'FACULTY_MANAGER', 18),
+(37, 'Giảng viên Khoa Ngoại ngữ', 'lecturer.eng@vlu.edu.vn', '$2b$10$NAO3LBQuVGlv/47lZGXsq.jVL0zAgF/SLuUL8uueNjgxWDY8A2Rn.', 'LECTURER', 18),
 -- COMM (id: 19)
-(38, 'Quản lý Khoa Truyền thông & Báo chí', 'manager.comm@vlu.edu.vn', '$2b$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW', 'FACULTY_MANAGER', 19),
-(39, 'Giảng viên Khoa Truyền thông & Báo chí', 'lecturer.comm@vlu.edu.vn', '$2b$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW', 'LECTURER', 19),
+(38, 'Quản lý Khoa Truyền thông & Báo chí', 'manager.comm@vlu.edu.vn', '$2b$10$NAO3LBQuVGlv/47lZGXsq.jVL0zAgF/SLuUL8uueNjgxWDY8A2Rn.', 'FACULTY_MANAGER', 19),
+(39, 'Giảng viên Khoa Truyền thông & Báo chí', 'lecturer.comm@vlu.edu.vn', '$2b$10$NAO3LBQuVGlv/47lZGXsq.jVL0zAgF/SLuUL8uueNjgxWDY8A2Rn.', 'LECTURER', 19),
 -- PSY (id: 20)
-(40, 'Quản lý Khoa Tâm lý học', 'manager.psy@vlu.edu.vn', '$2b$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW', 'FACULTY_MANAGER', 20),
-(41, 'Giảng viên Khoa Tâm lý học', 'lecturer.psy@vlu.edu.vn', '$2b$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW', 'LECTURER', 20),
+(40, 'Quản lý Khoa Tâm lý học', 'manager.psy@vlu.edu.vn', '$2b$10$NAO3LBQuVGlv/47lZGXsq.jVL0zAgF/SLuUL8uueNjgxWDY8A2Rn.', 'FACULTY_MANAGER', 20),
+(41, 'Giảng viên Khoa Tâm lý học', 'lecturer.psy@vlu.edu.vn', '$2b$10$NAO3LBQuVGlv/47lZGXsq.jVL0zAgF/SLuUL8uueNjgxWDY8A2Rn.', 'LECTURER', 20),
 -- NURS (id: 21)
-(42, 'Quản lý Khoa Điều dưỡng', 'manager.nurs@vlu.edu.vn', '$2b$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW', 'FACULTY_MANAGER', 21),
-(43, 'Giảng viên Khoa Điều dưỡng', 'lecturer.nurs@vlu.edu.vn', '$2b$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW', 'LECTURER', 21),
+(42, 'Quản lý Khoa Điều dưỡng', 'manager.nurs@vlu.edu.vn', '$2b$10$NAO3LBQuVGlv/47lZGXsq.jVL0zAgF/SLuUL8uueNjgxWDY8A2Rn.', 'FACULTY_MANAGER', 21),
+(43, 'Giảng viên Khoa Điều dưỡng', 'lecturer.nurs@vlu.edu.vn', '$2b$10$NAO3LBQuVGlv/47lZGXsq.jVL0zAgF/SLuUL8uueNjgxWDY8A2Rn.', 'LECTURER', 21),
 -- PHARM (id: 22)
-(44, 'Quản lý Khoa Dược', 'manager.pharm@vlu.edu.vn', '$2b$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW', 'FACULTY_MANAGER', 22),
-(45, 'Giảng viên Khoa Dược', 'lecturer.pharm@vlu.edu.vn', '$2b$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW', 'LECTURER', 22);
+(44, 'Quản lý Khoa Dược', 'manager.pharm@vlu.edu.vn', '$2b$10$NAO3LBQuVGlv/47lZGXsq.jVL0zAgF/SLuUL8uueNjgxWDY8A2Rn.', 'FACULTY_MANAGER', 22),
+(45, 'Giảng viên Khoa Dược', 'lecturer.pharm@vlu.edu.vn', '$2b$10$NAO3LBQuVGlv/47lZGXsq.jVL0zAgF/SLuUL8uueNjgxWDY8A2Rn.', 'LECTURER', 22);
 
 INSERT IGNORE INTO scales (id, name) VALUES
 (1, 'Tier 1 (Tập đoàn/Global)'),
@@ -450,10 +451,18 @@ CREATE TABLE IF NOT EXISTS notes (
     content TEXT NOT NULL,
     color VARCHAR(50) DEFAULT '#fef08a',
     created_by INT NOT NULL,
+    enterprise_id INT DEFAULT NULL,
+    activity_id INT DEFAULT NULL,
+    mou_id INT DEFAULT NULL,
+    student_id INT DEFAULT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     is_deleted TINYINT(1) DEFAULT 0,
-    FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE CASCADE
+    FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (enterprise_id) REFERENCES enterprises(id) ON DELETE CASCADE,
+    FOREIGN KEY (activity_id) REFERENCES activities(id) ON DELETE CASCADE,
+    FOREIGN KEY (mou_id) REFERENCES mous(id) ON DELETE CASCADE,
+    FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 SET FOREIGN_KEY_CHECKS = 1;

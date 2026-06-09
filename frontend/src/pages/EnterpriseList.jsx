@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Table, Tag, Form, Input, Select, Button, Modal, message, Space, Drawer, Timeline, Row, Col, DatePicker, Descriptions, Switch, Popover, Badge, Divider, App as AntApp, Spin, Card, Checkbox } from 'antd';
+import { Table, Tag, Form, Input, Select, Button, Modal, message, Space, Drawer, Timeline, Row, Col, DatePicker, Descriptions, Switch, Popover, Badge, Divider, App as AntApp, Spin, Card, Checkbox, Pagination } from 'antd';
 import { EditOutlined, DeleteOutlined, PlusOutlined, UnorderedListOutlined, UploadOutlined, DownloadOutlined, UserOutlined, HomeOutlined, FilterOutlined, SortAscendingOutlined, ClearOutlined, SearchOutlined, BankOutlined } from '@ant-design/icons';
 import ImportModal from '../components/ImportModal';
 import api from '../utils/api';
@@ -47,6 +47,12 @@ const EnterpriseList = () => {
     const [selectedRowKeys, setSelectedRowKeys] = useState([]);
 
     const [showDeleted, setShowDeleted] = useState(false);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pageSize, setPageSize] = useState(12);
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchText, statusFilter, filterScale, filterField, filterIsHcmc, filterDistrict, sortOption, showDeleted]);
 
     useEffect(() => {
         document.title = "Quản lý Doanh nghiệp | VLU Enterprise Link Manager";
@@ -309,6 +315,8 @@ const EnterpriseList = () => {
     });
 
     const activeFilterCount = [statusFilter, filterScale, filterField, filterIsHcmc !== undefined ? filterIsHcmc : undefined, filterDistrict, sortOption, showDeleted ? true : null].filter(v => v !== undefined && v !== null).length;
+
+    const paginatedData = filteredData.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
     const sortOptions = [
         { value: 'name_asc', label: '🔤 Tên (A → Z)' },
@@ -599,7 +607,12 @@ const EnterpriseList = () => {
                     className="shadow-sm border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-xl overflow-hidden"
                     scroll={{ x: 'max-content' }}
                     pagination={{
-                        defaultPageSize: 12,
+                        current: currentPage,
+                        pageSize: pageSize,
+                        onChange: (page, size) => {
+                            setCurrentPage(page);
+                            setPageSize(size);
+                        },
                         showSizeChanger: true,
                         pageSizeOptions: ['12', '24', '48', '96'],
                         showTotal: (total) => `Tổng số ${total} doanh nghiệp`,
@@ -609,20 +622,22 @@ const EnterpriseList = () => {
 
             {/* Mobile View */}
             <div className="block md:hidden space-y-4">
-                {!isLecturer && !loading && filteredData.length > 0 && (
+                {!isLecturer && !loading && paginatedData.length > 0 && (
                     <div className="bg-slate-50 dark:bg-gray-800 p-3 rounded-lg border border-slate-200 dark:border-gray-700 mb-2 flex items-center justify-between">
                         <Checkbox
-                            checked={filteredData.length > 0 && selectedRowKeys.length === filteredData.length}
-                            indeterminate={selectedRowKeys.length > 0 && selectedRowKeys.length < filteredData.length}
+                            checked={paginatedData.length > 0 && paginatedData.every(ent => selectedRowKeys.includes(ent.id))}
+                            indeterminate={paginatedData.some(ent => selectedRowKeys.includes(ent.id)) && !paginatedData.every(ent => selectedRowKeys.includes(ent.id))}
                             onChange={(e) => {
                                 if (e.target.checked) {
-                                    setSelectedRowKeys(filteredData.map(ent => ent.id));
+                                    const toAdd = paginatedData.filter(ent => ent.is_deleted !== 1).map(ent => ent.id);
+                                    setSelectedRowKeys(prev => [...new Set([...prev, ...toAdd])]);
                                 } else {
-                                    setSelectedRowKeys([]);
+                                    const toRemove = paginatedData.map(ent => ent.id);
+                                    setSelectedRowKeys(prev => prev.filter(id => !toRemove.includes(id)));
                                 }
                             }}
                         >
-                            Chọn tất cả ({filteredData.length} DN)
+                            Chọn tất cả trang này ({paginatedData.length} DN)
                         </Checkbox>
                     </div>
                 )}
@@ -632,7 +647,8 @@ const EnterpriseList = () => {
                 ) : filteredData.length === 0 ? (
                     <Card className="text-center py-6 text-gray-400">Không có dữ liệu</Card>
                 ) : (
-                    filteredData.map(record => {
+                    <>
+                        {paginatedData.map(record => {
                         const isChecked = selectedRowKeys.includes(record.id);
                         return (
                             <Card
@@ -739,7 +755,24 @@ const EnterpriseList = () => {
                             </div>
                         </Card>
                     );
-                }))}
+                })}
+                {filteredData.length > 0 && (
+                    <div className="flex justify-center mt-6 pb-4">
+                        <Pagination
+                            current={currentPage}
+                            pageSize={pageSize}
+                            total={filteredData.length}
+                            onChange={(page, size) => {
+                                setCurrentPage(page);
+                                setPageSize(size);
+                            }}
+                            showSizeChanger
+                            pageSizeOptions={['12', '24', '48', '96']}
+                        />
+                    </div>
+                )}
+                </>
+                )}
             </div>
 
             <Modal

@@ -1,10 +1,10 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Table, Button, Modal, Form, Input, Select, DatePicker, message, Space, Tooltip, Row, Col, Upload, Spin, Tag, Alert, Switch, Popover, Badge, Divider, App as AntApp, Card, Checkbox, Drawer, Descriptions, Progress } from 'antd';
+import { Table, Tag, Form, Input, Select, Button, Modal, message, Space, Drawer, Timeline, Row, Col, DatePicker, Descriptions, Switch, Popover, Badge, Divider, App as AntApp, Spin, Card, Checkbox, Pagination, Progress, Upload } from 'antd';
 import {
     PlusOutlined, EditOutlined, DeleteOutlined, LinkOutlined, SearchOutlined,
     FilePdfOutlined, ScanOutlined, InboxOutlined, CheckCircleOutlined, RobotOutlined, DownloadOutlined,
     FilterOutlined, ClearOutlined, SortAscendingOutlined, AuditOutlined, EyeOutlined, UnorderedListOutlined,
-    UploadOutlined, CloudUploadOutlined, ExclamationCircleOutlined, ReloadOutlined
+    UploadOutlined, CloudUploadOutlined, ExclamationCircleOutlined, ReloadOutlined, FileTextOutlined
 } from '@ant-design/icons';
 import api from '../utils/api';
 import dayjs from 'dayjs';
@@ -13,6 +13,14 @@ import Cookies from 'js-cookie';
 const { Option } = Select;
 const { TextArea } = Input;
 const { Dragger } = Upload;
+
+const STICKY_COLORS = [
+  { name: 'Vàng', hex: '#fef08a' },
+  { name: 'Xanh dương', hex: '#bfdbfe' },
+  { name: 'Xanh lá', hex: '#bbf7d0' },
+  { name: 'Hồng', hex: '#fbcfe8' },
+  { name: 'Tím', hex: '#e9d5ff' },
+];
 
 const MOUList = () => {
     const userCookie = Cookies.get('user');
@@ -56,6 +64,12 @@ const MOUList = () => {
     const [filterEnterprise, setFilterEnterprise] = useState(undefined);
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
     const [selectedMOU, setSelectedMOU] = useState(null);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pageSize, setPageSize] = useState(12);
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchText, sortOption, filterUnit, filterOrgType, filterCountry, filterFaculty, filterEnterprise, showDeleted]);
 
     // File upload states (for drawer and edit form)
     const [drawerUploadFile, setDrawerUploadFile] = useState(null);
@@ -66,6 +80,13 @@ const MOUList = () => {
     const [formUploadFile, setFormUploadFile] = useState(null);
     const [formUploading, setFormUploading] = useState(false);
     const [scanUploadingToCloud, setScanUploadingToCloud] = useState(false);
+
+    // Notes states
+    const [isNoteModalVisible, setIsNoteModalVisible] = useState(false);
+    const [currentNoteRecord, setCurrentNoteRecord] = useState(null);
+    const [noteForm] = Form.useForm();
+    const [existingNoteId, setExistingNoteId] = useState(null);
+    const [savingNote, setSavingNote] = useState(false);
 
     const handleViewDetail = (record) => {
         setSelectedMOU(record);
@@ -78,6 +99,64 @@ const MOUList = () => {
         fetchOptions();
         if (user?.role === 'ADMIN') fetchFaculties();
     }, []);
+
+    const handleOpenNoteModal = async (record) => {
+        setCurrentNoteRecord(record);
+        setExistingNoteId(null);
+        noteForm.resetFields();
+        noteForm.setFieldsValue({ color: '#fef08a' });
+        setIsNoteModalVisible(true);
+
+        try {
+            const res = await api.get(`/notes/reference?mou_id=${record.id}`);
+            if (res.data) {
+                setExistingNoteId(res.data.id);
+                noteForm.setFieldsValue({
+                    title: res.data.title,
+                    content: res.data.content,
+                    color: res.data.color || '#fef08a'
+                });
+            }
+        } catch (error) {
+            console.error('Lỗi khi tải ghi chú:', error);
+        }
+    };
+
+    const handleSaveNote = async (values) => {
+        setSavingNote(true);
+        try {
+            await api.post('/notes/reference', {
+                ...values,
+                mou_id: currentNoteRecord.id
+            });
+            message.success('Lưu ghi chú thành công');
+            setIsNoteModalVisible(false);
+            window.dispatchEvent(new Event('refresh-notes'));
+        } catch (error) {
+            message.error(error.response?.data?.message || 'Lỗi khi lưu ghi chú');
+        } finally {
+            setSavingNote(false);
+        }
+    };
+
+    const handleDeleteNote = async () => {
+        if (!existingNoteId) return;
+        modal.confirm({
+            title: 'Xác nhận xóa ghi chú?',
+            content: 'Ghi chú này sẽ bị xóa vĩnh viễn và gỡ bỏ khỏi bảng Kanban.',
+            okButtonProps: { danger: true, className: '!bg-red-600 hover:!bg-red-500 text-white' },
+            onOk: async () => {
+                try {
+                    await api.delete(`/notes/${existingNoteId}`);
+                    message.success('Xóa ghi chú thành công');
+                    setIsNoteModalVisible(false);
+                    window.dispatchEvent(new Event('refresh-notes'));
+                } catch (error) {
+                    message.error('Lỗi khi xóa ghi chú');
+                }
+            }
+        });
+    };
 
     const fetchFaculties = async () => {
         try {
@@ -585,6 +664,8 @@ const MOUList = () => {
         }
     });
 
+    const paginatedData = filteredData.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
     const columns = [
         {
             title: 'Mã Biên bản',
@@ -674,6 +755,9 @@ const MOUList = () => {
                 }
                 return (
                     <Space>
+                        <Tooltip title="Ghi chú">
+                            <Button type="text" icon={<FileTextOutlined className="text-slate-500" />} onClick={() => handleOpenNoteModal(record)} />
+                        </Tooltip>
                         <Tooltip title="Xem chi tiết">
                             <Button type="text" icon={<EyeOutlined />} onClick={() => handleViewDetail(record)} />
                         </Tooltip>
@@ -748,7 +832,7 @@ const MOUList = () => {
     };
 
     return (
-        <div>
+        <div className={selectedRowKeys.length > 0 ? "pb-24" : ""}>
             {/* Header */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
                 <div className="flex items-center gap-3">
@@ -817,7 +901,7 @@ const MOUList = () => {
                             danger 
                             icon={<DeleteOutlined />} 
                             onClick={handleBulkDelete}
-                            className="flex items-center justify-center font-medium"
+                            className="flex items-center justify-center font-medium !bg-red-600 hover:!bg-red-500 text-white border-0"
                         >
                             Xóa đã chọn
                         </Button>
@@ -845,7 +929,12 @@ const MOUList = () => {
                     rowKey="id"
                     rowClassName={(record) => record.is_deleted === 1 ? 'opacity-65 bg-red-50/20 dark:bg-red-950/10' : ''}
                     pagination={{
-                        defaultPageSize: 12,
+                        current: currentPage,
+                        pageSize: pageSize,
+                        onChange: (page, size) => {
+                            setCurrentPage(page);
+                            setPageSize(size);
+                        },
                         showSizeChanger: true,
                         pageSizeOptions: ['12', '24', '48', '96'],
                         showTotal: (total) => `Tổng số ${total} biên bản`,
@@ -858,20 +947,22 @@ const MOUList = () => {
 
             {/* Mobile View */}
             <div className="block md:hidden space-y-4">
-                {!isLecturer && !loading && filteredData.length > 0 && (
+                {!isLecturer && !loading && paginatedData.length > 0 && (
                     <div className="bg-slate-50 dark:bg-gray-800 p-3 rounded-lg border border-slate-200 dark:border-gray-700 mb-2 flex items-center justify-between">
                         <Checkbox
-                            checked={filteredData.length > 0 && selectedRowKeys.length === filteredData.length}
-                            indeterminate={selectedRowKeys.length > 0 && selectedRowKeys.length < filteredData.length}
+                            checked={paginatedData.length > 0 && paginatedData.every(mou => selectedRowKeys.includes(mou.id))}
+                            indeterminate={paginatedData.some(mou => selectedRowKeys.includes(mou.id)) && !paginatedData.every(mou => selectedRowKeys.includes(mou.id))}
                             onChange={(e) => {
                                 if (e.target.checked) {
-                                    setSelectedRowKeys(filteredData.map(mou => mou.id));
+                                    const toAdd = paginatedData.filter(mou => mou.is_deleted !== 1).map(mou => mou.id);
+                                    setSelectedRowKeys(prev => [...new Set([...prev, ...toAdd])]);
                                 } else {
-                                    setSelectedRowKeys([]);
+                                    const toRemove = paginatedData.map(mou => mou.id);
+                                    setSelectedRowKeys(prev => prev.filter(id => !toRemove.includes(id)));
                                 }
                             }}
                         >
-                            Chọn tất cả ({filteredData.length} biên bản)
+                            Chọn tất cả trang này ({paginatedData.length} biên bản)
                         </Checkbox>
                     </div>
                 )}
@@ -881,7 +972,8 @@ const MOUList = () => {
                 ) : filteredData.length === 0 ? (
                     <Card className="text-center py-6 text-gray-400">Không có dữ liệu</Card>
                 ) : (
-                    filteredData.map(record => {
+                    <>
+                        {paginatedData.map(record => {
                         const isChecked = selectedRowKeys.includes(record.id);
                         return (
                             <Card
@@ -936,6 +1028,7 @@ const MOUList = () => {
                                     </div>
                                 )}
                                 <div className="flex justify-end gap-3 pt-2 border-t border-gray-100 dark:border-gray-700 mt-2">
+                                    <Button type="text" icon={<FileTextOutlined className="text-slate-500" />} onClick={() => handleOpenNoteModal(record)} title="Ghi chú" />
                                     <Button type="text" icon={<EyeOutlined />} onClick={() => handleViewDetail(record)} />
                                     {record.working_dir && (
                                         <Button type="text" icon={<LinkOutlined />} onClick={() => window.open(record.working_dir, '_blank')} />
@@ -959,7 +1052,24 @@ const MOUList = () => {
                             </div>
                         </Card>
                     );
-                }))}
+                })}
+                {filteredData.length > 0 && (
+                    <div className="flex justify-center mt-6 pb-4">
+                        <Pagination
+                            current={currentPage}
+                            pageSize={pageSize}
+                            total={filteredData.length}
+                            onChange={(page, size) => {
+                                setCurrentPage(page);
+                                setPageSize(size);
+                            }}
+                            showSizeChanger
+                            pageSizeOptions={['12', '24', '48', '96']}
+                        />
+                    </div>
+                )}
+                </>
+                )}
             </div>
 
             {/* ==================== ADD/EDIT MODAL ==================== */}
@@ -1502,6 +1612,48 @@ const MOUList = () => {
                     </div>
                 )}
             </Drawer>
+
+            {/* Note Modal */}
+            <Modal
+                title={<div className="text-lg font-bold flex items-center gap-2">📝 Ghi chú MOU: <span className="text-vluRed">{currentNoteRecord?.mou_code}</span></div>}
+                open={isNoteModalVisible}
+                onCancel={() => setIsNoteModalVisible(false)}
+                footer={[
+                    existingNoteId && (
+                        <Button key="delete" danger onClick={handleDeleteNote} className="float-left">
+                            Xóa ghi chú
+                        </Button>
+                    ),
+                    <Button key="cancel" onClick={() => setIsNoteModalVisible(false)}>
+                        Hủy
+                    </Button>,
+                    <Button key="save" type="primary" className="bg-blue-600 hover:bg-blue-500 border-none" loading={savingNote} onClick={() => noteForm.submit()}>
+                        Lưu ghi chú
+                    </Button>
+                ].filter(Boolean)}
+                destroyOnClose
+            >
+                <Form form={noteForm} layout="vertical" onFinish={handleSaveNote} className="mt-4">
+                    <Form.Item name="title" label="Tiêu đề ghi chú">
+                        <Input placeholder="Nhập tiêu đề (tùy chọn)..." className="rounded-lg" />
+                    </Form.Item>
+                    <Form.Item name="content" label="Nội dung ghi chú" rules={[{ required: true, message: 'Vui lòng nhập nội dung ghi chú' }]}>
+                        <TextArea rows={4} placeholder="Nhập nội dung ghi chú..." className="rounded-lg" />
+                    </Form.Item>
+                    <Form.Item name="color" label="Màu sắc thẻ ghi chú" initialValue="#fef08a">
+                        <Select className="rounded-lg">
+                            {STICKY_COLORS.map(c => (
+                                <Option key={c.hex} value={c.hex}>
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-3.5 h-3.5 rounded-full border border-black/15" style={{ backgroundColor: c.hex }} />
+                                        {c.name}
+                                    </div>
+                                </Option>
+                            ))}
+                        </Select>
+                    </Form.Item>
+                </Form>
+            </Modal>
         </div>
     );
 };
