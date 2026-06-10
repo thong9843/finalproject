@@ -54,4 +54,4 @@ Hệ thống **VLU Enterprise Link** phân quyền thành 3 vai trò chính đ�
 | 21 | Khoa Điều dưỡng | **NURS** | `manager.nurs@vlu.edu.vn` | `lecturer.nurs@vlu.edu.vn` |
 | 22 | Khoa Dược | **PHARM** | `manager.pharm@vlu.edu.vn` | `lecturer.pharm@vlu.edu.vn` |
 
-[hình ảnh: Giao diện đăng nhập hệ thống]
+![Giao diện đăng nhập hệ thống](https://firebasestorage.googleapis.com/v0/b/quan-ly-doanh-nghiep-vlu.firebasestorage.app/o/docs%2Flogin.png?alt=media&token=21731059-471b-4d95-9465-f2561c53b00e)

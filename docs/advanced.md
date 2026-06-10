@@ -12,7 +12,7 @@
 4.  **Xem trước dữ liệu (Preview):** Hệ thống hiển thị bảng dữ liệu xem trước, tự động phát hiện và gộp các dòng trùng tên doanh nghiệp.
 5.  **Xử lý bằng AI:** Trợ lý AI (Gemini) sẽ đọc dữ liệu thô, tự động phân tích cấu trúc địa chỉ (tách riêng Tòa nhà/Đường, Quận, Tỉnh) và thông tin liên hệ của đại diện để ghi vào cơ sở dữ liệu một cách chuẩn hóa nhất.
 
-[hình ảnh: Giao diện tải tệp tin và ánh xạ cột dữ liệu trong công cụ AI Import]
+![Giao diện tải tệp tin và ánh xạ cột dữ liệu trong công cụ AI Import](https://firebasestorage.googleapis.com/v0/b/quan-ly-doanh-nghiep-vlu.firebasestorage.app/o/docs%2Fadvances%2Faiimport.mp4?alt=media&token=8791ddbf-e96d-4430-9f83-3f60571eea4e)
 
 ---
 
@@ -23,7 +23,7 @@ Công cụ dọn dẹp hệ thống dành riêng cho tài khoản Admin khi phá
 3.  Bấm nút **"Gộp (Merge)"**: Chọn một bản ghi chính xác làm bản ghi gốc.
 4.  **Cơ chế gộp an toàn:** Hệ thống tự động chuyển toàn bộ các dữ liệu liên đới gồm biên bản MOU, hoạt động liên kết, và sinh viên đang thực tập từ các bản ghi trùng lặp sang liên kết với bản ghi gốc đã chọn, sau đó mới tiến hành xóa các bản ghi thừa, đảm bảo tuyệt đối không làm mất dữ liệu của bất kỳ khoa nào.
 
-[hình ảnh: Giao diện dọn dẹp và gộp doanh nghiệp trùng lặp]
+![Giao diện dọn dẹp và gộp doanh nghiệp trùng lặp](https://firebasestorage.googleapis.com/v0/b/quan-ly-doanh-nghiep-vlu.firebasestorage.app/o/docs%2Fadvances%2Fdulieutrunglap.png?alt=media&token=18344037-5e63-4543-8049-5a4d54b6ec0d)
 
 ---
 
@@ -36,7 +36,7 @@ Công cụ xử lý nhanh lượng lớn doanh nghiệp (Chỉ dành cho ADMIN):
     *   *Chuyển quyền quản lý Khoa:* Chuyển giao quyền quản lý các doanh nghiệp được chọn sang cho khoa khác phụ trách.
     *   *Xóa mềm hàng loạt:* Xóa nhanh các doanh nghiệp không còn liên kết hoạt động.
 
-[hình ảnh: Giao diện thao tác thay đổi dữ liệu hàng loạt]
+![Giao diện thao tác thay đổi dữ liệu hàng loạt](https://firebasestorage.googleapis.com/v0/b/quan-ly-doanh-nghiep-vlu.firebasestorage.app/o/docs%2Fadvances%2Fdulieuhangloat.png?alt=media&token=a7b6244b-a753-46de-b5fe-d8023223d036)
 
 ---
 
@@ -46,7 +46,7 @@ Hệ thống tích hợp trình quản lý tệp tin trực quan cho mỗi khoa:
 *   **Thao tác:** Hỗ trợ tạo thư mục mới, tải trực tiếp các tệp tin scan hợp đồng, tài liệu, hình ảnh sự kiện.
 *   **Thùng rác tài liệu:** Các file xóa đi sẽ được đưa vào thùng rác riêng của File Manager để hỗ trợ khôi phục hoặc xóa vĩnh viễn nhằm giải phóng dung lượng lưu trữ.
 
-[hình ảnh: Trình quản lý tệp tin và cây thư mục tài liệu theo doanh nghiệp]
+![Trình quản lý tệp tin và cây thư mục tài liệu theo doanh nghiệp](https://firebasestorage.googleapis.com/v0/b/quan-ly-doanh-nghiep-vlu.firebasestorage.app/o/docs%2FQu%E1%BA%A3n%20l%C3%BD%20file.png?alt=media&token=48c42f55-9982-40f8-82e1-023c5305ebaa)
 
 ---
 
@@ -55,4 +55,4 @@ Hệ thống tích hợp trình quản lý tệp tin trực quan cho mỗi khoa:
 *   **Nhật ký hệ thống:** Lưu lại lịch sử hành động (CREATE - Tạo mới, UPDATE - Cập nhật, DELETE - Xóa, RESTORE - Khôi phục), tên tài khoản thực hiện, thời gian thực hiện và tên đối tượng bị thay đổi.
 *   **So sánh chi tiết thay đổi:** Người dùng có thể click chọn xem chi tiết để xem sự thay đổi giá trị của dữ liệu (Giá trị cũ ➔ Giá trị mới) dưới dạng định dạng JSON chi tiết để dễ dàng đối soát khi xảy ra tranh chấp hoặc lỗi nhập liệu.
 
-[hình ảnh: Nhật ký hệ thống và chi tiết so sánh giá trị JSON]
+![Nhật ký hệ thống và chi tiết so sánh giá trị JSON](https://firebasestorage.googleapis.com/v0/b/quan-ly-doanh-nghiep-vlu.firebasestorage.app/o/docs%2Fadvances%2Fhistory.png?alt=media&token=b007cc24-ff6b-43cd-9688-73ceb48e06ef)

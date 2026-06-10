@@ -13,7 +13,7 @@ Giao diện danh sách cung cấp các công cụ tìm kiếm và lọc dữ li�
     *   *Khu vực:* Lọc các doanh nghiệp có chi nhánh tại TP.HCM (checkbox "Có tại TP.HCM").
     *   *Trạng thái hợp tác:* Lọc doanh nghiệp theo trạng thái (Tiềm năng, Liên hệ, Đàm phán, Đề xuất, Đã ký hợp tác, Đang triển khai, Đã hoàn thành, Đã tạm ngưng).
 
-[hình ảnh: Danh sách doanh nghiệp đối tác và thanh công cụ tìm kiếm, lọc]
+![Danh sách doanh nghiệp đối tác và thanh công cụ tìm kiếm, lọc](https://firebasestorage.googleapis.com/v0/b/quan-ly-doanh-nghiep-vlu.firebasestorage.app/o/docs%2Fenterprises%2FDanh%20s%C3%A1ch%20doanh%20nghi%E1%BB%87p%20%C4%91%E1%BB%91i%20t%C3%A1c%20v%C3%A0%20thanh%20c%C3%B4ng%20c%E1%BB%A5%20t%C3%ACm%20ki%E1%BA%BFm%2C%20l%E1%BB%8Dc.webm?alt=media&token=e2d01749-4099-454b-a05b-5fe80cc9acbb)
 
 ---
 
@@ -31,7 +31,7 @@ Giao diện danh sách cung cấp các công cụ tìm kiếm và lọc dữ li�
     *   `Khoa quản lý` (Trường này chỉ hiển thị khi tài khoản Admin tạo để gán cho khoa tương ứng).
 3.  Nhấn **"Lưu"** để hoàn tất. Để chỉnh sửa, click biểu tượng **Chỉnh sửa** (bút chì) ở cột hành động trên dòng doanh nghiệp tương ứng.
 
-[hình ảnh: Biểu mẫu thêm mới/cập nhật thông tin Doanh nghiệp]
+![Biểu mẫu thêm mới/cập nhật thông tin Doanh nghiệp](https://firebasestorage.googleapis.com/v0/b/quan-ly-doanh-nghiep-vlu.firebasestorage.app/o/docs%2Fenterprises%2FBi%E1%BB%83u%20m%E1%BA%ABu%20th%C3%AAm%20m%E1%BB%9Bi%2C%20c%E1%BA%ADp%20nh%E1%BA%ADt%20th%C3%B4ng%20tin%20Doanh%20nghi%E1%BB%87p.webm?alt=media&token=9b8ea968-0870-4758-a144-a71ba208ce98)
 
 ---
 
@@ -39,20 +39,6 @@ Giao diện danh sách cung cấp các công cụ tìm kiếm và lọc dữ li�
 Hệ thống hỗ trợ cấu hình động thông tin chi tiết của doanh nghiệp:
 *   **Địa chỉ chi nhánh (Addresses):** Một doanh nghiệp có thể có nhiều cơ sở. Cho phép thêm nhiều địa chỉ khác nhau gồm các thông tin: *Tòa nhà/Đường*, *Quận/Huyện*, *Tỉnh/Thành phố*, *Quốc gia*. Cán bộ chọn 1 địa chỉ để tick làm **"Địa chỉ chính"**.
 *   **Danh sách người đại diện (Representatives):** Cho phép lưu trữ thông tin của nhiều nhân sự phía đối tác gồm: *Danh xưng (Anh/Chị/Mr/Ms)*, *Họ và tên*, *Chức vụ*, *Số điện thoại*, *Email*. Người dùng chọn 1 nhân sự làm **"Đại diện chính"** để liên hệ khi có sự kiện.
-
----
-
-## ⭐ Đánh giá chất lượng Doanh nghiệp (Ratings)
-Giúp Khoa tổng hợp phản hồi để sàng lọc và duy trì quan hệ với các đối tác uy tín:
-*   **Tiêu chí chấm điểm:** Đánh giá từ 1 đến 5 sao theo 5 tiêu chí cụ thể:
-    1.  *Chỉ số Hướng dẫn (Guidance):* Chất lượng mentor của doanh nghiệp hướng dẫn sinh viên.
-    2.  *Cơ sở vật chất (Facilities):* Trang thiết bị làm việc, vệ sinh, không gian làm việc.
-    3.  *Cơ hội phát triển (Opportunities):* Cơ hội học hỏi thực tế, khả năng nhận làm nhân viên chính thức.
-    4.  *Phối hợp thông tin (Coordination):* Mức độ phối hợp với Khoa khi gửi báo cáo, giải quyết sự cố.
-    5.  *Điểm tổng quan (Overall).*
-*   **Ghi chú nội bộ (Internal Note):** Các nhận xét nhạy cảm, lưu ý bảo mật về doanh nghiệp chỉ hiển thị trong nội bộ khoa.
-
-[hình ảnh: Chi tiết doanh nghiệp và bảng đánh giá chất lượng Ratings]
 
 ---
 

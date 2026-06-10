@@ -11,7 +11,8 @@ exports.listFiles = async (req, res) => {
             });
         }
 
-        const [files] = await bucket.getFiles();
+        const [allFiles] = await bucket.getFiles();
+        const files = allFiles.filter(file => !file.name.startsWith('docs/') && file.name !== 'docs');
         
         // Query database to check for file references
         // 1. mous.file_url
@@ -79,6 +80,10 @@ exports.deleteFile = async (req, res) => {
             return res.status(400).json({ message: 'Đường dẫn tệp tin hoặc thư mục (filePath) là bắt buộc.' });
         }
 
+        if (filePath.startsWith('docs/') || filePath === 'docs') {
+            return res.status(403).json({ message: 'Không thể xóa thư mục hoặc tệp tin thuộc tài liệu (docs).' });
+        }
+
         if (isFolder) {
             // Delete all files with this prefix
             const [files] = await bucket.getFiles({ prefix: filePath + '/' });
@@ -116,7 +121,8 @@ exports.cleanupGarbage = async (req, res) => {
             return res.status(400).json({ message: 'Firebase Storage is disabled.' });
         }
 
-        const [files] = await bucket.getFiles();
+        const [allFiles] = await bucket.getFiles();
+        const files = allFiles.filter(file => !file.name.startsWith('docs/') && file.name !== 'docs');
 
         const [mous] = await pool.query('SELECT file_url FROM mous WHERE file_url IS NOT NULL AND is_deleted = 0');
         const [tasks] = await pool.query('SELECT description FROM tasks WHERE description IS NOT NULL AND is_deleted = 0');

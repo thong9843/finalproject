@@ -42,7 +42,6 @@ const cleanMarkdownForDisplay = (text) => {
     return cleaned.trim();
 };
 
-// Configure marked with a custom heading renderer to support anchors and scrolling offset
 marked.use({
     renderer: {
         heading({ text, depth }) {
@@ -50,6 +49,14 @@ marked.use({
             return `<h${depth} id="${anchor}" class="group relative flex items-center scroll-mt-20 font-bold border-b border-slate-100 dark:border-slate-800/50 pb-2 mb-4 mt-6 text-slate-800 dark:text-gray-100 ${
                 depth === 1 ? 'text-3xl' : depth === 2 ? 'text-xl' : 'text-lg'
             }">${text}<a href="#${anchor}" class="opacity-0 group-hover:opacity-100 ml-2 text-red-500 transition-opacity">#</a></h${depth}>`;
+        },
+        image({ href, title, text }) {
+            const hrefLower = href.toLowerCase();
+            const isVideo = hrefLower.endsWith('.webm') || hrefLower.endsWith('.mp4') || hrefLower.includes('.webm?') || hrefLower.includes('.mp4?');
+            if (isVideo) {
+                return `<video src="${href}" controls class="max-w-full h-auto rounded-lg my-6 shadow-md border border-slate-200 dark:border-gray-700" title="${title || text || ''}"></video>`;
+            }
+            return `<img src="${href}" alt="${text}" title="${title || ''}" class="max-w-full h-auto rounded-lg my-6 shadow-md border border-slate-200 dark:border-gray-700" />`;
         }
     }
 });

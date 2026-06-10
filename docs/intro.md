@@ -13,7 +13,7 @@ Hệ thống được phát triển với mục tiêu nâng cao hiệu quả là
 *   **Tương tác thông minh:** Tích hợp Trợ lý AI (Gemini) hỗ trợ bóc tách, chuẩn hóa dữ liệu Excel và chat trực tiếp trong các nhiệm vụ công việc, ghi chú để hỗ trợ cán bộ xử lý thông tin nhanh chóng.
 *   **Báo cáo trực quan:** Cung cấp biểu đồ thống kê xu hướng thực tập, hoạt động, đánh giá doanh nghiệp của từng khoa và toàn trường.
 
-[hình ảnh: Giao diện Trang chủ Dashboard và các biểu đồ thống kê]
+![Giao diện Trang chủ Dashboard và các biểu đồ thống kê](https://firebasestorage.googleapis.com/v0/b/quan-ly-doanh-nghiep-vlu.firebasestorage.app/o/docs%2FDashboard.png?alt=media&token=5276347f-1ee2-4e24-a6e9-e129c1288738)
 
 > [!NOTE]
 > **Khảo sát ý kiến người dùng:** Để giúp chúng tôi cải tiến và hoàn thiện phần mềm tốt hơn, kính mong quý Thầy/Cô và các bạn sinh viên dành chút thời gian (khoảng 1 phút) để thực hiện khảo sát tại: [Khảo sát ý kiến sử dụng VLU Enterprise Link](https://forms.gle/vG4hhfUFrPTUNgwY6).

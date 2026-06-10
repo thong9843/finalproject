@@ -12,7 +12,7 @@ Biên bản ghi nhớ hợp tác (MOU) là văn bản chính thức làm cơ s�
     *   *Đơn vị triển khai:* Bộ môn trực thuộc khoa trực tiếp vận hành các điều khoản hợp tác của MOU.
     *   *Loại hình tổ chức:* Doanh nghiệp tư nhân, tập đoàn, hiệp hội, trường học...
 
-[hình ảnh: Danh sách Biên bản ghi nhớ hợp tác MOU]
+![Danh sách Biên bản ghi nhớ hợp tác MOU](https://firebasestorage.googleapis.com/v0/b/quan-ly-doanh-nghiep-vlu.firebasestorage.app/o/docs%2Fmous%2FMous.png?alt=media&token=a32372d9-cd63-4137-95d3-8ed268cd1294)
 
 ---
 
@@ -32,7 +32,7 @@ Biên bản ghi nhớ hợp tác (MOU) là văn bản chính thức làm cơ s�
     *   `Hoạt động cũ` và `Số liệu liên quan`.
 3.  Nhấn **"Lưu"**.
 
-[hình ảnh: Biểu mẫu thêm mới biên bản MOU]
+![Biểu mẫu thêm mới biên bản MOU](https://firebasestorage.googleapis.com/v0/b/quan-ly-doanh-nghiep-vlu.firebasestorage.app/o/docs%2Fmous%2FBi%E1%BB%83u%20m%E1%BA%ABu%20th%C3%AAm%20m%E1%BB%9Bi%20ho%E1%BA%A1t%20%C4%91%E1%BB%99ng%20li%C3%AAn%20k%E1%BA%BFt.webm?alt=media&token=89ab02ac-083c-46fd-8dba-d4be4edc3881)
 
 ---
 

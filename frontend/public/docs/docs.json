@@ -1,11 +1,38 @@
 [
-  { "id": "intro", "title": "Giới thiệu chung" },
-  { "id": "accounts", "title": "Tài khoản hệ thống" },
-  { "id": "enterprises", "title": "Quản lý Doanh nghiệp (Cty)" },
-  { "id": "students", "title": "Quản lý Sinh viên (HS)" },
-  { "id": "activities", "title": "Hoạt động liên kết" },
-  { "id": "mous", "title": "Biên bản ghi nhớ MOU" },
-  { "id": "tasks", "title": "Nhiệm vụ Kanban" },
-  { "id": "notes", "title": "Không gian Ghi chú" },
-  { "id": "advanced", "title": "Công cụ nâng cao" }
+  {
+    "id": "intro",
+    "title": "Giới thiệu chung"
+  },
+  {
+    "id": "accounts",
+    "title": "Tài khoản hệ thống"
+  },
+  {
+    "id": "enterprises",
+    "title": "Quản lý Doanh nghiệp (Cty)"
+  },
+  {
+    "id": "students",
+    "title": "Quản lý Sinh viên (HS)"
+  },
+  {
+    "id": "activities",
+    "title": "Hoạt động liên kết"
+  },
+  {
+    "id": "mous",
+    "title": "Biên bản ghi nhớ MOU"
+  },
+  {
+    "id": "tasks",
+    "title": "Bảng Nhiệm vụ"
+  },
+  {
+    "id": "notes",
+    "title": "Không gian Ghi chú"
+  },
+  {
+    "id": "advanced",
+    "title": "Công cụ nâng cao"
+  }
 ]

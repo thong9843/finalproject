@@ -12,8 +12,7 @@ Không gian Ghi chú giúp lưu trữ nhanh các mảnh ghi chép, ý tưởng h
 *   **Kéo thả sắp xếp (Reorder):** Người dùng có thể kéo thả trực tiếp các mảnh ghi chú để hoán đổi vị trí hiển thị của chúng trên không gian làm việc theo ý muốn.
 *   **Đổi màu sắc nhanh:** Di chuột vào thẻ ghi chú, click chọn màu sắc tương ứng từ các hình tròn màu sắc dưới chân thẻ để đổi màu nền note ngay lập tức.
 
-[hình ảnh: Không gian ghi chú dán với các thẻ note nhiều màu sắc]
-[hình ảnh: Biểu mẫu thêm mới ghi chú dán]
+![Không gian ghi chú dán với các thẻ note nhiều màu sắc](https://firebasestorage.googleapis.com/v0/b/quan-ly-doanh-nghiep-vlu.firebasestorage.app/o/docs%2Fnotes%2FNote.png?alt=media&token=43744502-5771-42da-b9c0-33d97bad3a63)
 
 ---
 

@@ -12,7 +12,7 @@ Phân hệ Sinh viên hỗ trợ Khoa quản lý toàn diện quá trình đi th
     *   *Giảng viên hướng dẫn:* Lọc danh sách sinh viên do giảng viên phụ trách chấm điểm và theo dõi.
     *   *Trạng thái thực tập:* Lọc theo tiến độ gồm: `Chờ phân công`, `Đang thực tập`, `Hoàn thành`, `Đã nghỉ`.
 
-[hình ảnh: Danh sách sinh viên thực tập và bộ lọc thông tin]
+![Danh sách sinh viên thực tập và bộ lọc thông tin](https://firebasestorage.googleapis.com/v0/b/quan-ly-doanh-nghiep-vlu.firebasestorage.app/o/docs%2Fstudents%2FDanh%20s%C3%A1ch%20sinh%20vi%C3%AAn%20th%E1%BB%B1c%20t%E1%BA%ADp%20v%C3%A0%20b%E1%BB%99%20l%E1%BB%8Dc%20th%C3%B4ng%20tin.webm?alt=media&token=189e660e-75ed-4bb9-8dd8-130572092edc)
 
 ---
 
@@ -32,7 +32,7 @@ Phân hệ Sinh viên hỗ trợ Khoa quản lý toàn diện quá trình đi th
     *   `Khoa quản lý` (Chỉ hiện khi Admin tạo).
 3.  Nhấn **"Lưu"**. Để sửa thông tin, click nút **"Chỉnh sửa"** (biểu tượng bút chì) trên dòng tương ứng của sinh viên.
 
-[hình ảnh: Hộp thoại phân công/cập nhật sinh viên thực tập]
+![Hộp thoại phân công/cập nhật sinh viên thực tập](https://firebasestorage.googleapis.com/v0/b/quan-ly-doanh-nghiep-vlu.firebasestorage.app/o/docs%2Fstudents%2FH%E1%BB%99p%20tho%E1%BA%A1i%20ph%C3%A2n%20c%C3%B4ng.webm?alt=media&token=a85cb07d-6e00-49e1-9160-074d78ceaccb)
 
 ---
 

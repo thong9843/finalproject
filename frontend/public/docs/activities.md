@@ -16,7 +16,7 @@ Giao diện hoạt động hỗ trợ 2 chế độ hiển thị tùy chọn:
     *   *Loại hoạt động:* Tuyển dụng & Thực tập, Hội thảo & Đào tạo, Tài trợ & Học bổng, Tham quan doanh nghiệp, Kiểm định & Đánh giá, Ký kết MOU, Khác.
     *   *Đối tượng hướng tới:* Sinh viên năm 1, 2, 3, 4, Mới tốt nghiệp, Giảng viên, Tất cả sinh viên.
 
-[hình ảnh: Danh sách hoạt động liên kết dưới dạng lưới thẻ]
+![Danh sách hoạt động liên kết dưới dạng lưới thẻ](https://firebasestorage.googleapis.com/v0/b/quan-ly-doanh-nghiep-vlu.firebasestorage.app/o/docs%2Factivities%2FActivity.png?alt=media&token=9a552033-62e8-4a5e-957f-4d99775bf784)
 
 ---
 
@@ -34,7 +34,7 @@ Giao diện hoạt động hỗ trợ 2 chế độ hiển thị tùy chọn:
     *   `Trạng thái`: Mặc định là *Đề xuất*.
 3.  Nhấp **"Lưu hoạt động"** để hoàn tất.
 
-[hình ảnh: Biểu mẫu thêm mới hoạt động liên kết]
+![Biểu mẫu thêm mới hoạt động liên kết](https://firebasestorage.googleapis.com/v0/b/quan-ly-doanh-nghiep-vlu.firebasestorage.app/o/docs%2Factivities%2FBi%E1%BB%83u%20m%E1%BA%ABu%20th%C3%AAm%20m%E1%BB%9Bi%20v%C3%A0%20ch%E1%BB%89nh%20s%E1%BB%ADa%20ho%E1%BA%A1t%20%C4%91%E1%BB%99ng%20li%C3%AAn%20k%E1%BA%BFt.webm?alt=media&token=e5abb8e8-215a-40d8-bcdc-ecc1f919efde)
 
 ---
 
@@ -50,7 +50,7 @@ Giao diện hoạt động hỗ trợ 2 chế độ hiển thị tùy chọn:
 *   Bật tab **"Lịch sự kiện"** trên menu chính của hệ thống.
 *   Hiển thị tất cả các hoạt động liên kết của khoa dưới dạng lịch tuần/lịch tháng trực quan. Giúp Cán bộ điều phối dễ dàng kiểm tra lịch trình, tránh tình trạng chồng chéo thời gian hoặc quá tải hoạt động trong một tuần học.
 
-[hình ảnh: Lịch sự kiện Calendar View trực quan]
+![Lịch sự kiện Calendar View trực quan](https://firebasestorage.googleapis.com/v0/b/quan-ly-doanh-nghiep-vlu.firebasestorage.app/o/docs%2Factivities%2FCalendar.png?alt=media&token=bca784e4-afbf-4a70-aff4-52c8ef3b1afb)
 
 ---
 
@@ -58,4 +58,4 @@ Giao diện hoạt động hỗ trợ 2 chế độ hiển thị tùy chọn:
 *   Khi click vào card hoạt động, một **Drawer chi tiết** sẽ trượt ra từ bên phải màn hình hiển thị toàn bộ thông tin mô tả hoạt động, danh sách các sinh viên tham gia đợt hoạt động đó, và các file tài liệu liên quan.
 *   Cán bộ có thể tạo các **Ghi chú dán (Sticky Notes)** riêng cho hoạt động này trực tiếp bên trong Drawer để lưu lại các lưu ý khẩn cấp khi tổ chức sự kiện.
 
-[hình ảnh: Drawer chi tiết hoạt động và danh sách sinh viên tham gia]
+![Drawer chi tiết hoạt động và danh sách sinh viên tham gia](https://firebasestorage.googleapis.com/v0/b/quan-ly-doanh-nghiep-vlu.firebasestorage.app/o/docs%2Factivities%2FActivity-Chi%20Ti%E1%BA%BFt.png?alt=media&token=6c7a77b9-8d7b-4849-9012-a4e596903ef8)

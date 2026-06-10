@@ -311,26 +311,11 @@ const importStudents = async (req, res) => {
 
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 
-// Rotate API keys if GEMINI_API_KEYS is defined
-let apiKeys = process.env.GEMINI_API_KEYS ? process.env.GEMINI_API_KEYS.split(',').map(k => k.trim()) : [];
-if (apiKeys.length === 0 && process.env.GEMINI_API_KEY) {
-    apiKeys.push(process.env.GEMINI_API_KEY);
-}
-let currentKeyIdx = 0;
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 function getGenerativeModel() {
-    if (apiKeys.length === 0) throw new Error("No Gemini API key found");
-    const genAI = new GoogleGenerativeAI(apiKeys[currentKeyIdx]);
-    // The user's Python script used gemini-3.1-flash-lite-preview, falling back to gemini-1.5-flash if that's invalid, 
-    // but the SDK requires the exact string. We will use the string provided by the user.
-    return genAI.getGenerativeModel({ model: "gemini-3-flash-preview" }); // Using 1.5-flash as the stable version, since 3.1 is not commonly available in standard library yet, but wait, the plan said to use 3.1-flash-lite-preview.
-}
-
-function rotateKey() {
-    if (apiKeys.length > 1) {
-        currentKeyIdx = (currentKeyIdx + 1) % apiKeys.length;
-        console.log(`[🔄 ĐỔI KEY] Đã chuyển sang API Key số ${currentKeyIdx + 1}...`);
-    }
+    if (!process.env.GEMINI_API_KEY) throw new Error("GEMINI_API_KEY chưa được cấu hình");
+    return genAI.getGenerativeModel({ model: "gemini-3.1-flash-lite" });
 }
 
 const system_prompt = `
@@ -380,160 +365,177 @@ OUTPUT FORMAT (CHỈ TRẢ VỀ JSON, KHÔNG CÓ MARKDOWN HAY TEXT NÀO KHÁC):
 const delay = ms => new Promise(res => setTimeout(res, ms));
 
 const aiParseRow = async (req, res) => {
-    const { rowText } = req.body;
+    const { rowText, companyName } = req.body;
     if (!rowText) return res.status(400).json({ message: "Missing rowText" });
 
     const facultyId = req.user.role === 'ADMIN'
         ? (req.body.faculty_id || req.body.facultyId || null)
         : req.user.faculty_id;
 
-    let parsedData = null;
-    let maxRetries = apiKeys.length * 2;
-    let waitTime = 5000;
+    try {
+        // ── PRE-CHECK: bỏ qua ngay nếu công ty đã tồn tại, không tốn token AI ──
+        if (companyName && companyName.trim()) {
+            const [existing] = await pool.query(
+                'SELECT id FROM enterprises WHERE name = ? AND (faculty_id = ? OR (faculty_id IS NULL AND ? IS NULL)) AND is_deleted = 0',
+                [companyName.trim(), facultyId, facultyId]
+            );
+            if (existing.length > 0) {
+                return res.status(409).json({ message: `Doanh nghiệp "${companyName.trim()}" đã tồn tại trong hệ thống (bỏ qua, không gọi AI).` });
+            }
+        }
 
-    for (let attempt = 0; attempt < maxRetries; attempt++) {
-        try {
-            const model = getGenerativeModel(); // You might want to override model string to "gemini-3.1-flash-lite-preview" or fallback to "gemini-1.5-flash"
-            const result = await model.generateContent(system_prompt + "\\nDỮ LIỆU ĐẦU VÀO:\\n" + rowText);
-            const text = result.response.text();
+        // ── GỌI AI ──
+        let parsedData = null;
+        const maxRetries = 3;
+        let waitTime = 5000;
 
-            let rawJson = text.trim();
-            if (rawJson.startsWith('```json')) rawJson = rawJson.replace('```json', '');
-            if (rawJson.startsWith('```')) rawJson = rawJson.replace('```', '');
-            if (rawJson.endsWith('```')) rawJson = rawJson.substring(0, rawJson.length - 3);
+        for (let attempt = 0; attempt < maxRetries; attempt++) {
+            try {
+                const model = getGenerativeModel();
+                const result = await model.generateContent(system_prompt + "\\nDỮ LIỆU ĐẦU VÀO:\\n" + rowText);
+                const text = result.response.text();
 
-            parsedData = JSON.parse(rawJson.trim());
-            break;
-        } catch (error) {
-            console.error("Gemini API Error:", error.message);
-            if (error.message.includes("429") || error.message.includes("quota") || error.message.includes("rate limit") || error.status === 429) {
-                rotateKey();
-                await delay(2000);
-                if ((attempt + 1) % apiKeys.length === 0) {
-                    console.log(`[⏳ CHỜ ĐỢI] Các Key đều tạm khóa. Nghỉ ${waitTime}ms...`);
+                let rawJson = text.trim();
+                if (rawJson.startsWith('```json')) rawJson = rawJson.replace('```json', '');
+                if (rawJson.startsWith('```')) rawJson = rawJson.replace('```', '');
+                if (rawJson.endsWith('```')) rawJson = rawJson.substring(0, rawJson.length - 3);
+
+                parsedData = JSON.parse(rawJson.trim());
+                break;
+            } catch (error) {
+                console.error("Gemini API Error:", error.message);
+                if (error.message.includes("429") || error.message.includes("quota") || error.message.includes("rate limit") || error.status === 429) {
+                    console.log(`[⏳ CHỜ ĐỢI] Rate limit, thử lại sau ${waitTime}ms...`);
                     await delay(waitTime);
                     waitTime += 5000;
+                } else {
+                    return res.status(500).json({ message: "Lỗi AI Parsing: " + error.message });
                 }
-            } else {
-                return res.status(500).json({ message: "Lỗi AI Parsing: " + error.message });
-            }
-        }
-    }
-
-    if (!parsedData) {
-        return res.status(500).json({ message: "Không thể parse dữ liệu sau nhiều lần thử." });
-    }
-
-    const conn = await pool.getConnection();
-    try {
-        await conn.beginTransaction();
-
-        const comp = parsedData.company || {};
-        const activities = parsedData.activities || [];
-
-        // 1. Get or Create Scale
-        let scale_id = null;
-        if (comp.scale_name) {
-            const [sRows] = await conn.query('SELECT id FROM scales WHERE name = ?', [comp.scale_name]);
-            if (sRows.length > 0) scale_id = sRows[0].id;
-            else {
-                const [sRes] = await conn.query('INSERT INTO scales (name) VALUES (?)', [comp.scale_name]);
-                scale_id = sRes.insertId;
             }
         }
 
-        // 2. Insert Enterprise
-        const entName = comp.name || "Unknown Company";
-        let checkQuery = 'SELECT id FROM enterprises WHERE name = ? AND (faculty_id = ? OR (faculty_id IS NULL AND ? IS NULL)) AND is_deleted = 0';
-        const [existingEnt] = await conn.query(checkQuery, [entName, facultyId, facultyId]);
-
-        let enterpriseId = null;
-        if (existingEnt.length > 0) {
-            throw new Error(`Doanh nghiệp "${entName}" đã tồn tại trong hệ thống.`);
-        } else {
-            const is_hcmc = comp.is_hcmc !== undefined ? comp.is_hcmc : true;
-            const [eRes] = await conn.query(
-                'INSERT INTO enterprises (name, scale_id, is_hcmc, faculty_id) VALUES (?, ?, ?, ?)',
-                [entName, scale_id, is_hcmc, facultyId]
-            );
-            enterpriseId = eRes.insertId;
+        if (!parsedData) {
+            return res.status(500).json({ message: "Không thể parse dữ liệu sau nhiều lần thử." });
         }
 
-        // 3. Insert Representatives
-        if (comp.rep_name || comp.rep_phone || comp.rep_email) {
-            await conn.query(
-                'INSERT INTO enterprise_representatives (enterprise_id, title, full_name, role, phone, email, is_primary) VALUES (?, ?, ?, ?, ?, ?, 1)',
-                [enterpriseId, comp.rep_title, comp.rep_name, comp.rep_role, comp.rep_phone, comp.rep_email]
-            );
-        }
+        // ── LƯU VÀO DB ──
+        const conn = await pool.getConnection();
+        try {
+            await conn.beginTransaction();
 
-        // 4. Insert Addresses
-        if (comp.address_building || comp.address_district || comp.address_province) {
-            await conn.query(
-                'INSERT INTO enterprise_addresses (enterprise_id, building_street, district, province, country, is_main) VALUES (?, ?, ?, ?, ?, 1)',
-                [enterpriseId, comp.address_building, comp.address_district, comp.address_province, comp.address_country || 'Việt Nam']
-            );
-        }
+            const comp = parsedData.company || {};
+            const activities = parsedData.activities || [];
 
-        // 5. Insert Enterprise Fields
-        if (comp.field_names && Array.isArray(comp.field_names)) {
-            for (const fn of comp.field_names) {
-                let field_id = null;
-                const [fRows] = await conn.query('SELECT id FROM fields WHERE name = ? AND (faculty_id = 0 OR faculty_id = ?)', [fn, facultyId || 0]);
-                if (fRows.length > 0) field_id = fRows[0].id;
+            // 1. Get or Create Scale
+            let scale_id = null;
+            if (comp.scale_name) {
+                const [sRows] = await conn.query('SELECT id FROM scales WHERE name = ?', [comp.scale_name]);
+                if (sRows.length > 0) scale_id = sRows[0].id;
                 else {
-                    const [fRes] = await conn.query('INSERT INTO fields (name, faculty_id) VALUES (?, ?)', [fn, facultyId || 0]);
-                    field_id = fRes.insertId;
+                    const [sRes] = await conn.query('INSERT INTO scales (name) VALUES (?)', [comp.scale_name]);
+                    scale_id = sRes.insertId;
                 }
-                await conn.query('INSERT IGNORE INTO enterprise_fields (enterprise_id, field_id) VALUES (?, ?)', [enterpriseId, field_id]);
             }
+
+            // 2. Insert Enterprise
+            const entName = comp.name || "Unknown Company";
+            let checkQuery = 'SELECT id FROM enterprises WHERE name = ? AND (faculty_id = ? OR (faculty_id IS NULL AND ? IS NULL)) AND is_deleted = 0';
+            const [existingEnt] = await conn.query(checkQuery, [entName, facultyId, facultyId]);
+
+            let enterpriseId = null;
+            if (existingEnt.length > 0) {
+                throw new Error(`Doanh nghiệp "${entName}" đã tồn tại trong hệ thống.`);
+            } else {
+                const is_hcmc = comp.is_hcmc !== undefined ? comp.is_hcmc : true;
+                const [eRes] = await conn.query(
+                    'INSERT INTO enterprises (name, scale_id, is_hcmc, faculty_id) VALUES (?, ?, ?, ?)',
+                    [entName, scale_id, is_hcmc, facultyId]
+                );
+                enterpriseId = eRes.insertId;
+            }
+
+            // 3. Insert Representatives
+            if (comp.rep_name || comp.rep_phone || comp.rep_email) {
+                await conn.query(
+                    'INSERT INTO enterprise_representatives (enterprise_id, title, full_name, role, phone, email, is_primary) VALUES (?, ?, ?, ?, ?, ?, 1)',
+                    [enterpriseId, comp.rep_title, comp.rep_name, comp.rep_role, comp.rep_phone, comp.rep_email]
+                );
+            }
+
+            // 4. Insert Addresses
+            if (comp.address_building || comp.address_district || comp.address_province) {
+                await conn.query(
+                    'INSERT INTO enterprise_addresses (enterprise_id, building_street, district, province, country, is_main) VALUES (?, ?, ?, ?, ?, 1)',
+                    [enterpriseId, comp.address_building, comp.address_district, comp.address_province, comp.address_country || 'Việt Nam']
+                );
+            }
+
+            // 5. Insert Enterprise Fields
+            if (comp.field_names && Array.isArray(comp.field_names)) {
+                for (const fn of comp.field_names) {
+                    let field_id = null;
+                    const [fRows] = await conn.query('SELECT id FROM fields WHERE name = ? AND (faculty_id = 0 OR faculty_id = ?)', [fn, facultyId || 0]);
+                    if (fRows.length > 0) field_id = fRows[0].id;
+                    else {
+                        const [fRes] = await conn.query('INSERT INTO fields (name, faculty_id) VALUES (?, ?)', [fn, facultyId || 0]);
+                        field_id = fRes.insertId;
+                    }
+                    await conn.query('INSERT IGNORE INTO enterprise_fields (enterprise_id, field_id) VALUES (?, ?)', [enterpriseId, field_id]);
+                }
+            }
+
+            // 6. Insert Activities
+            for (const act of activities) {
+                const [aRes] = await conn.query(
+                    'INSERT INTO activities (enterprise_id, title, detail, faculty_id) VALUES (?, ?, ?, ?)',
+                    [enterpriseId, act.name, act.detail, facultyId]
+                );
+                const activityId = aRes.insertId;
+
+                // Activity Types
+                if (act.activity_type_names && Array.isArray(act.activity_type_names)) {
+                    for (const tn of act.activity_type_names) {
+                        let type_id = null;
+                        const [tRows] = await conn.query('SELECT id FROM act_types WHERE name = ?', [tn]);
+                        if (tRows.length > 0) type_id = tRows[0].id;
+                        else {
+                            const [tRes] = await conn.query('INSERT INTO act_types (name) VALUES (?)', [tn]);
+                            type_id = tRes.insertId;
+                        }
+                        await conn.query('INSERT IGNORE INTO activity_type_map (activity_id, type_id) VALUES (?, ?)', [activityId, type_id]);
+                    }
+                }
+
+                // Targets
+                if (act.target_names && Array.isArray(act.target_names)) {
+                    for (const tg of act.target_names) {
+                        let target_id = null;
+                        const [tgRows] = await conn.query('SELECT id FROM targets WHERE name = ?', [tg]);
+                        if (tgRows.length > 0) target_id = tgRows[0].id;
+                        else {
+                            const [tgRes] = await conn.query('INSERT INTO targets (name) VALUES (?)', [tg]);
+                            target_id = tgRes.insertId;
+                        }
+                        await conn.query('INSERT IGNORE INTO activity_target_map (activity_id, target_id) VALUES (?, ?)', [activityId, target_id]);
+                    }
+                }
+            }
+
+            await conn.commit();
+            res.json({ message: "Parse và lưu dữ liệu thành công", data: parsedData, enterpriseId });
+        } catch (dbError) {
+            await conn.rollback();
+            console.error("DB Error:", dbError);
+            res.status(500).json({ message: dbError.message });
+        } finally {
+            conn.release();
         }
 
-        // 6. Insert Activities
-        for (const act of activities) {
-            const [aRes] = await conn.query(
-                'INSERT INTO activities (enterprise_id, title, detail, faculty_id) VALUES (?, ?, ?, ?)',
-                [enterpriseId, act.name, act.detail, facultyId]
-            );
-            const activityId = aRes.insertId;
-
-            // Activity Types
-            if (act.activity_type_names && Array.isArray(act.activity_type_names)) {
-                for (const tn of act.activity_type_names) {
-                    let type_id = null;
-                    const [tRows] = await conn.query('SELECT id FROM act_types WHERE name = ?', [tn]);
-                    if (tRows.length > 0) type_id = tRows[0].id;
-                    else {
-                        const [tRes] = await conn.query('INSERT INTO act_types (name) VALUES (?)', [tn]);
-                        type_id = tRes.insertId;
-                    }
-                    await conn.query('INSERT IGNORE INTO activity_type_map (activity_id, type_id) VALUES (?, ?)', [activityId, type_id]);
-                }
-            }
-
-            // Targets
-            if (act.target_names && Array.isArray(act.target_names)) {
-                for (const tg of act.target_names) {
-                    let target_id = null;
-                    const [tgRows] = await conn.query('SELECT id FROM targets WHERE name = ?', [tg]);
-                    if (tgRows.length > 0) target_id = tgRows[0].id;
-                    else {
-                        const [tgRes] = await conn.query('INSERT INTO targets (name) VALUES (?)', [tg]);
-                        target_id = tgRes.insertId;
-                    }
-                    await conn.query('INSERT IGNORE INTO activity_target_map (activity_id, target_id) VALUES (?, ?)', [activityId, target_id]);
-                }
-            }
+    } catch (outerError) {
+        console.error("aiParseRow error:", outerError.message);
+        if (!res.headersSent) {
+            res.status(500).json({ message: "Lỗi xử lý: " + outerError.message });
         }
-
-        await conn.commit();
-        res.json({ message: "Parse và lưu dữ liệu thành công", data: parsedData, enterpriseId });
-    } catch (dbError) {
-        await conn.rollback();
-        console.error("DB Error:", dbError);
-        res.status(500).json({ message: dbError.message });
-    } finally {
-        conn.release();
     }
 };
 

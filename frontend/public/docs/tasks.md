@@ -12,7 +12,7 @@ Bảng Kanban phân loại công việc thành 4 cột trạng thái:
 *   **Khay thả nổi nhanh (Floating Drop Targets):** Khi người dùng bắt đầu kéo thẻ, một khay nổi màu đen chứa 4 vùng trạng thái sẽ tự động xuất hiện ở cuối màn hình. Bạn có thể thả thẻ nhiệm vụ trực tiếp vào các vùng này để chuyển trạng thái nhanh (rất thuận tiện trên các màn hình nhỏ).
 *   **Chế độ di động:** Trên thiết bị di động, bảng tự động hiển thị thanh Tabs switch. Người dùng chỉ cần ấn nút tên trạng thái (ví dụ: *Đang thực hiện*) để xem các nhiệm vụ thuộc trạng thái đó mà không bị tràn màn hình.
 
-[hình ảnh: Bảng công việc Kanban với 4 cột trạng thái]
+![Bảng công việc Kanban với 4 cột trạng thái](https://firebasestorage.googleapis.com/v0/b/quan-ly-doanh-nghiep-vlu.firebasestorage.app/o/docs%2Ftask%2FTask.png?alt=media&token=dbf50f12-5f85-4989-b9b6-c3d5c15f21c3)
 
 ---
 
@@ -25,9 +25,6 @@ Bấm nút **"Thêm nhiệm vụ"** tại bảng Kanban để mở biểu mẫu:
 *   `Mô tả & chi tiết công việc`: 
     *   **Soạn thảo liên kết thông minh (MentionEditor):** Khi gõ kí tự `@` trong mô tả, hệ thống sẽ hiện danh sách đề xuất. Bạn có thể chọn liên kết nhanh đến một **Doanh nghiệp**, **Hoạt động**, **MOU** hoặc **Sinh viên** cụ thể.
     *   Thanh chọn nhanh ở chân biểu mẫu: Cung cấp các nút bấm `@ Doanh nghiệp`, `@ Hoạt động`, `@ MOU`, `@ Sinh viên` và nút `Đính kèm File/Audio/Ảnh` để tải tài liệu lên đính kèm vào nhiệm vụ.
-
-[hình ảnh: Biểu mẫu tạo nhiệm vụ mới với MentionEditor hỗ trợ gõ @]
-[hình ảnh: Khay thả nhanh Floating Quick Drop Target Shelf khi kéo thả thẻ nhiệm vụ]
 
 ---
 

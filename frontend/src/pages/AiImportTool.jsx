@@ -197,7 +197,7 @@ const AiImportTool = () => {
             try {
                 const res = await api.post(
                     '/import/ai-parse-row', 
-                    { rowText: item.rowText }
+                    { rowText: item.rowText, companyName: item.companyName }
                 );
                 
                 currentStatus = [
@@ -206,9 +206,14 @@ const AiImportTool = () => {
                 ];
                 setImportStatus(currentStatus);
             } catch (err) {
+                const isSkipped = err.response?.status === 409;
                 currentStatus = [
                     ...currentStatus.filter(l => l.companyName !== item.companyName),
-                    { companyName: item.companyName, status: 'error', message: err.response?.data?.message || err.message }
+                    { 
+                        companyName: item.companyName, 
+                        status: isSkipped ? 'skipped' : 'error', 
+                        message: err.response?.data?.message || err.message 
+                    }
                 ];
                 setImportStatus(currentStatus);
             }
@@ -347,7 +352,11 @@ const AiImportTool = () => {
 
                         <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-lg max-h-96 overflow-y-auto font-mono text-sm border border-gray-200 dark:border-gray-700">
                             {importStatus.map((log, idx) => (
-                                <div key={idx} className={`mb-1 ${log.status === 'error' ? 'text-red-500' : 'text-green-600 dark:text-green-400'}`}>
+                                <div key={idx} className={
+                                    log.status === 'error' ? 'mb-1 text-red-500' :
+                                    log.status === 'skipped' ? 'mb-1 text-yellow-500 dark:text-yellow-400' :
+                                    'mb-1 text-green-600 dark:text-green-400'
+                                }>
                                     [{log.status.toUpperCase()}] {log.companyName}: {log.message}
                                 </div>
                             ))}
