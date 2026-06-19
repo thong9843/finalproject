@@ -442,5 +442,18 @@ html.dark .vlu-mentions-input__suggestions__item--focused {
   vertical-align: middle;
 }
 
+/* Fix Ant Design Tour buttons background color overridden by Tailwind preflight */
+.ant-tour .ant-btn-primary {
+  background-color: #DA251D !important;
+  color: #ffffff !important;
+  border: none !important;
+  box-shadow: 0 2px 4px rgba(218, 37, 29, 0.2) !important;
+}
+
+.ant-tour .ant-btn-primary:hover {
+  background-color: #bd1f18 !important;
+  color: #ffffff !important;
+}
+
 
 

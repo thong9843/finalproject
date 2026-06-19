@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Dropdown, Avatar, Badge, List, Typography, Button, Popover } from 'antd';
-import { UserOutlined, LogoutOutlined, BellOutlined, MenuOutlined, MenuFoldOutlined, MenuUnfoldOutlined, MessageOutlined, RobotOutlined } from '@ant-design/icons';
+import { Dropdown, Avatar, Badge, List, Typography, Button, Popover, message, Switch } from 'antd';
+import { UserOutlined, LogoutOutlined, BellOutlined, MenuOutlined, MenuFoldOutlined, MenuUnfoldOutlined, MessageOutlined, RobotOutlined, InfoCircleOutlined, SettingOutlined, FormOutlined, EyeOutlined, EyeInvisibleOutlined, SunOutlined, MoonOutlined } from '@ant-design/icons';
 import Cookies from 'js-cookie';
 import { useNavigate } from 'react-router-dom';
+import { useTheme } from '../context/ThemeContext';
 import dayjs from 'dayjs';
 import api from '../utils/api';
 
@@ -10,6 +11,7 @@ const { Text } = Typography;
 
 const Header = ({ onMenuToggle, collapsed, onCollapseToggle, chatbotOpen, onChatbotToggle }) => {
     const navigate = useNavigate();
+    const { isDark, toggleDark } = useTheme();
     const userCookie = Cookies.get('user');
     const user = userCookie ? JSON.parse(userCookie) : null;
     const [upcomingEvents, setUpcomingEvents] = useState([]);
@@ -54,11 +56,65 @@ const Header = ({ onMenuToggle, collapsed, onCollapseToggle, chatbotOpen, onChat
         navigate('/login');
     };
 
+    const handleStartTour = () => {
+        window.dispatchEvent(new CustomEvent('start-tour'));
+    };
+
     const items = [
         {
-            key: '1',
-            icon: <LogoutOutlined />,
-            label: 'Đăng xuất',
+            key: 'profile',
+            icon: <UserOutlined className="text-blue-500" />,
+            label: 'Chỉnh sửa thông tin cá nhân',
+            onClick: () => navigate('/settings')
+        },
+        {
+            key: 'theme',
+            icon: isDark ? <SunOutlined className="text-yellow-500" /> : <MoonOutlined className="text-gray-500" />,
+            label: (
+                <div 
+                    className="flex items-center justify-between w-full min-w-[180px] gap-4" 
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        toggleDark();
+                    }}
+                >
+                    <span>Giao diện tối (Dark mode)</span>
+                    <Switch
+                        checked={isDark}
+                        size="small"
+                        onClick={(e) => e.stopPropagation()}
+                        onChange={() => {
+                            toggleDark();
+                        }}
+                    />
+                </div>
+            ),
+        },
+        {
+            key: 'tour',
+            icon: <InfoCircleOutlined className="text-cyan-500" />,
+            label: 'Xem lại hướng dẫn nhanh',
+            onClick: handleStartTour
+        },
+        {
+            key: 'survey',
+            icon: <FormOutlined className="text-purple-500" />,
+            label: 'Khảo sát ý kiến',
+            onClick: () => navigate('/survey')
+        },
+        {
+            key: 'settings',
+            icon: <SettingOutlined className="text-slate-500" />,
+            label: 'Cài đặt hệ thống',
+            onClick: () => navigate('/settings')
+        },
+        {
+            type: 'divider'
+        },
+        {
+            key: 'logout',
+            icon: <LogoutOutlined className="text-red-500" />,
+            label: <span className="text-red-500">Đăng xuất</span>,
             onClick: handleLogout
         }
     ];
@@ -123,6 +179,7 @@ const Header = ({ onMenuToggle, collapsed, onCollapseToggle, chatbotOpen, onChat
 
             {/* Chatbot Toggle Button */}
             <button
+                id="tour-ai-button"
                 onClick={onChatbotToggle}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full transition-all duration-300 border font-medium text-xs shadow-md cursor-pointer relative group
                     ${chatbotOpen 
@@ -148,7 +205,7 @@ const Header = ({ onMenuToggle, collapsed, onCollapseToggle, chatbotOpen, onChat
             </Popover>
 
             {user && (
-                <div className="flex items-center gap-2 sm:gap-3 border-l border-gray-200 dark:border-gray-600 pl-3 sm:pl-6 transition-colors duration-300">
+                <div id="tour-user-profile" className="flex items-center gap-2 sm:gap-3 border-l border-gray-200 dark:border-gray-600 pl-3 sm:pl-6 transition-colors duration-300">
                     <div className="hidden sm:flex flex-col text-right">
                         <span className="text-gray-800 dark:text-gray-100 font-semibold text-sm leading-tight">
                             {user.full_name}

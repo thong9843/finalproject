@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { Card, Row, Col, Spin, List, Tag, Typography, Segmented, DatePicker, Select } from 'antd';
+import { Card, Row, Col, Spin, List, Tag, Typography, Segmented, DatePicker, Select, Rate } from 'antd';
 import {
     BankOutlined,
     CheckCircleOutlined,
@@ -7,7 +7,9 @@ import {
     TeamOutlined,
     CalendarOutlined,
     RightOutlined,
-    DashboardOutlined
+    DashboardOutlined,
+    StarOutlined,
+    UserOutlined
 } from '@ant-design/icons';
 import api from '../utils/api';
 import { Doughnut, Bar } from 'react-chartjs-2';
@@ -148,7 +150,7 @@ const Dashboard = () => {
         return <div className="flex justify-center items-center h-full"><Spin size="large" /></div>;
     }
 
-    const { totals, charts, upcomingActivities } = stats;
+    const { totals, charts, upcomingActivities, recentRatings } = stats;
 
     // KPI Cards Configuration
     const kpiCards = [
@@ -531,6 +533,73 @@ const Dashboard = () => {
                             <div className="h-[350px] flex flex-col items-center justify-center text-gray-400">
                                 <CalendarOutlined className="text-4xl mb-3 opacity-50" />
                                 <p>Không có hoạt động nào sắp diễn ra</p>
+                            </div>
+                        )}
+                    </Card>
+                </Col>
+            </Row>
+
+            {/* Row 4: Typical Ratings */}
+            <Row gutter={[24, 24]} className="mt-8">
+                <Col xs={24}>
+                    <Card
+                        title={
+                            <div className="flex items-center gap-2">
+                                <StarOutlined className="text-yellow-500" />
+                                <span className="font-semibold text-gray-700 dark:text-gray-200">Đánh giá tiêu biểu của doanh nghiệp</span>
+                            </div>
+                        }
+                        className="shadow-sm rounded-xl border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow"
+                    >
+                        {recentRatings && recentRatings.length > 0 ? (
+                            <List
+                                grid={{
+                                    gutter: 16,
+                                    xs: 1,
+                                    sm: 2,
+                                    md: 3,
+                                    lg: 4,
+                                    xl: 5,
+                                }}
+                                dataSource={recentRatings}
+                                renderItem={(item) => {
+                                    const date = dayjs(item.created_at);
+                                    return (
+                                        <List.Item className="h-full">
+                                            <div className="bg-slate-50 dark:bg-gray-800/40 border border-slate-100 dark:border-gray-700 rounded-xl p-4 h-full flex flex-col justify-between transition-all duration-300 hover:-translate-y-1 hover:shadow-sm">
+                                                <div>
+                                                    <div className="flex items-center justify-between mb-2">
+                                                        <span className="font-bold text-yellow-600 dark:text-yellow-500 text-sm flex items-center gap-1">
+                                                            <Rate disabled allowHalf value={Number(item.overall_score)} className="text-yellow-500 text-[10px]" />
+                                                            <span>({Number(item.overall_score).toFixed(1)})</span>
+                                                        </span>
+                                                        <span className="text-[10px] text-gray-400">
+                                                            {date.format('DD/MM/YYYY')}
+                                                        </span>
+                                                    </div>
+                                                    
+                                                    <h4 className="text-sm font-bold text-gray-800 dark:text-gray-100 mb-1 line-clamp-1" title={item.enterprise_name}>
+                                                        {item.enterprise_name}
+                                                    </h4>
+                                                    
+                                                    <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-3 italic mb-3" title={item.internal_note}>
+                                                        "{item.internal_note || 'Không có nhận xét chi tiết'}"
+                                                    </p>
+                                                </div>
+                                                
+                                                <div className="border-t border-gray-100 dark:border-gray-700 pt-2 flex items-center gap-1.5 text-xs text-gray-400">
+                                                    <UserOutlined className="text-vluRed dark:text-red-400" />
+                                                    <span className="truncate font-medium">{item.user_name || 'Giảng viên'}</span>
+                                                </div>
+                                            </div>
+                                        </List.Item>
+                                    );
+                                }}
+                            />
+                        ) : (
+                            <div className="py-8 flex flex-col items-center justify-center text-gray-400">
+                                <StarOutlined className="text-4xl mb-3 opacity-50 text-yellow-400" />
+                                <p>Chưa có đánh giá tiêu biểu nào</p>
                             </div>
                         )}
                     </Card>

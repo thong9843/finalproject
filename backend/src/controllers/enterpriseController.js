@@ -12,7 +12,10 @@ exports.getAll = async (req, res) => {
                 (SELECT COUNT(DISTINCT s2.id)
                  FROM students s2
                  JOIN activities a ON s2.activity_id = a.id
-                 WHERE a.enterprise_id = e.id AND a.status IN ('Đã triển khai', 'Đã kết thúc')) as student_count
+                 WHERE a.enterprise_id = e.id AND a.status IN ('Đã triển khai', 'Đã kết thúc')) as student_count,
+                (SELECT ROUND(AVG(r.overall_score), 1)
+                 FROM enterprise_ratings r
+                 WHERE r.enterprise_id = e.id) as rating_score
             FROM enterprises e
             LEFT JOIN scales s ON e.scale_id = s.id
             LEFT JOIN faculties f ON e.faculty_id = f.id
@@ -49,7 +52,8 @@ exports.getAll = async (req, res) => {
             'name': 'e.name',
             'created_at': 'e.created_at',
             'status': 'e.status',
-            'student_count': 'student_count'
+            'student_count': 'student_count',
+            'rating_score': 'rating_score'
         };
         const sortCol = allowedSortColumns[sort_by] || 'e.created_at';
         const sortDir = sort_order === 'ASC' ? 'ASC' : 'DESC';
@@ -67,7 +71,10 @@ exports.getById = async (req, res) => {
         const id = req.params.id;
 
         const [enterprises] = await pool.query(`
-            SELECT e.*, s.name as scale_name, f.name as faculty_name
+            SELECT e.*, s.name as scale_name, f.name as faculty_name,
+                (SELECT ROUND(AVG(r.overall_score), 1)
+                 FROM enterprise_ratings r
+                 WHERE r.enterprise_id = e.id) as rating_score
             FROM enterprises e
             LEFT JOIN scales s ON e.scale_id = s.id
             LEFT JOIN faculties f ON e.faculty_id = f.id

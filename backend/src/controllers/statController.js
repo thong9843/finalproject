@@ -107,6 +107,17 @@ exports.getDashboardStats = async (req, res) => {
             LIMIT 5
         `, p);
 
+        // Đánh giá tiêu biểu theo thời gian (Recent ratings >= 4.0)
+        const [recentRatings] = await pool.query(`
+            SELECT r.*, e.name as enterprise_name, u.full_name as user_name
+            FROM enterprise_ratings r
+            JOIN enterprises e ON r.enterprise_id = e.id
+            LEFT JOIN users u ON r.created_by = u.id
+            WHERE r.overall_score >= 4.0${targetFacultyId ? ' AND e.faculty_id = ?' : ''}
+            ORDER BY r.created_at DESC
+            LIMIT 5
+        `, p);
+
         res.status(200).json({
             totals: { totalEnterprises, collaboratingEnterprises, activitiesCount, totalStudents },
             charts: { 
@@ -116,7 +127,8 @@ exports.getDashboardStats = async (req, res) => {
                 enterpriseByStatus,
                 enterpriseByFields
             },
-            upcomingActivities
+            upcomingActivities,
+            recentRatings
         });
     } catch (error) {
         res.status(500).json({ message: error.message });

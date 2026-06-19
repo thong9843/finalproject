@@ -5,8 +5,8 @@ const { verifyToken, verifyRole } = require('../middlewares/auth');
 
 // Apply auth middleware to all routes in this file
 router.use(verifyToken);
-// Only allow ADMIN or FACULTY_MANAGER to manage Firebase files and cleanup garbage
-router.use(verifyRole(['ADMIN', 'FACULTY_MANAGER']));
+// Only allow ADMIN to manage Firebase files and cleanup garbage
+router.use(verifyRole(['ADMIN']));
 
 router.get('/', fileController.listFiles);
 router.post('/delete', fileController.deleteFile);

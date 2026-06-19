@@ -32,6 +32,7 @@ const historyRoutes = require('./routes/historyRoutes');
 const taskRoutes = require('./routes/taskRoutes');
 const noteRoutes = require('./routes/noteRoutes');
 const fileRoutes = require('./routes/fileRoutes');
+const ratingRoutes = require('./routes/ratingRoutes');
 
 // Use Routes
 app.use('/api/auth', authRoutes);
@@ -49,6 +50,7 @@ app.use('/api/history', historyRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/notes', noteRoutes);
 app.use('/api/files', fileRoutes);
+app.use('/api/ratings', ratingRoutes);
 
 // Swagger Documentation Route
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, { customSiteTitle: "VLU API Documentation" }));

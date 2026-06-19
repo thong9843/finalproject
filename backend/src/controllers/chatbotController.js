@@ -903,9 +903,22 @@ exports.chat = async (req, res) => {
             return res.status(400).json({ reply: 'Vui lòng nhập câu hỏi.' });
         }
 
+        const dateOptions = {
+            timeZone: 'Asia/Ho_Chi_Minh',
+            weekday: 'long',
+            year: 'numeric',
+            month: 'numeric',
+            day: 'numeric',
+            hour: 'numeric',
+            minute: 'numeric',
+            second: 'numeric'
+        };
+        const currentLocalTime = new Date().toLocaleString('vi-VN', dateOptions);
+        const dynamicSystemPrompt = `${SYSTEM_PROMPT}\n\n---\nTHÔNG TIN HỆ THỐNG HIỆN TẠI:\n- Thời gian hiện tại của hệ thống: ${currentLocalTime}\n- Hãy luôn sử dụng mốc thời gian này để đối chiếu khi người dùng hỏi các câu hỏi liên quan đến thời gian ("hôm nay", "tháng này", "tuần tới", "năm nay", v.v.).`;
+
         const model = genAI.getGenerativeModel({
             model: 'gemini-3.1-flash-lite',
-            systemInstruction: SYSTEM_PROMPT,
+            systemInstruction: dynamicSystemPrompt,
             tools,
         });
 

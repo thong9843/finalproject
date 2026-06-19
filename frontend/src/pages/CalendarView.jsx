@@ -318,14 +318,49 @@ const CalendarView = () => {
                         <Form.Item name="start_date" label="Ngày bắt đầu" rules={[{ required: true, message: 'Vui lòng chọn ngày bắt đầu' }]}>
                             <DatePicker className="w-full" format="DD/MM/YYYY" />
                         </Form.Item>
-                        <Form.Item name="end_date" label="Ngày kết thúc">
+                        <Form.Item 
+                            name="end_date" 
+                            label="Ngày kết thúc"
+                            dependencies={['start_date']}
+                            rules={[
+                                ({ getFieldValue }) => ({
+                                    validator(_, value) {
+                                        const startDate = getFieldValue('start_date');
+                                        if (!value || !startDate || !value.isBefore(startDate, 'day')) {
+                                            return Promise.resolve();
+                                        }
+                                        return Promise.reject(new Error('Ngày kết thúc không được nhỏ hơn ngày bắt đầu'));
+                                    },
+                                }),
+                            ]}
+                        >
                             <DatePicker className="w-full" format="DD/MM/YYYY" />
                         </Form.Item>
 
                         <Form.Item name="start_time" label="Thời gian bắt đầu">
                             <TimePicker className="w-full" format="HH:mm" />
                         </Form.Item>
-                        <Form.Item name="end_time" label="Thời gian kết thúc">
+                        <Form.Item 
+                            name="end_time" 
+                            label="Thời gian kết thúc"
+                            dependencies={['start_date', 'end_date', 'start_time']}
+                            rules={[
+                                ({ getFieldValue }) => ({
+                                    validator(_, value) {
+                                        const startDate = getFieldValue('start_date');
+                                        const endDate = getFieldValue('end_date');
+                                        const startTime = getFieldValue('start_time');
+                                        
+                                        if (value && startTime && startDate && endDate && dayjs(startDate).isSame(dayjs(endDate), 'day')) {
+                                            if (value.isBefore(startTime, 'second') || value.isSame(startTime, 'second')) {
+                                                return Promise.reject(new Error('Thời gian kết thúc phải lớn hơn thời gian bắt đầu khi trong cùng một ngày'));
+                                            }
+                                        }
+                                        return Promise.resolve();
+                                    },
+                                }),
+                            ]}
+                        >
                             <TimePicker className="w-full" format="HH:mm" />
                         </Form.Item>
 

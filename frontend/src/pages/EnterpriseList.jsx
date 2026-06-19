@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Table, Tag, Form, Input, Select, Button, Modal, message, Space, Drawer, Timeline, Row, Col, DatePicker, Descriptions, Switch, Popover, Badge, Divider, App as AntApp, Spin, Card, Checkbox, Pagination, Tooltip } from 'antd';
-import { EditOutlined, DeleteOutlined, PlusOutlined, UnorderedListOutlined, UploadOutlined, DownloadOutlined, UserOutlined, HomeOutlined, FilterOutlined, SortAscendingOutlined, ClearOutlined, SearchOutlined, BankOutlined, FileTextOutlined } from '@ant-design/icons';
+import { Table, Tag, Form, Input, Select, Button, Modal, message, Space, Drawer, Timeline, Row, Col, DatePicker, Descriptions, Switch, Popover, Badge, Divider, App as AntApp, Spin, Card, Checkbox, Pagination, Tooltip, Tour, Rate } from 'antd';
+import { EditOutlined, DeleteOutlined, PlusOutlined, UnorderedListOutlined, UploadOutlined, DownloadOutlined, UserOutlined, HomeOutlined, FilterOutlined, SortAscendingOutlined, ClearOutlined, SearchOutlined, BankOutlined, FileTextOutlined, QuestionCircleOutlined, StarOutlined } from '@ant-design/icons';
 import ImportModal from '../components/ImportModal';
 import api from '../utils/api';
 import dayjs from 'dayjs';
@@ -48,6 +48,7 @@ const EnterpriseList = () => {
     const [filterField, setFilterField] = useState(undefined);
     const [filterIsHcmc, setFilterIsHcmc] = useState(undefined);
     const [filterDistrict, setFilterDistrict] = useState(undefined);
+    const [filterPopular, setFilterPopular] = useState(false);
     const [isDrawerVisible, setIsDrawerVisible] = useState(false);
     const [selectedEnterprise, setSelectedEnterprise] = useState(null);
     const [showImport, setShowImport] = useState(false);
@@ -65,9 +66,70 @@ const EnterpriseList = () => {
     const [existingNoteId, setExistingNoteId] = useState(null);
     const [savingNote, setSavingNote] = useState(false);
 
+    // Tour state & steps
+    const [tourOpen, setTourOpen] = useState(false);
+
+    useEffect(() => {
+        const hasCompletedTour = localStorage.getItem('vlu-tour-enterprise-completed');
+        if (!hasCompletedTour) {
+            const timer = setTimeout(() => {
+                setTourOpen(true);
+            }, 1000);
+            return () => clearTimeout(timer);
+        }
+    }, []);
+
+    const tourSteps = [
+        {
+            title: 'Quản lý Doanh nghiệp 🏢',
+            description: (
+                <div className="text-slate-600 dark:text-slate-300 text-xs sm:text-sm mt-1">
+                    Trang này giúp Thầy/Cô quản lý danh sách các doanh nghiệp đối tác, thông tin liên hệ và tình trạng hợp tác.
+                </div>
+            ),
+            target: () => document.getElementById('tour-enterprise-title'),
+        },
+        {
+            title: 'Thao tác nhanh ⚡',
+            description: (
+                <div className="text-slate-600 dark:text-slate-300 text-xs sm:text-sm mt-1">
+                    Thầy/Cô có thể <strong>Import</strong> danh sách từ Excel, <strong>Xuất file Excel</strong> báo cáo hoặc <strong>Thêm Đối Tác</strong> mới bằng cách nhấn các nút này.
+                </div>
+            ),
+            target: () => document.getElementById('tour-enterprise-actions'),
+        },
+        {
+            title: 'Lọc nhanh Trạng thái 🏷️',
+            description: (
+                <div className="text-slate-600 dark:text-slate-300 text-xs sm:text-sm mt-1">
+                    Nhấp vào các nhãn này để lọc nhanh danh sách doanh nghiệp theo trạng thái hợp tác (Ký MOU, Tiềm năng, Liên kết thực tập...).
+                </div>
+            ),
+            target: () => document.getElementById('tour-enterprise-status'),
+        },
+        {
+            title: 'Tìm kiếm & Bộ lọc nâng cao 🔍',
+            description: (
+                <div className="text-slate-600 dark:text-slate-300 text-xs sm:text-sm mt-1">
+                    Tìm kiếm theo tên, mã số thuế hoặc đại diện. Sử dụng <strong>Bộ lọc</strong> để lọc nâng cao theo quận/huyện, quy mô hoặc lĩnh vực hoạt động.
+                </div>
+            ),
+            target: () => document.getElementById('tour-enterprise-filters'),
+        },
+        {
+            title: 'Bảng dữ liệu Doanh nghiệp 📋',
+            description: (
+                <div className="text-slate-600 dark:text-slate-300 text-xs sm:text-sm mt-1">
+                    Hiển thị thông tin chi tiết của doanh nghiệp. Thầy/Cô có thể nhấp vào tên doanh nghiệp để xem thông tin chi tiết, chỉnh sửa hoặc thêm ghi chú.
+                </div>
+            ),
+            target: () => document.getElementById('tour-enterprise-table'),
+        }
+    ];
+
     useEffect(() => {
         setCurrentPage(1);
-    }, [searchText, statusFilter, filterScale, filterField, filterIsHcmc, filterDistrict, sortOption, showDeleted]);
+    }, [searchText, statusFilter, filterScale, filterField, filterIsHcmc, filterDistrict, sortOption, showDeleted, filterPopular]);
 
     useEffect(() => {
         document.title = "Quản lý Doanh nghiệp | VLU Enterprise Link Manager";
@@ -373,7 +435,8 @@ const EnterpriseList = () => {
         const matchIsHcmc = filterIsHcmc === undefined || !!item.is_hcmc === filterIsHcmc;
         const matchDistrict = !filterDistrict || item.district === filterDistrict;
         const matchStatus = !statusFilter || item.status === statusFilter;
-        return matchSearch && matchScale && matchField && matchIsHcmc && matchDistrict && matchStatus;
+        const matchPopular = !filterPopular || (item.rating_score && Number(item.rating_score) >= 4.0);
+        return matchSearch && matchScale && matchField && matchIsHcmc && matchDistrict && matchStatus && matchPopular;
     }).sort((a, b) => {
         if (!sortOption) return 0;
         switch (sortOption) {
@@ -383,11 +446,13 @@ const EnterpriseList = () => {
             case 'created_oldest': return new Date(a.created_at) - new Date(b.created_at);
             case 'students_desc': return (b.student_count || 0) - (a.student_count || 0);
             case 'students_asc': return (a.student_count || 0) - (b.student_count || 0);
+            case 'rating_desc': return (Number(b.rating_score) || 0) - (Number(a.rating_score) || 0);
+            case 'rating_asc': return (Number(a.rating_score) || 0) - (Number(b.rating_score) || 0);
             default: return 0;
         }
     });
 
-    const activeFilterCount = [statusFilter, filterScale, filterField, filterIsHcmc !== undefined ? filterIsHcmc : undefined, filterDistrict, sortOption, showDeleted ? true : null].filter(v => v !== undefined && v !== null).length;
+    const activeFilterCount = [statusFilter, filterScale, filterField, filterIsHcmc !== undefined ? filterIsHcmc : undefined, filterDistrict, sortOption, showDeleted ? true : null, filterPopular ? true : null].filter(v => v !== undefined && v !== null).length;
 
     const paginatedData = filteredData.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
@@ -398,6 +463,8 @@ const EnterpriseList = () => {
         { value: 'created_oldest', label: '📅 Cũ nhất' },
         { value: 'students_desc', label: '👥 SV nhiều → ít' },
         { value: 'students_asc', label: '👥 SV ít → nhiều' },
+        { value: 'rating_desc', label: '⭐ Đánh giá (Cao → Thấp)' },
+        { value: 'rating_asc', label: '⭐ Đánh giá (Thấp → Cao)' },
     ];
 
     const filterContent = (
@@ -433,8 +500,12 @@ const EnterpriseList = () => {
                 <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider flex items-center gap-1"><DeleteOutlined /> Hiển thị đã xóa</span>
                 <Switch size="small" checked={showDeleted} onChange={setShowDeleted} />
             </div>
+            <div className="flex justify-between items-center py-1">
+                <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider flex items-center gap-1"><StarOutlined className="text-yellow-500" /> Công ty tiêu biểu (⭐ ≥ 4.0)</span>
+                <Switch size="small" checked={filterPopular} onChange={setFilterPopular} />
+            </div>
             <Button icon={<ClearOutlined />} type="default" block onClick={() => {
-                setStatusFilter(undefined); setFilterScale(undefined); setFilterField(undefined); setFilterIsHcmc(undefined); setFilterDistrict(undefined); setSortOption(null); setShowDeleted(false);
+                setStatusFilter(undefined); setFilterScale(undefined); setFilterField(undefined); setFilterIsHcmc(undefined); setFilterDistrict(undefined); setSortOption(null); setShowDeleted(false); setFilterPopular(false);
             }}>Xóa tất cả bộ lọc</Button>
         </div>
     );
@@ -479,11 +550,20 @@ const EnterpriseList = () => {
             render: (text) => text ? <Tag color="cyan" className="rounded-md font-medium">{text}</Tag> : <span className="text-gray-400">Hệ thống / Chung</span>
         }] : []),
         {
+            title: 'Đánh giá', dataIndex: 'rating_score', key: 'rating_score', width: 140,
+            render: (score) => score ? (
+                <div className="flex flex-col">
+                    <Rate disabled allowHalf value={Number(score)} className="text-yellow-500 text-xs" />
+                    <span className="text-xs text-slate-500 mt-0.5 font-bold">{score} / 5.0</span>
+                </div>
+            ) : <span className="text-slate-300 dark:text-slate-600 italic text-xs">Chưa có</span>
+        },
+        {
             title: 'Trạng thái', dataIndex: 'status', key: 'status', width: 140,
             render: (text) => <Tag color={statusColors[text]}>{text}</Tag>
         },
         {
-            title: 'Thao tác', key: 'action', width: 120, fixed: 'right',
+            title: 'Thao tác', key: 'action', width: 145, fixed: 'right',
             render: (_, record) => {
                 const isDeleted = record.is_deleted === 1;
                 if (isDeleted) {
@@ -502,6 +582,9 @@ const EnterpriseList = () => {
                 }
                 return (
                     <Space size="middle">
+                        <Tooltip title="Đánh giá Doanh nghiệp">
+                            <Button type="text" icon={<StarOutlined className="text-yellow-500 hover:text-yellow-600" />} onClick={() => navigate(`/enterprises/${record.id}/evaluate`)} />
+                        </Tooltip>
                         <Tooltip title="Ghi chú">
                             <Button type="text" icon={<FileTextOutlined className="text-slate-500" />} onClick={() => handleOpenNoteModal(record)} />
                         </Tooltip>
@@ -551,12 +634,23 @@ const EnterpriseList = () => {
                     <div className="w-10 h-10 sm:w-12 sm:h-12 bg-red-50 dark:bg-red-950/30 text-vluRed dark:text-red-400 rounded-xl sm:rounded-2xl flex items-center justify-center shadow-sm flex-shrink-0">
                         <BankOutlined className="text-xl sm:text-2xl" />
                     </div>
-                    <div>
-                        <h1 className="text-xl sm:text-2xl font-bold text-slate-800 dark:text-gray-100 m-0">Quản lý Doanh nghiệp</h1>
+                    <div id="tour-enterprise-title">
+                        <div className="flex items-center gap-2">
+                            <h1 className="text-xl sm:text-2xl font-bold text-slate-800 dark:text-gray-100 m-0">Quản lý Doanh nghiệp</h1>
+                            <Tooltip title="Hướng dẫn trang này">
+                                <Button 
+                                    id="tour-enterprise-help"
+                                    type="text" 
+                                    icon={<QuestionCircleOutlined className="text-slate-400 hover:text-vluRed text-lg sm:text-xl" />} 
+                                    onClick={() => setTourOpen(true)}
+                                    className="flex items-center justify-center p-0 h-7 w-7 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800"
+                                />
+                            </Tooltip>
+                        </div>
                         <p className="text-xs sm:text-sm text-slate-500 m-0 mt-0.5">Cập nhật thông tin Doanh nghiệp & Đầu mối liên hệ Đối tác</p>
                     </div>
                 </div>
-                <div className="flex gap-2 w-full sm:w-auto header-actions">
+                <div id="tour-enterprise-actions" className="flex gap-2 w-full sm:w-auto header-actions">
                     {!isLecturer && (
                         <Button
                             size="middle"
@@ -594,7 +688,7 @@ const EnterpriseList = () => {
             </div>
 
             {/* Status tags */}
-            <div className="mb-5">
+            <div id="tour-enterprise-status" className="mb-5">
                 <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Trạng thái doanh nghiệp</div>
                 <div className="flex gap-2 flex-wrap">
                     {Object.entries(statusCounts).map(([status, count]) => {
@@ -616,7 +710,7 @@ const EnterpriseList = () => {
             </div>
 
             {/* Search + Filters */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl p-4 mb-6 shadow-sm border border-gray-100 dark:border-gray-700 flex flex-wrap items-center gap-3 transition-colors">
+            <div id="tour-enterprise-filters" className="bg-white dark:bg-gray-800 rounded-xl p-4 mb-6 shadow-sm border border-gray-100 dark:border-gray-700 flex flex-wrap items-center gap-3 transition-colors">
                 <Input
                     placeholder="Tìm kiếm theo tên, mã thuế, đại diện..."
                     prefix={<SearchOutlined className="text-gray-300" />}
@@ -670,8 +764,9 @@ const EnterpriseList = () => {
                 </div>
             )}
 
-            {/* Desktop View */}
-            <div className="hidden md:block">
+            <div id="tour-enterprise-table">
+                {/* Desktop View */}
+                <div className="hidden md:block">
                 <Table
                     rowSelection={isLecturer ? null : {
                         selectedRowKeys,
@@ -794,7 +889,21 @@ const EnterpriseList = () => {
                                         <Tag color="cyan">{record.faculty_name}</Tag>
                                     </div>
                                 )}
+                                <div>
+                                    <span className="text-gray-400 font-medium">Đánh giá:</span>{' '}
+                                    {record.rating_score ? (
+                                        <span className="inline-flex items-center gap-1 font-bold text-yellow-600 dark:text-yellow-500">
+                                            <Rate disabled allowHalf value={Number(record.rating_score)} className="text-yellow-500 text-xs" />
+                                            ({record.rating_score})
+                                        </span>
+                                    ) : (
+                                        <span className="text-slate-300 dark:text-slate-600 italic text-xs">Chưa có</span>
+                                    )}
+                                </div>
                                 <div className="flex justify-end gap-3 pt-2 border-t border-gray-100 dark:border-gray-700 mt-2">
+                                    {record.is_deleted !== 1 && (
+                                        <Button type="text" icon={<StarOutlined className="text-yellow-500 hover:text-yellow-600" />} onClick={() => navigate(`/enterprises/${record.id}/evaluate`)} />
+                                    )}
                                     <Button type="text" icon={<FileTextOutlined className="text-slate-500" />} onClick={() => handleOpenNoteModal(record)} />
                                     <Button type="text" icon={<UnorderedListOutlined />} onClick={() => handleViewTimeline(record)} />
                                     {!isLecturer && record.is_deleted !== 1 && (
@@ -852,6 +961,7 @@ const EnterpriseList = () => {
                 )}
                 </>
                 )}
+            </div>
             </div>
 
             <Modal
@@ -1123,6 +1233,10 @@ const EnterpriseList = () => {
                     </Form.Item>
                 </Form>
             </Modal>
+            <Tour open={tourOpen} onClose={() => {
+                localStorage.setItem('vlu-tour-enterprise-completed', 'true');
+                setTourOpen(false);
+            }} steps={tourSteps} />
         </div>
     );
 };

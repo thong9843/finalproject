@@ -231,15 +231,17 @@ CREATE TABLE IF NOT EXISTS enterprise_ratings (
     enterprise_id INT NOT NULL,
     activity_id INT,
     user_type ENUM('LECTURER', 'STUDENT') DEFAULT 'LECTURER',
-    overall_score INT NOT NULL,
+    overall_score DECIMAL(3,2) NOT NULL,
     guidance_score INT,
     facilities_score INT,
     opportunities_score INT,
     coordination_score INT,
     internal_note TEXT,
+    created_by INT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (enterprise_id) REFERENCES enterprises(id) ON DELETE CASCADE,
-    FOREIGN KEY (activity_id) REFERENCES activities(id) ON DELETE SET NULL
+    FOREIGN KEY (activity_id) REFERENCES activities(id) ON DELETE SET NULL,
+    FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 20. action_history
@@ -287,7 +289,17 @@ INSERT IGNORE INTO faculties (id, cluster_id, name, code) VALUES
 (19, 3, 'Khoa Truyền thông & Báo chí', 'COMM'),
 (20, 3, 'Khoa Tâm lý học', 'PSY'),
 (21, 3, 'Khoa Điều dưỡng', 'NURS'),
-(22, 3, 'Khoa Dược', 'PHARM');
+(22, 3, 'Khoa Dược', 'PHARM'),
+(23, 3, 'Khoa Khoa học Cơ bản', 'BASIC'),
+(24, 1, 'Khoa Môi trường - VLTECH', 'ENV'),
+(25, 3, 'Khoa Xã hội Và Nhân văn', 'FSSH'),
+(26, 1, 'Khoa Công nghệ ứng dụng - VLTECH', 'APT'),
+(27, 1, 'Khoa Kỹ thuật Y học', 'MDT'),
+(28, 1, 'Khoa Răng Hàm Mặt', 'DENT'),
+(29, 1, 'Khoa Y', 'MED'),
+(30, 3, 'Khoa Ngôn ngữ và Văn hóa Hàn Quốc', 'KOR'),
+(31, 1, 'Khoa Kỹ Thuật và Quản lý Công nghiệp', 'IEM'),
+(32, 2, 'Khoa Kế toán Kiểm toán', 'ACC');
 
 INSERT IGNORE INTO users (id, full_name, email, password, role, faculty_id) VALUES
 (1, 'System Admin', 'admin@vlu.edu.vn', '$2b$10$NAO3LBQuVGlv/47lZGXsq.jVL0zAgF/SLuUL8uueNjgxWDY8A2Rn.', 'ADMIN', NULL),
@@ -356,7 +368,37 @@ INSERT IGNORE INTO users (id, full_name, email, password, role, faculty_id) VALU
 (43, 'Giảng viên Khoa Điều dưỡng', 'lecturer.nurs@vlu.edu.vn', '$2b$10$NAO3LBQuVGlv/47lZGXsq.jVL0zAgF/SLuUL8uueNjgxWDY8A2Rn.', 'LECTURER', 21),
 -- PHARM (id: 22)
 (44, 'Quản lý Khoa Dược', 'manager.pharm@vlu.edu.vn', '$2b$10$NAO3LBQuVGlv/47lZGXsq.jVL0zAgF/SLuUL8uueNjgxWDY8A2Rn.', 'FACULTY_MANAGER', 22),
-(45, 'Giảng viên Khoa Dược', 'lecturer.pharm@vlu.edu.vn', '$2b$10$NAO3LBQuVGlv/47lZGXsq.jVL0zAgF/SLuUL8uueNjgxWDY8A2Rn.', 'LECTURER', 22);
+(45, 'Giảng viên Khoa Dược', 'lecturer.pharm@vlu.edu.vn', '$2b$10$NAO3LBQuVGlv/47lZGXsq.jVL0zAgF/SLuUL8uueNjgxWDY8A2Rn.', 'LECTURER', 22),
+-- BASIC (id: 23)
+(46, 'Quản lý Khoa Khoa học Cơ bản', 'manager.basic@vlu.edu.vn', '$2b$10$NAO3LBQuVGlv/47lZGXsq.jVL0zAgF/SLuUL8uueNjgxWDY8A2Rn.', 'FACULTY_MANAGER', 23),
+(47, 'Giảng viên Khoa Khoa học Cơ bản', 'lecturer.basic@vlu.edu.vn', '$2b$10$NAO3LBQuVGlv/47lZGXsq.jVL0zAgF/SLuUL8uueNjgxWDY8A2Rn.', 'LECTURER', 23),
+-- ENV (id: 24)
+(48, 'Quản lý Khoa Môi trường - VLTECH', 'manager.env@vlu.edu.vn', '$2b$10$NAO3LBQuVGlv/47lZGXsq.jVL0zAgF/SLuUL8uueNjgxWDY8A2Rn.', 'FACULTY_MANAGER', 24),
+(49, 'Giảng viên Khoa Môi trường - VLTECH', 'lecturer.env@vlu.edu.vn', '$2b$10$NAO3LBQuVGlv/47lZGXsq.jVL0zAgF/SLuUL8uueNjgxWDY8A2Rn.', 'LECTURER', 24),
+-- FSSH (id: 25)
+(50, 'Quản lý Khoa Xã hội Và Nhân văn', 'manager.fssh@vlu.edu.vn', '$2b$10$NAO3LBQuVGlv/47lZGXsq.jVL0zAgF/SLuUL8uueNjgxWDY8A2Rn.', 'FACULTY_MANAGER', 25),
+(51, 'Giảng viên Khoa Xã hội Và Nhân văn', 'lecturer.fssh@vlu.edu.vn', '$2b$10$NAO3LBQuVGlv/47lZGXsq.jVL0zAgF/SLuUL8uueNjgxWDY8A2Rn.', 'LECTURER', 25),
+-- APT (id: 26)
+(52, 'Quản lý Khoa Công nghệ ứng dụng - VLTECH', 'manager.apt@vlu.edu.vn', '$2b$10$NAO3LBQuVGlv/47lZGXsq.jVL0zAgF/SLuUL8uueNjgxWDY8A2Rn.', 'FACULTY_MANAGER', 26),
+(53, 'Giảng viên Khoa Công nghệ ứng dụng - VLTECH', 'lecturer.apt@vlu.edu.vn', '$2b$10$NAO3LBQuVGlv/47lZGXsq.jVL0zAgF/SLuUL8uueNjgxWDY8A2Rn.', 'LECTURER', 26),
+-- MDT (id: 27)
+(54, 'Quản lý Khoa Kỹ thuật Y học', 'manager.mdt@vlu.edu.vn', '$2b$10$NAO3LBQuVGlv/47lZGXsq.jVL0zAgF/SLuUL8uueNjgxWDY8A2Rn.', 'FACULTY_MANAGER', 27),
+(55, 'Giảng viên Khoa Kỹ thuật Y học', 'lecturer.mdt@vlu.edu.vn', '$2b$10$NAO3LBQuVGlv/47lZGXsq.jVL0zAgF/SLuUL8uueNjgxWDY8A2Rn.', 'LECTURER', 27),
+-- DENT (id: 28)
+(56, 'Quản lý Khoa Răng Hàm Mặt', 'manager.dent@vlu.edu.vn', '$2b$10$NAO3LBQuVGlv/47lZGXsq.jVL0zAgF/SLuUL8uueNjgxWDY8A2Rn.', 'FACULTY_MANAGER', 28),
+(57, 'Giảng viên Khoa Răng Hàm Mặt', 'lecturer.dent@vlu.edu.vn', '$2b$10$NAO3LBQuVGlv/47lZGXsq.jVL0zAgF/SLuUL8uueNjgxWDY8A2Rn.', 'LECTURER', 28),
+-- MED (id: 29)
+(58, 'Quản lý Khoa Y', 'manager.med@vlu.edu.vn', '$2b$10$NAO3LBQuVGlv/47lZGXsq.jVL0zAgF/SLuUL8uueNjgxWDY8A2Rn.', 'FACULTY_MANAGER', 29),
+(59, 'Giảng viên Khoa Y', 'lecturer.med@vlu.edu.vn', '$2b$10$NAO3LBQuVGlv/47lZGXsq.jVL0zAgF/SLuUL8uueNjgxWDY8A2Rn.', 'LECTURER', 29),
+-- KOR (id: 30)
+(60, 'Quản lý Khoa Ngôn ngữ và Văn hóa Hàn Quốc', 'manager.kor@vlu.edu.vn', '$2b$10$NAO3LBQuVGlv/47lZGXsq.jVL0zAgF/SLuUL8uueNjgxWDY8A2Rn.', 'FACULTY_MANAGER', 30),
+(61, 'Giảng viên Khoa Ngôn ngữ và Văn hóa Hàn Quốc', 'lecturer.kor@vlu.edu.vn', '$2b$10$NAO3LBQuVGlv/47lZGXsq.jVL0zAgF/SLuUL8uueNjgxWDY8A2Rn.', 'LECTURER', 30),
+-- IEM (id: 31)
+(62, 'Quản lý Khoa Kỹ Thuật và Quản lý Công nghiệp', 'manager.iem@vlu.edu.vn', '$2b$10$NAO3LBQuVGlv/47lZGXsq.jVL0zAgF/SLuUL8uueNjgxWDY8A2Rn.', 'FACULTY_MANAGER', 31),
+(63, 'Giảng viên Khoa Kỹ Thuật và Quản lý Công nghiệp', 'lecturer.iem@vlu.edu.vn', '$2b$10$NAO3LBQuVGlv/47lZGXsq.jVL0zAgF/SLuUL8uueNjgxWDY8A2Rn.', 'LECTURER', 31),
+-- ACC (id: 32)
+(64, 'Quản lý Khoa Kế toán Kiểm toán', 'manager.acc@vlu.edu.vn', '$2b$10$NAO3LBQuVGlv/47lZGXsq.jVL0zAgF/SLuUL8uueNjgxWDY8A2Rn.', 'FACULTY_MANAGER', 32),
+(65, 'Giảng viên Khoa Kế toán Kiểm toán', 'lecturer.acc@vlu.edu.vn', '$2b$10$NAO3LBQuVGlv/47lZGXsq.jVL0zAgF/SLuUL8uueNjgxWDY8A2Rn.', 'LECTURER', 32);
 
 INSERT IGNORE INTO scales (id, name) VALUES
 (1, 'Tier 1 (Tập đoàn/Global)'),

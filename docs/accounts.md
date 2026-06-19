@@ -27,7 +27,7 @@ Hệ thống **VLU Enterprise Link** phân quyền thành 3 vai trò chính đ�
 
 ---
 
-## 📧 Danh sách Email tài khoản của 22 Khoa đào tạo
+## 📧 Danh sách Email tài khoản của 32 Khoa đào tạo
 
 | STT | Tên Khoa | Mã Khoa | Email Quản lý Khoa (`FACULTY_MANAGER`) | Email Giảng viên (`LECTURER`) |
 |---|---|---|---|---|
@@ -53,5 +53,15 @@ Hệ thống **VLU Enterprise Link** phân quyền thành 3 vai trò chính đ�
 | 20 | Khoa Tâm lý học | **PSY** | `manager.psy@vlu.edu.vn` | `lecturer.psy@vlu.edu.vn` |
 | 21 | Khoa Điều dưỡng | **NURS** | `manager.nurs@vlu.edu.vn` | `lecturer.nurs@vlu.edu.vn` |
 | 22 | Khoa Dược | **PHARM** | `manager.pharm@vlu.edu.vn` | `lecturer.pharm@vlu.edu.vn` |
+| 23 | Khoa Khoa học Cơ bản | **BASIC** | `manager.basic@vlu.edu.vn` | `lecturer.basic@vlu.edu.vn` |
+| 24 | Khoa Môi trường - VLTECH | **ENV** | `manager.env@vlu.edu.vn` | `lecturer.env@vlu.edu.vn` |
+| 25 | Khoa Xã hội Và Nhân văn | **FSSH** | `manager.fssh@vlu.edu.vn` | `lecturer.fssh@vlu.edu.vn` |
+| 26 | Khoa Công nghệ ứng dụng - VLTECH | **APT** | `manager.apt@vlu.edu.vn` | `lecturer.apt@vlu.edu.vn` |
+| 27 | Khoa Kỹ thuật Y học | **MDT** | `manager.mdt@vlu.edu.vn` | `lecturer.mdt@vlu.edu.vn` |
+| 28 | Khoa Răng Hàm Mặt | **DENT** | `manager.dent@vlu.edu.vn` | `lecturer.dent@vlu.edu.vn` |
+| 29 | Khoa Y | **MED** | `manager.med@vlu.edu.vn` | `lecturer.med@vlu.edu.vn` |
+| 30 | Khoa Ngôn ngữ và Văn hóa Hàn Quốc | **KOR** | `manager.kor@vlu.edu.vn` | `lecturer.kor@vlu.edu.vn` |
+| 31 | Khoa Kỹ Thuật và Quản lý Công nghiệp | **IEM** | `manager.iem@vlu.edu.vn` | `lecturer.iem@vlu.edu.vn` |
+| 32 | Khoa Kế toán Kiểm toán | **ACC** | `manager.acc@vlu.edu.vn` | `lecturer.acc@vlu.edu.vn` |
 
 ![Giao diện đăng nhập hệ thống](https://firebasestorage.googleapis.com/v0/b/quan-ly-doanh-nghiep-vlu.firebasestorage.app/o/docs%2Flogin.png?alt=media&token=21731059-471b-4d95-9465-f2561c53b00e)

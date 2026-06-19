@@ -11,6 +11,13 @@ const pool = mysql.createPool({
     queueLimit: 0
 });
 
+// Configure connection to disable ONLY_FULL_GROUP_BY sql_mode for compatibility
+pool.on('connection', (connection) => {
+    connection.query("SET SESSION sql_mode=(SELECT REPLACE(@@sql_mode,'ONLY_FULL_GROUP_BY',''))", (err) => {
+        if (err) console.error('✖ Error configuring session sql_mode:', err.message);
+    });
+});
+
 // Auto migration on startup
 (async () => {
     try {
@@ -116,6 +123,26 @@ const pool = mysql.createPool({
                 await pool.query("UPDATE mous SET faculty_id = 1 WHERE faculty_id IS NULL");
             } catch (syncErr) {
                 console.error("✖ Error syncing existing faculty_ids:", syncErr.message);
+            }
+        }
+
+        // 5. Modify enterprise_ratings.overall_score to DECIMAL(3, 2)
+        try {
+            await pool.query("ALTER TABLE `enterprise_ratings` MODIFY COLUMN `overall_score` DECIMAL(3,2) NOT NULL");
+            console.log("✔ Modified overall_score column in enterprise_ratings table to DECIMAL(3,2).");
+        } catch (alterErr) {
+            console.error("✖ Error modifying overall_score column:", alterErr.message);
+        }
+
+        // 6. Add created_by column to enterprise_ratings if it does not exist
+        const [ratingColumns] = await pool.query("SHOW COLUMNS FROM `enterprise_ratings` LIKE 'created_by'");
+        if (ratingColumns.length === 0) {
+            try {
+                await pool.query("ALTER TABLE `enterprise_ratings` ADD COLUMN `created_by` INT NULL");
+                await pool.query("ALTER TABLE `enterprise_ratings` ADD CONSTRAINT fk_ratings_users FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL");
+                console.log("✔ Added created_by column and foreign key constraint to enterprise_ratings table.");
+            } catch (columnErr) {
+                console.error("✖ Error adding created_by column to enterprise_ratings:", columnErr.message);
             }
         }
     } catch (err) {

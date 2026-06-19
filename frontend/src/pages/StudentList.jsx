@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Table, Tag, Card, Row, Col, Statistic, Form, Input, Select, Button, Modal, message, Space, DatePicker, InputNumber, Popover, Badge, Divider, Switch, App as AntApp, Spin, Checkbox, Drawer, Descriptions, Tooltip, Pagination } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, SearchOutlined, SyncOutlined, ClockCircleOutlined, CheckCircleOutlined, TeamOutlined, UploadOutlined, DownloadOutlined, FilterOutlined, SortAscendingOutlined, ClearOutlined, CalendarOutlined, EyeOutlined, FileTextOutlined } from '@ant-design/icons';
+import { Table, Tag, Card, Row, Col, Statistic, Form, Input, Select, Button, Modal, message, Space, DatePicker, InputNumber, Popover, Badge, Divider, Switch, App as AntApp, Spin, Checkbox, Drawer, Descriptions, Tooltip, Pagination, Tour } from 'antd';
+import { PlusOutlined, EditOutlined, DeleteOutlined, SearchOutlined, SyncOutlined, ClockCircleOutlined, CheckCircleOutlined, TeamOutlined, UploadOutlined, DownloadOutlined, FilterOutlined, SortAscendingOutlined, ClearOutlined, CalendarOutlined, EyeOutlined, FileTextOutlined, QuestionCircleOutlined } from '@ant-design/icons';
 import ImportModal from '../components/ImportModal';
 import api from '../utils/api';
 import dayjs from 'dayjs';
@@ -55,6 +55,67 @@ const StudentList = () => {
     const [noteForm] = Form.useForm();
     const [existingNoteId, setExistingNoteId] = useState(null);
     const [savingNote, setSavingNote] = useState(false);
+
+    // Tour state & steps
+    const [tourOpen, setTourOpen] = useState(false);
+
+    useEffect(() => {
+        const hasCompletedTour = localStorage.getItem('vlu-tour-student-completed');
+        if (!hasCompletedTour) {
+            const timer = setTimeout(() => {
+                setTourOpen(true);
+            }, 1000);
+            return () => clearTimeout(timer);
+        }
+    }, []);
+
+    const tourSteps = [
+        {
+            title: 'Quản lý Sinh viên 👥',
+            description: (
+                <div className="text-slate-600 dark:text-slate-300 text-xs sm:text-sm mt-1">
+                    Trang này giúp Thầy/Cô theo dõi danh sách sinh viên thực tập, phân công doanh nghiệp và cập nhật kết quả.
+                </div>
+            ),
+            target: () => document.getElementById('tour-student-title'),
+        },
+        {
+            title: 'Thao tác nhanh ⚡',
+            description: (
+                <div className="text-slate-600 dark:text-slate-300 text-xs sm:text-sm mt-1">
+                    Thầy/Cô có thể <strong>Import</strong> danh sách từ file Excel, <strong>Xuất Excel</strong> hoặc <strong>Thêm sinh viên</strong> mới trực tiếp tại đây.
+                </div>
+            ),
+            target: () => document.getElementById('tour-student-actions'),
+        },
+        {
+            title: 'Thống kê Tổng quan 📊',
+            description: (
+                <div className="text-slate-600 dark:text-slate-300 text-xs sm:text-sm mt-1">
+                    Xem nhanh số lượng sinh viên đang thực tập, sinh viên chờ phân công, hoặc đã hoàn thành đợt thực tập.
+                </div>
+            ),
+            target: () => document.getElementById('tour-student-stats'),
+        },
+        {
+            title: 'Tìm kiếm & Bộ lọc 🔍',
+            description: (
+                <div className="text-slate-600 dark:text-slate-300 text-xs sm:text-sm mt-1">
+                    Tìm kiếm nhanh theo tên/MSSV hoặc sử dụng <strong>Bộ lọc</strong> nâng cao để lọc sinh viên theo Ngành, GPA, Doanh nghiệp thực tập...
+                </div>
+            ),
+            target: () => document.getElementById('tour-student-filters'),
+        },
+        {
+            title: 'Bảng danh sách Sinh viên 📋',
+            description: (
+                <div className="text-slate-600 dark:text-slate-300 text-xs sm:text-sm mt-1">
+                    Nơi hiển thị danh sách sinh viên. Thầy/Cô có thể xem hồ sơ chi tiết, phân công doanh nghiệp, cập nhật GPA hoặc thêm ghi chú nhanh.
+                </div>
+            ),
+            target: () => document.getElementById('tour-student-table'),
+        }
+    ];
 
     useEffect(() => {
         setCurrentPage(1);
@@ -587,12 +648,23 @@ const StudentList = () => {
                     <div className="w-10 h-10 sm:w-12 sm:h-12 bg-red-50 dark:bg-red-950/30 text-vluRed dark:text-red-400 rounded-xl sm:rounded-2xl flex items-center justify-center shadow-sm flex-shrink-0">
                         <TeamOutlined className="text-xl sm:text-2xl" />
                     </div>
-                    <div>
-                        <h1 className="text-xl sm:text-2xl font-bold text-slate-800 dark:text-gray-100 m-0">Quản lý sinh viên</h1>
+                    <div id="tour-student-title">
+                        <div className="flex items-center gap-2">
+                            <h1 className="text-xl sm:text-2xl font-bold text-slate-800 dark:text-gray-100 m-0">Quản lý sinh viên</h1>
+                            <Tooltip title="Hướng dẫn trang này">
+                                <Button 
+                                    id="tour-student-help"
+                                    type="text" 
+                                    icon={<QuestionCircleOutlined className="text-slate-400 hover:text-vluRed text-lg sm:text-xl" />} 
+                                    onClick={() => setTourOpen(true)}
+                                    className="flex items-center justify-center p-0 h-7 w-7 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800"
+                                />
+                            </Tooltip>
+                        </div>
                         <p className="text-xs sm:text-sm text-slate-500 m-0 mt-0.5">{data.length} sinh viên · {stats?.active || 0} đang thực tập</p>
                     </div>
                 </div>
-                <div className="flex gap-2 w-full sm:w-auto header-actions">
+                <div id="tour-student-actions" className="flex gap-2 w-full sm:w-auto header-actions">
                     <Button 
                         size="middle"
                         icon={<UploadOutlined />} 
@@ -622,7 +694,7 @@ const StudentList = () => {
             </div>
 
             {/* Stats Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+            <div id="tour-student-stats" className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
                 {/* Green Card */}
                 <div className="group relative overflow-hidden bg-gradient-to-br from-emerald-50 to-emerald-100/30 dark:from-emerald-950/20 dark:to-emerald-900/10 rounded-2xl p-4 sm:p-5 border-l-4 border-l-emerald-500 border-t border-r border-b border-slate-100 dark:border-emerald-900/30 transition-all duration-300 hover:-translate-y-1 hover:shadow-md cursor-default">
                     <div className="absolute -right-2 -bottom-2 opacity-10 transition-transform duration-500 group-hover:scale-110">
@@ -673,7 +745,7 @@ const StudentList = () => {
             </div>
 
             {/* Filter Tabs + Search + Filter Popover */}
-            <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-3 mb-4">
+            <div id="tour-student-filters" className="flex flex-col md:flex-row md:justify-between md:items-center gap-3 mb-4">
                 <div className="flex gap-1 bg-slate-100 dark:bg-gray-800/50 rounded-lg p-1 border border-transparent overflow-x-auto whitespace-nowrap scrollbar-none flex-nowrap max-w-full">
                     {tabs.map(tab => (
                         <button
@@ -746,8 +818,9 @@ const StudentList = () => {
             )}
 
             {/* Table */}
-            {/* Desktop View */}
-            <div className="hidden md:block bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
+            <div id="tour-student-table">
+                {/* Desktop View */}
+                <div className="hidden md:block bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
                 <Table 
                     rowSelection={{
                         selectedRowKeys,
@@ -903,6 +976,7 @@ const StudentList = () => {
                 </>
                 )}
             </div>
+            </div>
 
             {/* Modal Form */}
             <Modal 
@@ -993,7 +1067,22 @@ const StudentList = () => {
                             </Form.Item>
                         </Col>
                         <Col span={12}>
-                            <Form.Item name="end_date" label="Ngày kết thúc">
+                            <Form.Item 
+                                name="end_date" 
+                                label="Ngày kết thúc"
+                                dependencies={['start_date']}
+                                rules={[
+                                    ({ getFieldValue }) => ({
+                                        validator(_, value) {
+                                            const startDate = getFieldValue('start_date');
+                                            if (!value || !startDate || !value.isBefore(startDate, 'day')) {
+                                                return Promise.resolve();
+                                            }
+                                            return Promise.reject(new Error('Ngày kết thúc không được nhỏ hơn ngày bắt đầu'));
+                                        },
+                                    }),
+                                ]}
+                            >
                                 <DatePicker className="w-full" format="DD/MM/YYYY" />
                             </Form.Item>
                         </Col>
@@ -1108,6 +1197,10 @@ const StudentList = () => {
                     </Form.Item>
                 </Form>
             </Modal>
+            <Tour open={tourOpen} onClose={() => {
+                localStorage.setItem('vlu-tour-student-completed', 'true');
+                setTourOpen(false);
+            }} steps={tourSteps} />
         </div>
     );
 };

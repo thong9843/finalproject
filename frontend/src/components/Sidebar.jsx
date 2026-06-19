@@ -121,16 +121,16 @@ const Sidebar = ({ isOpen, onClose, collapsed }) => {
                     {
                         key: '/ai-import',
                         label: 'Import dữ liệu AI',
-                    },
-                    {
-                        key: '/files',
-                        label: 'Quản lý File & Rác',
                     }
                 ] : []),
                 ...(isAdmin ? [
                     {
                         key: '/users',
                         label: 'Quản lý người dùng',
+                    },
+                    {
+                        key: '/files',
+                        label: 'Quản lý File & Rác',
                     },
                     {
                         key: '/duplicates',
@@ -184,6 +184,7 @@ const Sidebar = ({ isOpen, onClose, collapsed }) => {
 
     return (
         <div
+            id="tour-sidebar"
             className={`
                 h-screen fixed left-0 top-0 z-40 flex flex-col pt-4 overflow-x-hidden
                 bg-white dark:bg-gray-800
@@ -197,6 +198,7 @@ const Sidebar = ({ isOpen, onClose, collapsed }) => {
             {/* Header with logo + close button on mobile */}
             <div className={`flex items-center mb-6 transition-all duration-300 ${isCollapsedDesktop ? 'justify-center px-2' : 'justify-center px-4 relative'}`}>
                 <img
+                    id="tour-sidebar-logo"
                     src={isCollapsedDesktop ? "https://cdn.haitrieu.com/wp-content/uploads/2022/12/Icon-Dai-Hoc-Van-Lang.png" : "https://upload.wikimedia.org/wikipedia/commons/d/d1/Logo_VLU_2022.png"}
                     alt="VLU Logo"
                     className={`${isCollapsedDesktop ? 'h-10 w-10' : 'h-10'} object-contain transition-all duration-300`}

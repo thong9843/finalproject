@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Card, Table, Row, Col, Tag, Form, Select, Button, Modal, message, Input, DatePicker, TimePicker, Statistic, Spin, Empty, Tooltip, Drawer, Descriptions, Popover, Badge, Divider, Pagination, Checkbox, Switch, Space, App as AntApp } from 'antd';
+import { Card, Table, Row, Col, Tag, Form, Select, Button, Modal, message, Input, DatePicker, TimePicker, Statistic, Spin, Empty, Tooltip, Drawer, Descriptions, Popover, Badge, Divider, Pagination, Checkbox, Switch, Space, App as AntApp, Tour } from 'antd';
 import {
     ClockCircleOutlined, SyncOutlined, CheckOutlined, PauseCircleOutlined,
     UploadOutlined, DownloadOutlined, PlusOutlined, CheckCircleOutlined,
     TeamOutlined, SearchOutlined, SortAscendingOutlined, CalendarOutlined,
     FilterOutlined, ClearOutlined, AppstoreOutlined, UnorderedListOutlined,
-    DeleteOutlined, BankOutlined, EditOutlined, FileTextOutlined
+    DeleteOutlined, BankOutlined, EditOutlined, FileTextOutlined, QuestionCircleOutlined
 } from '@ant-design/icons';
 import ImportModal from '../components/ImportModal';
 import api from '../utils/api';
@@ -76,6 +76,76 @@ const ActivityList = () => {
     }, [searchText, filterType, filterStatus, filterEnterprise, dateRange, sortOption]);
 
     const [showDeleted, setShowDeleted] = useState(false);
+
+    // Tour state & steps
+    const [tourOpen, setTourOpen] = useState(false);
+
+    useEffect(() => {
+        const hasCompletedTour = localStorage.getItem('vlu-tour-activity-completed');
+        if (!hasCompletedTour) {
+            const timer = setTimeout(() => {
+                setTourOpen(true);
+            }, 1000);
+            return () => clearTimeout(timer);
+        }
+    }, []);
+
+    const tourSteps = [
+        {
+            title: 'Hoạt động hợp tác 🤝',
+            description: (
+                <div className="text-slate-600 dark:text-slate-300 text-xs sm:text-sm mt-1">
+                    Trang này giúp Thầy/Cô quản lý các hoạt động hợp tác giữa nhà trường và doanh nghiệp (Hội thảo, Ký kết, Tuyển dụng...).
+                </div>
+            ),
+            target: () => document.getElementById('tour-activity-title'),
+        },
+        {
+            title: 'Thao tác nhanh ⚡',
+            description: (
+                <div className="text-slate-600 dark:text-slate-300 text-xs sm:text-sm mt-1">
+                    Thầy/Cô có thể <strong>Import</strong> danh sách từ file Excel, <strong>Xuất Excel</strong> báo cáo hoặc <strong>Thêm hoạt động</strong> mới nhanh chóng tại đây.
+                </div>
+            ),
+            target: () => document.getElementById('tour-activity-actions'),
+        },
+        {
+            title: 'Chỉ số thống kê 📈',
+            description: (
+                <div className="text-slate-600 dark:text-slate-300 text-xs sm:text-sm mt-1">
+                    Theo dõi số lượng hoạt động đang diễn ra, hoàn thành, chờ triển khai hoặc tổng số sinh viên tham gia các hoạt động.
+                </div>
+            ),
+            target: () => document.getElementById('tour-activity-stats'),
+        },
+        {
+            title: 'Phân loại Hoạt động 🏷️',
+            description: (
+                <div className="text-slate-600 dark:text-slate-300 text-xs sm:text-sm mt-1">
+                    Nhấp vào các nhãn này để lọc nhanh danh sách hoạt động theo các hình thức hợp tác cụ thể.
+                </div>
+            ),
+            target: () => document.getElementById('tour-activity-types'),
+        },
+        {
+            title: 'Tìm kiếm & Bộ lọc nâng cao 🔍',
+            description: (
+                <div className="text-slate-600 dark:text-slate-300 text-xs sm:text-sm mt-1">
+                    Tìm kiếm theo tên hoạt động/doanh nghiệp. Sử dụng bộ lọc nâng cao để lọc theo ngày, đơn vị quản lý, doanh nghiệp đối tác, hoặc chuyển đổi giao diện xem dạng <strong>Grid/List</strong>.
+                </div>
+            ),
+            target: () => document.getElementById('tour-activity-filters'),
+        },
+        {
+            title: 'Danh sách Hoạt động 📋',
+            description: (
+                <div className="text-slate-600 dark:text-slate-300 text-xs sm:text-sm mt-1">
+                    Khu vực hiển thị danh sách các hoạt động dưới dạng lưới hoặc bảng. Nhấp vào tên hoạt động để xem chi tiết, phân công sinh viên, thêm ghi chú hoặc chỉnh sửa.
+                </div>
+            ),
+            target: () => document.getElementById('tour-activity-content'),
+        }
+    ];
 
     useEffect(() => {
         document.title = "Hoạt động Hợp tác | VLU Enterprise Link Manager";
@@ -884,12 +954,23 @@ const ActivityList = () => {
                     <div className="w-10 h-10 sm:w-12 sm:h-12 bg-red-50 dark:bg-red-950/30 text-vluRed dark:text-red-400 rounded-xl sm:rounded-2xl flex items-center justify-center shadow-sm flex-shrink-0">
                         <AppstoreOutlined className="text-xl sm:text-2xl" />
                     </div>
-                    <div>
-                        <h1 className="text-xl sm:text-2xl font-bold text-slate-800 dark:text-gray-100 m-0">Hoạt động hợp tác</h1>
+                    <div id="tour-activity-title">
+                        <div className="flex items-center gap-2">
+                            <h1 className="text-xl sm:text-2xl font-bold text-slate-800 dark:text-gray-100 m-0">Hoạt động hợp tác</h1>
+                            <Tooltip title="Hướng dẫn trang này">
+                                <Button 
+                                    id="tour-activity-help"
+                                    type="text" 
+                                    icon={<QuestionCircleOutlined className="text-slate-400 hover:text-vluRed text-lg sm:text-xl" />} 
+                                    onClick={() => setTourOpen(true)}
+                                    className="flex items-center justify-center p-0 h-7 w-7 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800"
+                                />
+                            </Tooltip>
+                        </div>
                         <p className="text-xs sm:text-sm text-slate-500 m-0 mt-0.5">{data.length} hoạt động · {stats?.active || 0} đang diễn ra</p>
                     </div>
                 </div>
-                <div className="flex gap-2 w-full sm:w-auto header-actions">
+                <div id="tour-activity-actions" className="flex gap-2 w-full sm:w-auto header-actions">
                     {!isLecturer && (
                         <Button
                             size="middle"
@@ -927,7 +1008,7 @@ const ActivityList = () => {
             </div>
 
             {/* Stats Cards */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            <div id="tour-activity-stats" className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                 {/* Green Card */}
                 <div className="group relative overflow-hidden bg-gradient-to-br from-emerald-50 to-emerald-100/30 dark:from-emerald-950/20 dark:to-emerald-900/10 rounded-2xl p-3.5 sm:p-5 border-l-4 border-l-emerald-500 border-t border-r border-b border-slate-100 dark:border-emerald-900/30 transition-all duration-300 hover:-translate-y-1 hover:shadow-md cursor-default">
                     <div className="absolute -right-2 -bottom-2 opacity-10 transition-transform duration-500 group-hover:scale-110">
@@ -994,7 +1075,7 @@ const ActivityList = () => {
             </div>
 
             {/* Type tags */}
-            <div className="mb-5">
+            <div id="tour-activity-types" className="mb-5">
                 <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Phân loại hoạt động</div>
                 <div className="flex gap-2 flex-wrap">
                     {Object.entries(typeCounts).map(([type, count]) => {
@@ -1016,7 +1097,7 @@ const ActivityList = () => {
             </div>
 
             {/* Search + Filters */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl p-4 mb-6 shadow-sm border border-gray-100 dark:border-gray-700 flex flex-wrap items-center gap-3 transition-colors">
+            <div id="tour-activity-filters" className="bg-white dark:bg-gray-800 rounded-xl p-4 mb-6 shadow-sm border border-gray-100 dark:border-gray-700 flex flex-wrap items-center gap-3 transition-colors">
                 <Input
                     placeholder="Tìm kiếm hoạt động, doanh nghiệp..."
                     prefix={<SearchOutlined className="text-gray-300" />}
@@ -1144,8 +1225,9 @@ const ActivityList = () => {
                 </div>
             )}
 
-            {/* Mobile-only Select All Panel */}
-            {!isLecturer && !loading && paginatedData.length > 0 && (
+            <div id="tour-activity-content">
+                {/* Mobile-only Select All Panel */}
+                {!isLecturer && !loading && paginatedData.length > 0 && (
                 <div className="block md:hidden bg-slate-50 dark:bg-gray-800 p-3 rounded-lg border border-slate-200 dark:border-gray-700 mb-4 flex items-center justify-between">
                     <Checkbox
                         checked={paginatedData.length > 0 && paginatedData.every(item => selectedActivities.includes(item.id))}
@@ -1222,6 +1304,7 @@ const ActivityList = () => {
                     </>
                 )}
             </div>
+            </div>
 
             {/* Modal Form */}
             <Modal
@@ -1271,12 +1354,27 @@ const ActivityList = () => {
                     </Form.Item>
                     <Row gutter={16}>
                         <Col span={12}>
-                            <Form.Item name="start_date" label="Ngày bắt đầu" rules={[{ required: true }]}>
+                            <Form.Item name="start_date" label="Ngày bắt đầu" rules={[{ required: true, message: 'Vui lòng chọn ngày bắt đầu' }]}>
                                 <DatePicker className="w-full" format="DD/MM/YYYY" />
                             </Form.Item>
                         </Col>
                         <Col span={12}>
-                            <Form.Item name="end_date" label="Ngày kết thúc">
+                            <Form.Item 
+                                name="end_date" 
+                                label="Ngày kết thúc"
+                                dependencies={['start_date']}
+                                rules={[
+                                    ({ getFieldValue }) => ({
+                                        validator(_, value) {
+                                            const startDate = getFieldValue('start_date');
+                                            if (!value || !startDate || !value.isBefore(startDate, 'day')) {
+                                                return Promise.resolve();
+                                            }
+                                            return Promise.reject(new Error('Ngày kết thúc không được nhỏ hơn ngày bắt đầu'));
+                                        },
+                                    }),
+                                ]}
+                            >
                                 <DatePicker className="w-full" format="DD/MM/YYYY" />
                             </Form.Item>
                         </Col>
@@ -1288,7 +1386,27 @@ const ActivityList = () => {
                             </Form.Item>
                         </Col>
                         <Col span={12}>
-                            <Form.Item name="end_time" label="Giờ kết thúc">
+                            <Form.Item 
+                                name="end_time" 
+                                label="Giờ kết thúc"
+                                dependencies={['start_date', 'end_date', 'start_time']}
+                                rules={[
+                                    ({ getFieldValue }) => ({
+                                        validator(_, value) {
+                                            const startDate = getFieldValue('start_date');
+                                            const endDate = getFieldValue('end_date');
+                                            const startTime = getFieldValue('start_time');
+                                            
+                                            if (value && startTime && startDate && endDate && dayjs(startDate).isSame(dayjs(endDate), 'day')) {
+                                                if (value.isBefore(startTime, 'second') || value.isSame(startTime, 'second')) {
+                                                    return Promise.reject(new Error('Thời gian kết thúc phải lớn hơn thời gian bắt đầu khi trong cùng một ngày'));
+                                                }
+                                            }
+                                            return Promise.resolve();
+                                        },
+                                    }),
+                                ]}
+                            >
                                 <TimePicker className="w-full" format="HH:mm" />
                             </Form.Item>
                         </Col>
@@ -1420,6 +1538,10 @@ const ActivityList = () => {
                     </Form.Item>
                 </Form>
             </Modal>
+            <Tour open={tourOpen} onClose={() => {
+                localStorage.setItem('vlu-tour-activity-completed', 'true');
+                setTourOpen(false);
+            }} steps={tourSteps} />
         </div>
     );
 };

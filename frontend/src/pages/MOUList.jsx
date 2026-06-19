@@ -1,10 +1,10 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Table, Tag, Form, Input, Select, Button, Modal, message, Space, Drawer, Timeline, Row, Col, DatePicker, Descriptions, Switch, Popover, Badge, Divider, App as AntApp, Spin, Card, Checkbox, Pagination, Progress, Upload, Tooltip } from 'antd';
+import { Table, Tag, Form, Input, Select, Button, Modal, message, Space, Drawer, Timeline, Row, Col, DatePicker, Descriptions, Switch, Popover, Badge, Divider, App as AntApp, Spin, Card, Checkbox, Pagination, Progress, Upload, Tooltip, Tour } from 'antd';
 import {
     PlusOutlined, EditOutlined, DeleteOutlined, LinkOutlined, SearchOutlined,
     FilePdfOutlined, ScanOutlined, InboxOutlined, CheckCircleOutlined, RobotOutlined, DownloadOutlined,
     FilterOutlined, ClearOutlined, SortAscendingOutlined, AuditOutlined, EyeOutlined, UnorderedListOutlined,
-    UploadOutlined, CloudUploadOutlined, ExclamationCircleOutlined, ReloadOutlined, FileTextOutlined
+    UploadOutlined, CloudUploadOutlined, ExclamationCircleOutlined, ReloadOutlined, FileTextOutlined, QuestionCircleOutlined
 } from '@ant-design/icons';
 import api from '../utils/api';
 import dayjs from 'dayjs';
@@ -75,6 +75,58 @@ const MOUList = () => {
     const [drawerUploadFile, setDrawerUploadFile] = useState(null);
     const [drawerUploading, setDrawerUploading] = useState(false);
     const [generatingPdf, setGeneratingPdf] = useState(false);
+
+    // Tour state & steps
+    const [tourOpen, setTourOpen] = useState(false);
+
+    useEffect(() => {
+        const hasCompletedTour = localStorage.getItem('vlu-tour-mou-completed');
+        if (!hasCompletedTour) {
+            const timer = setTimeout(() => {
+                setTourOpen(true);
+            }, 1000);
+            return () => clearTimeout(timer);
+        }
+    }, []);
+
+    const tourSteps = [
+        {
+            title: 'Biên bản ghi nhớ (MOU) 📜',
+            description: (
+                <div className="text-slate-600 dark:text-slate-300 text-xs sm:text-sm mt-1">
+                    Trang này giúp Thầy/Cô quản lý các Biên bản ghi nhớ (MOU) đã ký kết với các đối tác, doanh nghiệp.
+                </div>
+            ),
+            target: () => document.getElementById('tour-mou-title'),
+        },
+        {
+            title: 'Thao tác nâng cao & Thêm mới ⚡',
+            description: (
+                <div className="text-slate-600 dark:text-slate-300 text-xs sm:text-sm mt-1">
+                    Thầy/Cô có thể sử dụng <strong>AI quét tự động (Import MOU bằng AI)</strong> để tự động nhận dạng thông tin từ hợp đồng PDF/ảnh, hoặc <strong>Thêm Biên bản</strong> mới thủ công.
+                </div>
+            ),
+            target: () => document.getElementById('tour-mou-actions'),
+        },
+        {
+            title: 'Tìm kiếm & Bộ lọc 🔍',
+            description: (
+                <div className="text-slate-600 dark:text-slate-300 text-xs sm:text-sm mt-1">
+                    Tìm kiếm nhanh theo tên đối tác/mã MOU. Sử dụng bộ lọc nâng cao để lọc theo quốc gia, đơn vị ký kết, hoặc trạng thái hiệu lực.
+                </div>
+            ),
+            target: () => document.getElementById('tour-mou-filters'),
+        },
+        {
+            title: 'Bảng danh sách MOU 📋',
+            description: (
+                <div className="text-slate-600 dark:text-slate-300 text-xs sm:text-sm mt-1">
+                    Hiển thị các thông tin quan trọng của biên bản ghi nhớ (ngày ký, ngày hết hạn, tiến độ...). Thầy/Cô có thể xem chi tiết file đính kèm, chỉnh sửa hoặc xuất PDF bản ghi.
+                </div>
+            ),
+            target: () => document.getElementById('tour-mou-table'),
+        }
+    ];
     const drawerUploadRef = useRef(null);
     const formUploadRef = useRef(null);
     const [formUploadFile, setFormUploadFile] = useState(null);
@@ -839,12 +891,23 @@ const MOUList = () => {
                     <div className="w-10 h-10 sm:w-12 sm:h-12 bg-red-50 dark:bg-red-950/30 text-vluRed dark:text-red-400 rounded-xl sm:rounded-2xl flex items-center justify-center shadow-sm flex-shrink-0">
                         <AuditOutlined className="text-xl sm:text-2xl" />
                     </div>
-                    <div>
-                        <h1 className="text-xl sm:text-2xl font-bold text-slate-800 dark:text-gray-100 m-0">Biên bản ghi nhớ (MOU)</h1>
+                    <div id="tour-mou-title">
+                        <div className="flex items-center gap-2">
+                            <h1 className="text-xl sm:text-2xl font-bold text-slate-800 dark:text-gray-100 m-0">Biên bản ghi nhớ (MOU)</h1>
+                            <Tooltip title="Hướng dẫn trang này">
+                                <Button 
+                                    id="tour-mou-help"
+                                    type="text" 
+                                    icon={<QuestionCircleOutlined className="text-slate-400 hover:text-vluRed text-lg sm:text-xl" />} 
+                                    onClick={() => setTourOpen(true)}
+                                    className="flex items-center justify-center p-0 h-7 w-7 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800"
+                                />
+                            </Tooltip>
+                        </div>
                         <p className="text-xs sm:text-sm text-slate-500 m-0 mt-0.5">Danh sách thống kê các MOU đã ký với Đối tác/Doanh nghiệp</p>
                     </div>
                 </div>
-                <div className="flex gap-2 w-full sm:w-auto header-actions">
+                <div id="tour-mou-actions" className="flex gap-2 w-full sm:w-auto header-actions">
                     {!isLecturer && (
                         <>
                             <Button
@@ -870,7 +933,7 @@ const MOUList = () => {
             </div>
 
             {/* Search + Filters */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl p-4 mb-6 shadow-sm border border-gray-100 dark:border-gray-700 flex flex-wrap items-center gap-3 transition-colors">
+            <div id="tour-mou-filters" className="bg-white dark:bg-gray-800 rounded-xl p-4 mb-6 shadow-sm border border-gray-100 dark:border-gray-700 flex flex-wrap items-center gap-3 transition-colors">
                 <Input
                     placeholder="Tìm mã MOU, đối tác..."
                     prefix={<SearchOutlined className="text-slate-400" />}
@@ -916,8 +979,9 @@ const MOUList = () => {
                 </div>
             )}
 
-            {/* Desktop View */}
-            <div className="hidden md:block bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-slate-200 dark:border-gray-700 overflow-hidden">
+            <div id="tour-mou-table">
+                {/* Desktop View */}
+                <div className="hidden md:block bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-slate-200 dark:border-gray-700 overflow-hidden">
                 <Table
                     rowSelection={isLecturer ? null : {
                         selectedRowKeys,
@@ -1070,6 +1134,7 @@ const MOUList = () => {
                 )}
                 </>
                 )}
+            </div>
             </div>
 
             {/* ==================== ADD/EDIT MODAL ==================== */}
@@ -1654,6 +1719,10 @@ const MOUList = () => {
                     </Form.Item>
                 </Form>
             </Modal>
+            <Tour open={tourOpen} onClose={() => {
+                localStorage.setItem('vlu-tour-mou-completed', 'true');
+                setTourOpen(false);
+            }} steps={tourSteps} />
         </div>
     );
 };

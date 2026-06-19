@@ -4,6 +4,7 @@ import { ConfigProvider, theme as antTheme, App as AntApp } from 'antd';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import EnterpriseList from './pages/EnterpriseList';
+import EnterpriseEvaluation from './pages/EnterpriseEvaluation';
 import ActivityList from './pages/ActivityList';
 import Settings from './pages/Settings';
 import StudentList from './pages/StudentList';
@@ -22,7 +23,8 @@ import Fields from './pages/Fields';
 import Departments from './pages/Departments';
 import BulkDataTool from './pages/BulkDataTool';
 import FileManager from './pages/FileManager';
-import Docs from './pages/Docs';
+import DocsWrapper from './components/DocsWrapper';
+import SurveyRedirect from './components/SurveyRedirect';
 import Cookies from 'js-cookie';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
 
@@ -104,6 +106,8 @@ const App = () => {
                 <BrowserRouter>
                     <Routes>
                         <Route path="/login" element={<Login />} />
+                        <Route path="/docs" element={<DocsWrapper />} />
+                        <Route path="/survey" element={<SurveyRedirect />} />
 
                         <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
                             <Route index element={<Navigate to="/dashboard" replace />} />
@@ -113,9 +117,9 @@ const App = () => {
                             <Route path="notes" element={<KanbanBoard />} />
                             <Route path="calendar" element={<CalendarView />} />
                             <Route path="enterprises" element={<EnterpriseList />} />
+                            <Route path="enterprises/:id/evaluate" element={<EnterpriseEvaluation />} />
                             <Route path="activities" element={<ActivityList />} />
                             <Route path="settings" element={<Settings />} />
-                            <Route path="docs" element={<Docs />} />
                             <Route path="students" element={<StudentList />} />
                             <Route path="reports/students" element={<ReportStudents />} />
                             <Route path="reports/activities" element={<ReportActivities />} />
@@ -128,7 +132,7 @@ const App = () => {
                             <Route path="bulk-data" element={<AdminRoute><BulkDataTool /></AdminRoute>} />
                             <Route path="ai-import" element={<AdminOrManagerRoute><AiImportTool /></AdminOrManagerRoute>} />
                             <Route path="history" element={<AdminOrManagerRoute><HistoryLog /></AdminOrManagerRoute>} />
-                            <Route path="files" element={<AdminOrManagerRoute><FileManager /></AdminOrManagerRoute>} />
+                            <Route path="files" element={<AdminRoute><FileManager /></AdminRoute>} />
                         </Route>
                     </Routes>
                 </BrowserRouter>
