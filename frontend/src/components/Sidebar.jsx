@@ -118,23 +118,21 @@ const Sidebar = ({ isOpen, onClose, collapsed }) => {
                         key: '/history',
                         label: 'Lịch sử hệ thống',
                     },
-                    /*
                     {
                         key: '/ai-import',
                         label: 'Import dữ liệu AI',
                     }
-                    */
                 ] : []),
                 ...(isAdmin ? [
                     {
                         key: '/users',
                         label: 'Quản lý người dùng',
                     },
-                    /*
                     {
                         key: '/files',
-                        label: 'Quản lý File & Rác',
+                        label: 'Quản lý File & Dọn rác Firebase',
                     },
+                    /*
                     {
                         key: '/duplicates',
                         label: 'Xử lý dữ liệu trùng lặp',
