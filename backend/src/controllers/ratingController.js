@@ -45,7 +45,7 @@ exports.getEnterpriseRatings = async (req, res) => {
         }
 
         const [ratings] = await pool.query(
-            'SELECT r.*, a.title as activity_name, u.full_name as user_name FROM enterprise_ratings r LEFT JOIN activities a ON r.activity_id = a.id LEFT JOIN users u ON r.created_by = u.id WHERE r.enterprise_id = ? ORDER BY r.created_at DESC',
+            'SELECT r.*, a.title as activity_name, u.full_name as user_name, u.role as user_role FROM enterprise_ratings r LEFT JOIN activities a ON r.activity_id = a.id LEFT JOIN users u ON r.created_by = u.id WHERE r.enterprise_id = ? ORDER BY r.created_at DESC',
             [enterpriseId]
         );
         res.status(200).json(ratings);

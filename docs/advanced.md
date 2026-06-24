@@ -4,15 +4,14 @@
 
 ---
 
-## 📂 1. Import dữ liệu thông minh bằng AI
-Để giảm thiểu thời gian nhập liệu thủ công khi nhận được các file Excel/CSV thô từ đối tác bên ngoài:
-1.  Truy cập menu **"Công cụ khác"** ➔ Chọn **"Import dữ liệu AI"**.
-2.  Tải lên tệp Excel/CSV chứa danh sách doanh nghiệp đối tác.
-3.  **Ánh xạ cột (Mapping):** Lựa chọn các cột trong file Excel tương ứng với trường thông tin hệ thống (Tên công ty, Người đại diện, Điện thoại, Email, Địa chỉ...).
-4.  **Xem trước dữ liệu (Preview):** Hệ thống hiển thị bảng dữ liệu xem trước, tự động phát hiện và gộp các dòng trùng tên doanh nghiệp.
-5.  **Xử lý bằng AI:** Trợ lý AI (Gemini) sẽ đọc dữ liệu thô, tự động phân tích cấu trúc địa chỉ (tách riêng Tòa nhà/Đường, Quận, Tỉnh) và thông tin liên hệ của đại diện để ghi vào cơ sở dữ liệu một cách chuẩn hóa nhất.
+## 🤖 1. Trợ lý ảo AI Chatbot (VLU AI Assistant)
+Trợ lý ảo thông minh hỗ trợ tương tác và khai thác dữ liệu trực tiếp trong hệ thống:
+1.  **Hộp thoại Trò chuyện (Chatbot Widget):** Bấm vào biểu tượng Robot trên thanh Header để mở hộp thoại trò chuyện trực tiếp từ bất kỳ trang nào.
+2.  **Hỏi đáp thông tin:** Hỗ trợ truy vấn nhanh các số liệu thống kê bằng ngôn ngữ tự nhiên (Ví dụ: *"Có bao nhiêu doanh nghiệp thuộc khoa CNTT?"*, *"Thống kê số sinh viên thực tập tại công ty X"*).
+3.  **Phân tích hình ảnh:** Tải tệp ảnh lên (như ảnh biên bản, ảnh sự kiện, hóa đơn...) để nhờ AI phân tích, đọc chữ hoặc tóm tắt nội dung.
+4.  **Tích hợp ghi chú:** Chuyển đổi câu trả lời hoặc kết quả gợi ý của AI trực tiếp thành các thẻ ghi chú dán (Sticky Note) nhiều màu sắc trong không gian làm việc cá nhân chỉ bằng một cú click.
 
-![Giao diện tải tệp tin và ánh xạ cột dữ liệu trong công cụ AI Import](https://firebasestorage.googleapis.com/v0/b/quan-ly-doanh-nghiep-vlu.firebasestorage.app/o/docs%2Fadvances%2Faiimport.mp4?alt=media&token=8791ddbf-e96d-4430-9f83-3f60571eea4e)
+![Giao diện trợ lý ảo AI Chatbot trong hệ thống](https://firebasestorage.googleapis.com/v0/b/quan-ly-doanh-nghiep-vlu.firebasestorage.app/o/docs%2Fchatbot%2FChatbot.png?alt=media&token=e144a71b-a71b-4d95-9465-f2561c53b00e)
 
 ---
 

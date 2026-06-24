@@ -118,16 +118,19 @@ const Sidebar = ({ isOpen, onClose, collapsed }) => {
                         key: '/history',
                         label: 'Lịch sử hệ thống',
                     },
+                    /*
                     {
                         key: '/ai-import',
                         label: 'Import dữ liệu AI',
                     }
+                    */
                 ] : []),
                 ...(isAdmin ? [
                     {
                         key: '/users',
                         label: 'Quản lý người dùng',
                     },
+                    /*
                     {
                         key: '/files',
                         label: 'Quản lý File & Rác',
@@ -140,6 +143,7 @@ const Sidebar = ({ isOpen, onClose, collapsed }) => {
                         key: '/bulk-data',
                         label: 'Xử lý dữ liệu hàng loạt',
                     }
+                    */
                 ] : [])
             ]
         },

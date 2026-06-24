@@ -45,7 +45,6 @@ async function run() {
                 'DB_NAME=vlu_enterprise_link',
                 `JWT_SECRET=${crypto.randomBytes(32).toString('hex')}`,
                 'GEMINI_API_KEY=',
-                'GEMINI_API_KEYS=',
                 'FIREBASE_STORAGE_BUCKET='
             ].join('\n');
             fs.writeFileSync(backendEnvPath, defaultEnv, 'utf8');

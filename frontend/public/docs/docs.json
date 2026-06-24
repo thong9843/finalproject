@@ -32,6 +32,10 @@
     "title": "Không gian Ghi chú"
   },
   {
+    "id": "chatbot",
+    "title": "Trợ lý ảo AI Chatbot"
+  },
+  {
     "id": "advanced",
     "title": "Công cụ nâng cao"
   }

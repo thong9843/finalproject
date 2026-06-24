@@ -1,12 +1,36 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, Form, Input, Button, Rate, Space, Spin, message, Row, Col, Divider, Timeline, Tag, Modal } from 'antd';
-import { ArrowLeftOutlined, StarOutlined, CheckCircleOutlined, InfoCircleOutlined, MessageOutlined, CalendarOutlined, UserOutlined, EditOutlined, DeleteOutlined, CloseCircleOutlined } from '@ant-design/icons';
+import { ArrowLeftOutlined, LikeOutlined, CheckCircleOutlined, InfoCircleOutlined, MessageOutlined, CalendarOutlined, UserOutlined, EditOutlined, DeleteOutlined, CloseCircleOutlined } from '@ant-design/icons';
 import api from '../utils/api';
 import dayjs from 'dayjs';
 import Cookies from 'js-cookie';
 
 const { TextArea } = Input;
+
+const NumberRating = ({ value, onChange }) => {
+    return (
+        <div className="flex gap-3">
+            {[1, 2, 3, 4, 5].map((num) => {
+                const isSelected = value === num;
+                return (
+                    <button
+                        type="button"
+                        key={num}
+                        onClick={() => onChange && onChange(num)}
+                        className={`w-12 h-12 rounded-xl font-bold text-base flex items-center justify-center transition-all ${
+                            isSelected
+                                ? 'bg-vluRed text-white shadow-md transform scale-105 border border-vluRed'
+                                : 'bg-white dark:bg-gray-800 text-slate-700 dark:text-gray-300 border border-slate-200 dark:border-gray-700 hover:border-vluRed hover:text-vluRed'
+                        }`}
+                    >
+                        {num}
+                    </button>
+                );
+            })}
+        </div>
+    );
+};
 
 const EnterpriseEvaluation = () => {
     const { id } = useParams();
@@ -35,6 +59,13 @@ const EnterpriseEvaluation = () => {
     }
 
     const scoreTexts = ['Rất tệ', 'Không hài lòng', 'Bình thường', 'Hài lòng', 'Xuất sắc/Rất hài lòng'];
+
+    const getRoleLabel = (rating) => {
+        if (rating.user_role === 'ADMIN') return 'Quản trị viên';
+        if (rating.user_role === 'FACULTY_MANAGER') return 'Quản lý khoa';
+        if (rating.user_role === 'LECTURER') return 'Giảng viên';
+        return rating.user_type === 'LECTURER' ? 'Giảng viên' : 'Sinh viên';
+    };
 
     useEffect(() => {
         fetchData();
@@ -174,7 +205,7 @@ const EnterpriseEvaluation = () => {
         );
     }
 
-    const avgScore = calculatedOverall();
+    // const avgScore = calculatedOverall();
 
     return (
         <div className="max-w-6xl mx-auto p-4 sm:p-6">
@@ -194,7 +225,7 @@ const EnterpriseEvaluation = () => {
             {/* Enterprise basic card */}
             <Card className="mb-6 rounded-2xl border-slate-100 dark:border-gray-700/80 shadow-sm bg-gradient-to-r from-red-50/30 to-slate-50/50 dark:from-red-950/10 dark:to-gray-800/20">
                 <Row gutter={[24, 16]}>
-                    <Col xs={24} md={16}>
+                    <Col xs={24} md={24}>
                         <h2 className="text-lg font-bold text-vluRed dark:text-red-400 m-0 mb-2">{enterprise?.name}</h2>
                         <Space wrap className="mb-2">
                             {enterprise?.scale_name && <Tag color="blue" className="rounded-md px-2 py-0.5">{enterprise.scale_name}</Tag>}
@@ -203,18 +234,6 @@ const EnterpriseEvaluation = () => {
                         <div className="text-xs text-slate-500 space-y-1">
                             <div><strong>Mã số thuế:</strong> {enterprise?.tax_code || 'Chưa cung cấp'}</div>
                             <div><strong>Lĩnh vực:</strong> {enterprise?.fields?.map(f => f.name).join(', ') || 'Chưa phân loại'}</div>
-                        </div>
-                    </Col>
-                    <Col xs={24} md={8} className="flex md:justify-end items-center">
-                        <div className="text-left md:text-right">
-                            <span className="text-xs text-slate-400 block uppercase tracking-wider mb-1">Điểm trung bình hiện tại</span>
-                            <div className="flex items-baseline md:justify-end gap-1.5">
-                                <span className="text-3xl font-extrabold text-slate-800 dark:text-gray-100">
-                                    {enterprise?.rating_score || '---'}
-                                </span>
-                                <span className="text-slate-400 text-sm">/ 5.0</span>
-                            </div>
-                            <Rate disabled allowHalf value={Number(enterprise?.rating_score || 0)} className="text-yellow-500 text-sm mt-1" />
                         </div>
                     </Col>
                 </Row>
@@ -268,7 +287,7 @@ const EnterpriseEvaluation = () => {
                                             rules={[{ required: true, message: 'Vui lòng đánh giá tiêu chí này' }]}
                                             className="mb-0 flex-1"
                                         >
-                                            <Rate className="text-yellow-500 text-2xl" />
+                                            <NumberRating />
                                         </Form.Item>
                                         {coordination > 0 && (
                                             <span className="text-sm font-semibold text-slate-500 bg-white dark:bg-gray-800 px-3 py-1 rounded-full shadow-sm mt-1 sm:mt-8 self-start sm:self-center">
@@ -287,7 +306,7 @@ const EnterpriseEvaluation = () => {
                                             rules={[{ required: true, message: 'Vui lòng đánh giá tiêu chí này' }]}
                                             className="mb-0 flex-1"
                                         >
-                                            <Rate className="text-yellow-500 text-2xl" />
+                                            <NumberRating />
                                         </Form.Item>
                                         {facilities > 0 && (
                                             <span className="text-sm font-semibold text-slate-500 bg-white dark:bg-gray-800 px-3 py-1 rounded-full shadow-sm mt-1 sm:mt-8 self-start sm:self-center">
@@ -306,7 +325,7 @@ const EnterpriseEvaluation = () => {
                                             rules={[{ required: true, message: 'Vui lòng đánh giá tiêu chí này' }]}
                                             className="mb-0 flex-1"
                                         >
-                                            <Rate className="text-yellow-500 text-2xl" />
+                                            <NumberRating />
                                         </Form.Item>
                                         {guidance > 0 && (
                                             <span className="text-sm font-semibold text-slate-500 bg-white dark:bg-gray-800 px-3 py-1 rounded-full shadow-sm mt-1 sm:mt-8 self-start sm:self-center">
@@ -329,20 +348,6 @@ const EnterpriseEvaluation = () => {
                                             className="rounded-xl"
                                         />
                                     </Form.Item>
-                                </Col>
-
-                                {/* Live average card */}
-                                <Col xs={24} className="mt-2">
-                                    <div className="bg-gradient-to-r from-red-600 to-rose-500 text-white rounded-xl p-4 flex justify-between items-center shadow-md">
-                                        <div>
-                                            <div className="text-xs text-white/80 uppercase tracking-wider font-semibold">Điểm đánh giá trung bình phiếu này</div>
-                                            <div className="text-sm text-white/95 mt-0.5">Sẽ được ghi nhận trực tiếp vào điểm hệ thống.</div>
-                                        </div>
-                                        <div className="flex items-baseline gap-1">
-                                            <span className="text-4xl font-black">{avgScore}</span>
-                                            <span className="text-white/60 text-xs">/ 5.0</span>
-                                        </div>
-                                    </div>
                                 </Col>
 
                                 <Col xs={24} className="mt-4 flex justify-end gap-3">
@@ -400,21 +405,20 @@ const EnterpriseEvaluation = () => {
                                         return (
                                             <Timeline.Item 
                                                 key={rating.id} 
-                                                dot={<StarOutlined className="text-yellow-500" />}
+                                                dot={<LikeOutlined className="text-blue-500" />}
                                             >
                                                 <div className="bg-slate-50 dark:bg-gray-800/40 border border-slate-100 dark:border-gray-800/80 p-3.5 rounded-xl mb-3 relative group">
                                                     {/* Header info inside card */}
                                                     <div className="flex justify-between items-center mb-1 text-[10px] text-slate-400">
                                                         <span className="font-semibold text-slate-500 uppercase tracking-wider">
-                                                            {rating.user_type === 'LECTURER' ? 'Giảng viên' : 'Sinh viên'}
+                                                            {getRoleLabel(rating)}
                                                         </span>
-                                                        <span className="flex items-center gap-1">
+                                                        <span className="flex items-center gap-1 flex-shrink-0">
                                                             <CalendarOutlined /> {dayjs(rating.created_at).format('DD/MM/YYYY HH:mm')}
                                                         </span>
                                                     </div>
 
-                                                    <div className="flex justify-between items-center mb-2">
-                                                        <span className="font-bold text-slate-800 dark:text-gray-100">{rating.overall_score} ⭐</span>
+                                                    <div className="flex justify-end items-center mb-2">
                                                         {isCreatorOrAdmin && (
                                                             <div className="flex items-center gap-1 bg-white/80 dark:bg-gray-800 border border-slate-200 dark:border-gray-700 rounded-md px-1.5 py-0.5">
                                                                 <Button 
@@ -436,20 +440,13 @@ const EnterpriseEvaluation = () => {
                                                             </div>
                                                         )}
                                                     </div>
-                                                    
-                                                    {/* Scores breakdown */}
-                                                    <div className="grid grid-cols-3 gap-1 mb-2 border-b border-dashed border-slate-200 dark:border-gray-700/60 pb-1.5 text-[10px] text-slate-500">
-                                                        <div>Phối hợp: <strong className="text-slate-700 dark:text-gray-300">{rating.coordination_score}/5</strong></div>
-                                                        <div>Cơ sở vật chất: <strong className="text-slate-700 dark:text-gray-300">{rating.facilities_score}/5</strong></div>
-                                                        <div>Hỗ trợ: <strong className="text-slate-700 dark:text-gray-300">{rating.guidance_score}/5</strong></div>
-                                                    </div>
 
                                                     <p className="text-xs text-slate-600 dark:text-gray-300 italic m-0 mb-2">
                                                         "{rating.internal_note || 'Không có nhận xét chi tiết'}"
                                                     </p>
 
                                                     <div className="text-[9px] text-slate-400 flex items-center gap-1 font-medium bg-slate-100 dark:bg-gray-800/80 px-2 py-0.5 rounded w-max">
-                                                        <UserOutlined /> {rating.user_name || 'Người dùng'}
+                                                        <UserOutlined /> {rating.user_name ? `${rating.user_name} (${getRoleLabel(rating)})` : getRoleLabel(rating)}
                                                     </div>
                                                 </div>
                                             </Timeline.Item>

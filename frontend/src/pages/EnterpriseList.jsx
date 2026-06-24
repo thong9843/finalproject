@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Table, Tag, Form, Input, Select, Button, Modal, message, Space, Drawer, Timeline, Row, Col, DatePicker, Descriptions, Switch, Popover, Badge, Divider, App as AntApp, Spin, Card, Checkbox, Pagination, Tooltip, Tour, Rate } from 'antd';
-import { EditOutlined, DeleteOutlined, PlusOutlined, UnorderedListOutlined, UploadOutlined, DownloadOutlined, UserOutlined, HomeOutlined, FilterOutlined, SortAscendingOutlined, ClearOutlined, SearchOutlined, BankOutlined, FileTextOutlined, QuestionCircleOutlined, StarOutlined } from '@ant-design/icons';
+import { EditOutlined, DeleteOutlined, PlusOutlined, UnorderedListOutlined, UploadOutlined, DownloadOutlined, UserOutlined, HomeOutlined, FilterOutlined, SortAscendingOutlined, ClearOutlined, SearchOutlined, BankOutlined, FileTextOutlined, QuestionCircleOutlined, StarOutlined, LikeOutlined } from '@ant-design/icons';
 import ImportModal from '../components/ImportModal';
 import api from '../utils/api';
 import dayjs from 'dayjs';
@@ -31,6 +31,13 @@ const EnterpriseList = () => {
     }
     const isLecturer = user?.role === 'LECTURER';
     const isAdmin = user?.role === 'ADMIN';
+
+    const getRoleLabel = (rating) => {
+        if (rating.user_role === 'ADMIN') return 'Quản trị viên';
+        if (rating.user_role === 'FACULTY_MANAGER') return 'Quản lý khoa';
+        if (rating.user_role === 'LECTURER') return 'Giảng viên';
+        return rating.user_type === 'LECTURER' ? 'Giảng viên' : 'Sinh viên';
+    };
 
     const [data, setData] = useState([]);
     const { modal } = AntApp.useApp();
@@ -305,8 +312,14 @@ const EnterpriseList = () => {
 
     const handleViewTimeline = async (record) => {
         try {
-            const res = await api.get(`/enterprises/${record.id}`);
-            setSelectedEnterprise(res.data);
+            const [entRes, ratingsRes] = await Promise.all([
+                api.get(`/enterprises/${record.id}`),
+                api.get(`/ratings/enterprise/${record.id}`)
+            ]);
+            setSelectedEnterprise({
+                ...entRes.data,
+                ratings: ratingsRes.data || []
+            });
             setIsDrawerVisible(true);
         } catch (error) {
             message.error('Lỗi khi tải thông tin chi tiết');
@@ -550,15 +563,6 @@ const EnterpriseList = () => {
             render: (text) => text ? <Tag color="cyan" className="rounded-md font-medium">{text}</Tag> : <span className="text-gray-400">Hệ thống / Chung</span>
         }] : []),
         {
-            title: 'Đánh giá', dataIndex: 'rating_score', key: 'rating_score', width: 140,
-            render: (score) => score ? (
-                <div className="flex flex-col">
-                    <Rate disabled allowHalf value={Number(score)} className="text-yellow-500 text-xs" />
-                    <span className="text-xs text-slate-500 mt-0.5 font-bold">{score} / 5.0</span>
-                </div>
-            ) : <span className="text-slate-300 dark:text-slate-600 italic text-xs">Chưa có</span>
-        },
-        {
             title: 'Trạng thái', dataIndex: 'status', key: 'status', width: 140,
             render: (text) => <Tag color={statusColors[text]}>{text}</Tag>
         },
@@ -583,7 +587,7 @@ const EnterpriseList = () => {
                 return (
                     <Space size="middle">
                         <Tooltip title="Đánh giá Doanh nghiệp">
-                            <Button type="text" icon={<StarOutlined className="text-yellow-500 hover:text-yellow-600" />} onClick={() => navigate(`/enterprises/${record.id}/evaluate`)} />
+                            <Button type="text" icon={<LikeOutlined className="text-blue-500 hover:text-blue-600" />} onClick={() => navigate(`/enterprises/${record.id}/evaluate`)} />
                         </Tooltip>
                         <Tooltip title="Ghi chú">
                             <Button type="text" icon={<FileTextOutlined className="text-slate-500" />} onClick={() => handleOpenNoteModal(record)} />
@@ -889,20 +893,10 @@ const EnterpriseList = () => {
                                         <Tag color="cyan">{record.faculty_name}</Tag>
                                     </div>
                                 )}
-                                <div>
-                                    <span className="text-gray-400 font-medium">Đánh giá:</span>{' '}
-                                    {record.rating_score ? (
-                                        <span className="inline-flex items-center gap-1 font-bold text-yellow-600 dark:text-yellow-500">
-                                            <Rate disabled allowHalf value={Number(record.rating_score)} className="text-yellow-500 text-xs" />
-                                            ({record.rating_score})
-                                        </span>
-                                    ) : (
-                                        <span className="text-slate-300 dark:text-slate-600 italic text-xs">Chưa có</span>
-                                    )}
-                                </div>
+
                                 <div className="flex justify-end gap-3 pt-2 border-t border-gray-100 dark:border-gray-700 mt-2">
                                     {record.is_deleted !== 1 && (
-                                        <Button type="text" icon={<StarOutlined className="text-yellow-500 hover:text-yellow-600" />} onClick={() => navigate(`/enterprises/${record.id}/evaluate`)} />
+                                        <Button type="text" icon={<LikeOutlined className="text-blue-500 hover:text-blue-600" />} onClick={() => navigate(`/enterprises/${record.id}/evaluate`)} />
                                     )}
                                     <Button type="text" icon={<FileTextOutlined className="text-slate-500" />} onClick={() => handleOpenNoteModal(record)} />
                                     <Button type="text" icon={<UnorderedListOutlined />} onClick={() => handleViewTimeline(record)} />
@@ -1128,8 +1122,45 @@ const EnterpriseList = () => {
                                 </Descriptions.Item>
                                 <Descriptions.Item label="TP.HCM">{selectedEnterprise.is_hcmc ? <Tag color="green">Có</Tag> : <Tag color="default">Không</Tag>}</Descriptions.Item>
                                 <Descriptions.Item label="Trạng thái"><Tag color={statusColors[selectedEnterprise.status]}>{selectedEnterprise.status}</Tag></Descriptions.Item>
+                                <Descriptions.Item label="Đánh giá doanh nghiệp" span={2}>
+                                    {selectedEnterprise.rating_score ? (
+                                        <span className="font-bold text-slate-800 dark:text-gray-100">
+                                            {selectedEnterprise.rating_score} / 5.0
+                                        </span>
+                                    ) : (
+                                        <span className="text-slate-400 italic">Chưa có đánh giá</span>
+                                    )}
+                                </Descriptions.Item>
                             </Descriptions>
                         </div>
+
+                        {selectedEnterprise.ratings?.length > 0 && (
+                            <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-slate-200 dark:border-gray-700">
+                                <h3 className="text-lg font-bold text-slate-800 dark:text-gray-100 mb-4 border-b pb-2">Nhận xét & Ý kiến đóng góp ({selectedEnterprise.ratings.length})</h3>
+                                <div className="space-y-4 max-h-[300px] overflow-y-auto pr-1">
+                                    {selectedEnterprise.ratings.map(rating => (
+                                        <div key={rating.id} className="bg-slate-50 dark:bg-gray-900/40 p-3 rounded-lg border border-slate-100 dark:border-gray-800 text-xs">
+                                            <div className="flex justify-between items-center mb-1 text-slate-400">
+                                                <span className="font-semibold text-slate-500 uppercase tracking-wider">
+                                                    {rating.user_name ? `${rating.user_name} (${getRoleLabel(rating)})` : getRoleLabel(rating)}
+                                                </span>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="font-bold text-slate-700 dark:text-gray-300 bg-slate-100 dark:bg-gray-800 px-2 py-0.5 rounded">
+                                                        {rating.overall_score}/5
+                                                    </span>
+                                                    <span>
+                                                        {dayjs(rating.created_at).format('DD/MM/YYYY')}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            <p className="text-slate-700 dark:text-gray-300 italic m-0">
+                                                "{rating.internal_note || 'Không có nhận xét chi tiết'}"
+                                            </p>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
 
                         {selectedEnterprise.representatives?.length > 0 && (
                             <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-slate-200 dark:border-gray-700">
