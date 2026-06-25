@@ -474,11 +474,19 @@ const importStudents = async (req, res) => {
                     continue;
                 }
 
-                await conn.query(
+                const [insertResult] = await conn.query(
                     `INSERT INTO students (student_code, name, email, class, major, advisor, activity_id, enterprise_id, position, status, gpa, start_date, end_date, faculty_id) 
                      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
                     [student_code, name, email, className, major, advisor, activity_id, enterprise_id, position, status, gpa, start_date, end_date, facultyId]
                 );
+
+                // Sync student_activities junction table
+                if (activity_id) {
+                    await conn.query(
+                        'INSERT IGNORE INTO student_activities (student_id, activity_id) VALUES (?, ?)',
+                        [insertResult.insertId, activity_id]
+                    );
+                }
 
                 await conn.commit();
                 inserted++;

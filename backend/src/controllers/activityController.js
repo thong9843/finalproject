@@ -8,7 +8,7 @@ exports.getAll = async (req, res) => {
                 GROUP_CONCAT(DISTINCT act.id ORDER BY act.id SEPARATOR ',') as type_ids,
                 GROUP_CONCAT(DISTINCT tgt.name ORDER BY tgt.name SEPARATOR ', ') as target_names,
                 GROUP_CONCAT(DISTINCT tgt.id ORDER BY tgt.id SEPARATOR ',') as target_ids,
-                (SELECT COUNT(*) FROM students s WHERE s.activity_id = a.id) as student_count
+                (SELECT COUNT(DISTINCT sa.student_id) FROM student_activities sa JOIN students s ON sa.student_id = s.id WHERE sa.activity_id = a.id AND s.is_deleted = 0) as student_count
             FROM activities a
             JOIN enterprises e ON a.enterprise_id = e.id
             LEFT JOIN faculties f ON a.faculty_id = f.id
@@ -78,9 +78,10 @@ exports.getStats = async (req, res) => {
         const [completed] = await pool.query(`SELECT COUNT(*) as count FROM activities WHERE status = 'Đã kết thúc' AND is_deleted = 0 ${facultyFilter}`, params);
         const [pending] = await pool.query(`SELECT COUNT(*) as count FROM activities WHERE status IN ('Đề xuất', 'Phê duyệt nội bộ') AND is_deleted = 0 ${facultyFilter}`, params);
         const [students] = await pool.query(`
-            SELECT COUNT(s.id) as count
-            FROM students s
-            JOIN activities a ON s.activity_id = a.id
+            SELECT COUNT(DISTINCT sa.student_id) as count
+            FROM student_activities sa
+            JOIN students s ON sa.student_id = s.id
+            JOIN activities a ON sa.activity_id = a.id
             WHERE s.is_deleted = 0 AND a.is_deleted = 0 ${facultyFilter}`, params);
 
         res.status(200).json({
@@ -415,6 +416,26 @@ exports.restore = async (req, res) => {
         req.params.id = logRows[0].id;
         const historyController = require('./historyController');
         return historyController.restore(req, res);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+exports.getStudentsParticipating = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const [students] = await pool.query(`
+            SELECT s.id, s.student_code, s.name, s.email, s.class, s.major, s.status, s.gpa,
+                   s.position, s.start_date, s.end_date, s.advisor,
+                   e.name as enterprise_name, f.name as faculty_name
+            FROM students s
+            JOIN student_activities sa ON s.id = sa.student_id
+            LEFT JOIN enterprises e ON s.enterprise_id = e.id
+            LEFT JOIN faculties f ON s.faculty_id = f.id
+            WHERE sa.activity_id = ? AND s.is_deleted = 0
+            ORDER BY s.name ASC
+        `, [id]);
+        res.status(200).json(students);
     } catch (error) {
         res.status(500).json({ message: error.message });
     }

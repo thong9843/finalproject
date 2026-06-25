@@ -62,7 +62,7 @@ async function seedClean() {
         // Step 2: Truncate only transactional and dynamic tables
         const tablesToClear = [
             'tasks', 'notes', 'action_history', 'workflow_history', 'enterprise_ratings',
-            'students', 'mous', 'activity_target_map', 'activity_type_map', 'activities',
+            'student_activities', 'students', 'mous', 'activity_target_map', 'activity_type_map', 'activities',
             'enterprise_fields', 'enterprise_addresses', 'enterprise_representatives', 'enterprises',
             'departments', 'targets', 'act_types', 'scales', 'fields'
         ];

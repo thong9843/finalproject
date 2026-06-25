@@ -124,10 +124,18 @@ const StudentList = () => {
     }, [searchText, activeTab, sortOption, dateRange, filterEnterprise, filterMajor, filterGpa, filterFaculty, showDeleted]);
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
     const [selectedStudent, setSelectedStudent] = useState(null);
+    const [studentActivities, setStudentActivities] = useState([]);
+    const [studentActivitiesLoading, setStudentActivitiesLoading] = useState(false);
 
     const handleViewDetail = (record) => {
         setSelectedStudent(record);
         setIsDrawerOpen(true);
+        setStudentActivities([]);
+        setStudentActivitiesLoading(true);
+        api.get(`/students/${record.id}/activities`)
+            .then(r => setStudentActivities(r.data))
+            .catch((err) => console.error('getActivitiesJoined error:', err))
+            .finally(() => setStudentActivitiesLoading(false));
     };
 
     const handleOpenNoteModal = async (record) => {
@@ -1239,6 +1247,35 @@ const StudentList = () => {
                                     </span>
                                 </Descriptions.Item>
                             </Descriptions>
+                        </div>
+
+                        {/* Activity History */}
+                        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-slate-200 dark:border-gray-700">
+                            <h3 className="text-lg font-bold text-slate-800 dark:text-gray-100 mb-4 border-b pb-2">
+                                📋 Lịch sử tham gia Hoạt động
+                            </h3>
+                            {studentActivitiesLoading ? (
+                                <div className="text-center py-4"><Spin /></div>
+                            ) : studentActivities.length > 0 ? (
+                                <Table
+                                    size="small"
+                                    dataSource={studentActivities}
+                                    rowKey="id"
+                                    pagination={{ pageSize: 5, size: 'small' }}
+                                    columns={[
+                                        { title: 'Tên hoạt động', dataIndex: 'title', key: 'title', ellipsis: true },
+                                        { title: 'Doanh nghiệp', dataIndex: 'enterprise_name', key: 'enterprise_name', ellipsis: true },
+                                        { title: 'Loại hình', dataIndex: 'type_names', key: 'type_names', ellipsis: true,
+                                            render: (t) => t ? t.split(', ').map(n => <Tag key={n} color="blue" style={{marginBottom:2}}>{n}</Tag>) : '---' },
+                                        { title: 'Trạng thái', dataIndex: 'status', key: 'status', width: 130,
+                                            render: (s) => <Tag color={s === 'Đã kết thúc' ? 'blue' : s === 'Đã triển khai' ? 'green' : 'default'}>{s}</Tag> },
+                                        { title: 'Thời gian', key: 'period', width: 190,
+                                            render: (_, r) => `${r.start_date ? dayjs(r.start_date).format('DD/MM/YYYY') : '---'} — ${r.end_date ? dayjs(r.end_date).format('DD/MM/YYYY') : '---'}` },
+                                    ]}
+                                />
+                            ) : (
+                                <div className="text-sm text-gray-400 italic">Chưa có hoạt động nào được ghi nhận.</div>
+                            )}
                         </div>
                     </div>
                 )}

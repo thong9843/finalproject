@@ -11,5 +11,6 @@ router.post('/', studentController.create);
 router.put('/:id', studentController.update);
 router.delete('/:id', studentController.remove);
 router.post('/:id/restore', verifyRole(['ADMIN', 'FACULTY_MANAGER']), studentController.restore);
+router.get('/:id/activities', studentController.getActivitiesJoined);
 
 module.exports = router;

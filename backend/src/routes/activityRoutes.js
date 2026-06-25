@@ -13,5 +13,6 @@ router.put('/:id', verifyRole(['ADMIN', 'FACULTY_MANAGER']), activityController.
 router.put('/:id/status', verifyRole(['ADMIN', 'FACULTY_MANAGER']), activityController.updateStatus);
 router.delete('/:id', verifyRole(['ADMIN', 'FACULTY_MANAGER']), activityController.remove);
 router.post('/:id/restore', verifyRole(['ADMIN', 'FACULTY_MANAGER']), activityController.restore);
+router.get('/:id/students', activityController.getStudentsParticipating);
 
 module.exports = router;

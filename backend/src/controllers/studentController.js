@@ -134,6 +134,14 @@ exports.create = async (req, res) => {
             newValue: { student: newStudent[0] }
         });
 
+        // Sync student_activities junction table if activity_id provided
+        if (activity_id) {
+            await pool.query(
+                'INSERT IGNORE INTO student_activities (student_id, activity_id) VALUES (?, ?)',
+                [studentId, activity_id]
+            );
+        }
+
         res.status(201).json({ id: studentId, message: 'Created successfully' });
     } catch (error) {
         res.status(500).json({ message: error.message });
@@ -190,6 +198,14 @@ exports.update = async (req, res) => {
             oldValue,
             newValue
         });
+
+        // Sync student_activities: if activity_id changed, add new link (don't remove old ones)
+        if (activity_id) {
+            await pool.query(
+                'INSERT IGNORE INTO student_activities (student_id, activity_id) VALUES (?, ?)',
+                [id, activity_id]
+            );
+        }
 
         res.status(200).json({ message: 'Updated successfully' });
     } catch (error) {
@@ -252,6 +268,29 @@ exports.restore = async (req, res) => {
         req.params.id = logRows[0].id;
         const historyController = require('./historyController');
         return historyController.restore(req, res);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+exports.getActivitiesJoined = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const [activities] = await pool.query(`
+            SELECT a.id, a.title, a.detail, a.start_date, a.end_date, a.status,
+                   a.collaboration_date, a.person_in_charge,
+                   e.name as enterprise_name, sa.joined_at,
+                   GROUP_CONCAT(DISTINCT act.name ORDER BY act.name SEPARATOR ', ') as type_names
+            FROM activities a
+            JOIN student_activities sa ON a.id = sa.activity_id
+            JOIN enterprises e ON a.enterprise_id = e.id
+            LEFT JOIN activity_type_map atm ON a.id = atm.activity_id
+            LEFT JOIN act_types act ON atm.type_id = act.id
+            WHERE sa.student_id = ? AND a.is_deleted = 0
+            GROUP BY a.id, sa.joined_at
+            ORDER BY sa.joined_at DESC
+        `, [id]);
+        res.status(200).json(activities);
     } catch (error) {
         res.status(500).json({ message: error.message });
     }

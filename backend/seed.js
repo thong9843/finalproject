@@ -62,7 +62,7 @@ async function seed() {
         // Step 2: Truncate tables we want to seed dynamically
         const tablesToClear = [
             'tasks', 'notes', 'action_history', 'workflow_history', 'enterprise_ratings',
-            'students', 'mous', 'activity_target_map', 'activity_type_map', 'activities',
+            'student_activities', 'students', 'mous', 'activity_target_map', 'activity_type_map', 'activities',
             'enterprise_fields', 'enterprise_addresses', 'enterprise_representatives', 'enterprises',
             'departments', 'targets', 'act_types', 'scales', 'fields'
         ];
@@ -251,6 +251,12 @@ async function seed() {
         // Fetch student count
         const [[{ count: studentCount }]] = await conn.query('SELECT COUNT(*) as count FROM students');
         console.log(`✔ Seeded ${studentCount} students for Faculty 1 (CNTT).`);
+
+        // Populate student_activities junction table from existing activity_id links
+        console.log('Populating student_activities junction table from students.activity_id...');
+        await conn.query('INSERT IGNORE INTO student_activities (student_id, activity_id) SELECT id, activity_id FROM students WHERE activity_id IS NOT NULL');
+        const [[{ count: saCount }]] = await conn.query('SELECT COUNT(*) as count FROM student_activities');
+        console.log(`✔ Populated ${saCount} records in student_activities junction table.`);
 
         // Step 8: Generate MOUs for Signed/Active Enterprises
         console.log('Generating MOUs for signed/active enterprises...');

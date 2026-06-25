@@ -61,6 +61,8 @@ const ActivityList = () => {
     const [editingId, setEditingId] = useState(null);
     const [isDrawerVisible, setIsDrawerVisible] = useState(false);
     const [selectedActivity, setSelectedActivity] = useState(null);
+    const [activityStudents, setActivityStudents] = useState([]);
+    const [activityStudentsLoading, setActivityStudentsLoading] = useState(false);
     const [sortOption, setSortOption] = useState(null);
     const [dateRange, setDateRange] = useState(null);
     const [currentPage, setCurrentPage] = useState(1);
@@ -596,6 +598,12 @@ const ActivityList = () => {
                     onClick={() => {
                         setSelectedActivity(record);
                         setIsDrawerVisible(true);
+                        setActivityStudents([]);
+                        setActivityStudentsLoading(true);
+                        api.get(`/activities/${record.id}/students`)
+                            .then(r => setActivityStudents(r.data))
+                            .catch(() => {})
+                            .finally(() => setActivityStudentsLoading(false));
                     }}
                 >
                     {text}
@@ -824,6 +832,12 @@ const ActivityList = () => {
                         if (e.target.closest('.action-buttons') || e.target.closest('.ant-checkbox-wrapper')) return;
                         setSelectedActivity(item);
                         setIsDrawerVisible(true);
+                        setActivityStudents([]);
+                        setActivityStudentsLoading(true);
+                        api.get(`/activities/${item.id}/students`)
+                            .then(r => setActivityStudents(r.data))
+                            .catch(() => {})
+                            .finally(() => setActivityStudentsLoading(false));
                     }}
                 >
                     {/* Card Header */}
@@ -1557,14 +1571,34 @@ const ActivityList = () => {
                         )}
 
                         <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-slate-200 dark:border-gray-700">
-                            <h3 className="text-lg font-bold text-slate-800 dark:text-gray-100 mb-3 border-b pb-2">Thống kê</h3>
-                            <div className="flex items-center gap-3">
+                            <h3 className="text-lg font-bold text-slate-800 dark:text-gray-100 mb-4 border-b pb-2">Thống kê &amp; Sinh viên tham gia</h3>
+                            <div className="flex items-center gap-3 mb-4">
                                 <TeamOutlined className="text-2xl text-purple-500" />
                                 <div>
-                                    <div className="text-2xl font-bold text-slate-800 dark:text-gray-100">{selectedActivity.student_count || 0}</div>
+                                    <div className="text-2xl font-bold text-slate-800 dark:text-gray-100">{selectedActivity.student_count || activityStudents.length || 0}</div>
                                     <div className="text-sm text-gray-500">Sinh viên tham gia</div>
                                 </div>
                             </div>
+                            {activityStudentsLoading ? (
+                                <div className="text-center py-4"><Spin /></div>
+                            ) : activityStudents.length > 0 ? (
+                                <Table
+                                    size="small"
+                                    dataSource={activityStudents}
+                                    rowKey="id"
+                                    pagination={{ pageSize: 5, size: 'small' }}
+                                    columns={[
+                                        { title: 'MSSV', dataIndex: 'student_code', key: 'student_code', width: 110 },
+                                        { title: 'Họ tên', dataIndex: 'name', key: 'name', ellipsis: true },
+                                        { title: 'Lớp', dataIndex: 'class', key: 'class', width: 110 },
+                                        { title: 'Trạng thái', dataIndex: 'status', key: 'status', width: 130,
+                                            render: (s) => <Tag color={s === 'Đang thực tập' ? 'green' : s === 'Hoàn thành' ? 'blue' : 'default'}>{s}</Tag> },
+                                        { title: 'GPA', dataIndex: 'gpa', key: 'gpa', width: 70 },
+                                    ]}
+                                />
+                            ) : (
+                                <div className="text-sm text-gray-400 italic">Chưa có sinh viên tham gia hoạt động này.</div>
+                            )}
                         </div>
                     </div>
                 )}

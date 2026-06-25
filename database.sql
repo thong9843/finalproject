@@ -213,6 +213,16 @@ CREATE TABLE IF NOT EXISTS students (
     FOREIGN KEY (faculty_id) REFERENCES faculties(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- 17a. student_activities junction (NEW - many-to-many participation)
+CREATE TABLE IF NOT EXISTS student_activities (
+    student_id INT NOT NULL,
+    activity_id INT NOT NULL,
+    joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (student_id, activity_id),
+    FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE,
+    FOREIGN KEY (activity_id) REFERENCES activities(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- 18. workflow_history
 CREATE TABLE IF NOT EXISTS workflow_history (
     id INT AUTO_INCREMENT PRIMARY KEY,
