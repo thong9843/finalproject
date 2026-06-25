@@ -45,6 +45,8 @@ const StudentList = () => {
 
     const [faculties, setFaculties] = useState([]);
     const [filterFaculty, setFilterFaculty] = useState(undefined);
+    const [isExportFacultyModalOpen, setIsExportFacultyModalOpen] = useState(false);
+    const [exportSelectedFacultyId, setExportSelectedFacultyId] = useState(undefined);
     const [showDeleted, setShowDeleted] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(12);
@@ -367,35 +369,90 @@ const StudentList = () => {
     const filterOptionIgnoreCase = (input, option) => 
         removeAccents(option?.children || '').includes(removeAccents(input));
 
-    const handleExport = () => {
-        const exportData = data.map(item => ({
+    const handleExportClick = () => {
+        const isAdmin = user?.role === 'ADMIN';
+        if (isAdmin && !filterFaculty) {
+            setExportSelectedFacultyId(undefined);
+            setIsExportFacultyModalOpen(true);
+        } else {
+            const targetFacultyId = filterFaculty || user?.faculty_id;
+            performExport(filteredData, targetFacultyId);
+        }
+    };
+
+    const performExport = (exportList, facultyId) => {
+        if (!exportList || exportList.length === 0) {
+            message.warning('Không có dữ liệu để xuất');
+            return;
+        }
+        const exportData = exportList.map(item => ({
             'Mã Sinh Viên': item.student_code,
             'Họ và Tên': item.name,
-            'Lớp': item.class,
-            'Khoa': item.faculty,
-            'Hoạt động tham gia': item.activity_title,
-            'Trạng thái': item.status,
-            'Nơi thực tập/Làm việc': item.enterprise_name,
-            'Thời gian làm việc (tháng)': item.duration_months
+            'Email': item.email || '',
+            'Lớp': item.class || '',
+            'Khoa': item.faculty_name || '',
+            'Ngành học': item.major || '',
+            'GPA': item.gpa || '',
+            'Giảng viên HD': item.advisor || '',
+            'Nơi thực tập/Làm việc': item.enterprise_name || '',
+            'Mã doanh nghiệp (ID)': item.enterprise_id || '',
+            'Vị trí': item.position || '',
+            'Hoạt động tham gia': item.activity_title || '',
+            'Mã hoạt động (ID)': item.activity_id || '',
+            'Trạng thái': item.status || '',
+            'Thời gian làm việc (tháng)': item.duration_months || '',
+            'Ngày bắt đầu': item.start_date ? dayjs(item.start_date).format('DD/MM/YYYY') : '',
+            'Ngày kết thúc': item.end_date ? dayjs(item.end_date).format('DD/MM/YYYY') : ''
         }));
         
         const ws = XLSX.utils.json_to_sheet(exportData);
         
         const columnWidths = [
-            { wch: 15 }, // Mã SV
-            { wch: 25 }, // Tên
-            { wch: 15 }, // Lớp
+            { wch: 15 }, // Mã Sinh Viên
+            { wch: 25 }, // Họ và Tên
+            { wch: 25 }, // Email
+            { wch: 12 }, // Lớp
             { wch: 25 }, // Khoa
-            { wch: 40 }, // Hoạt động
-            { wch: 20 }, // Trạng thái
-            { wch: 30 }, // Nơi
-            { wch: 25 }  // Thời gian
+            { wch: 20 }, // Ngành học
+            { wch: 10 }, // GPA
+            { wch: 25 }, // Giảng viên HD
+            { wch: 30 }, // Nơi thực tập/Làm việc
+            { wch: 20 }, // Vị trí
+            { wch: 35 }, // Hoạt động tham gia
+            { wch: 15 }, // Trạng thái
+            { wch: 25 }, // Thời gian làm việc (tháng)
+            { wch: 15 }, // Ngày bắt đầu
+            { wch: 15 }  // Ngày kết thúc
         ];
         ws['!cols'] = columnWidths;
 
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, "Danh sách Sinh viên");
-        XLSX.writeFile(wb, `Danh_Sach_Sinh_Vien_${dayjs().format('YYYYMMDD')}.xlsx`);
+
+        let facultyName = '';
+        if (facultyId && faculties.length > 0) {
+            const fac = faculties.find(f => f.id === facultyId);
+            if (fac) facultyName = `_${fac.name.replace(/[^a-zA-Z0-9]/g, '_')}`;
+        }
+        XLSX.writeFile(wb, `Danh_Sach_Sinh_Vien${facultyName}_${dayjs().format('YYYYMMDD')}.xlsx`);
+        message.success('Xuất file Excel thành công');
+    };
+
+    const handleConfirmExportWithFaculty = async () => {
+        if (!exportSelectedFacultyId) {
+            message.warning('Vui lòng chọn một Khoa!');
+            return;
+        }
+        setIsExportFacultyModalOpen(false);
+        setLoading(true);
+        try {
+            const res = await api.get(`/students?is_deleted=${showDeleted ? 1 : 0}&faculty_id=${exportSelectedFacultyId}`);
+            performExport(res.data, exportSelectedFacultyId);
+        } catch (error) {
+            message.error('Lỗi khi tải dữ liệu để xuất');
+        } finally {
+            setLoading(false);
+        }
     };
 
     const openEditModal = (record) => {
@@ -676,7 +733,7 @@ const StudentList = () => {
                     <Button 
                         size="middle"
                         icon={<DownloadOutlined />} 
-                        onClick={handleExport}
+                        onClick={handleExportClick}
                         className="border-emerald-600 text-emerald-600 dark:border-emerald-400 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 rounded-lg shadow-sm font-medium hover:border-emerald-700 flex-1 sm:flex-initial"
                     >
                         Xuất Excel
@@ -1101,8 +1158,39 @@ const StudentList = () => {
                 onClose={() => setShowImport(false)}
                 onSuccess={() => { fetchData(); fetchStats(); }}
                 type="students"
-                templateColumns={['MSSV', 'Họ tên', 'Email', 'Lớp', 'Ngành học', 'Giảng viên HD', 'enterprise_id', 'Vị trí', 'Trạng thái', 'GPA', 'Ngày bắt đầu', 'Ngày kết thúc']}
+                templateColumns={['MSSV', 'Họ tên', 'Email', 'Lớp', 'Ngành học', 'Giảng viên HD', 'Nơi thực tập/làm việc', 'Mã doanh nghiệp (ID)', 'Hoạt động tham gia', 'Mã hoạt động (ID)', 'Vị trí', 'Trạng thái', 'GPA', 'Ngày bắt đầu', 'Ngày kết thúc']}
             />
+
+            <Modal
+                title={
+                    <div className="flex items-center gap-2">
+                        <DownloadOutlined className="text-blue-600 text-xl" />
+                        <span>Chọn Khoa để xuất file Excel</span>
+                    </div>
+                }
+                open={isExportFacultyModalOpen}
+                onCancel={() => setIsExportFacultyModalOpen(false)}
+                onOk={handleConfirmExportWithFaculty}
+                okText="Xuất Excel"
+                cancelText="Hủy"
+                destroyOnClose
+            >
+                <div className="py-4 space-y-3">
+                    <p className="text-slate-500 text-sm">Bạn đang đăng nhập với tư cách <strong>Admin</strong>. Vui lòng chọn Khoa quản lý muốn xuất dữ liệu:</p>
+                    <Select
+                        placeholder="Vui lòng chọn Khoa..."
+                        className="w-full h-10"
+                        value={exportSelectedFacultyId}
+                        onChange={setExportSelectedFacultyId}
+                        showSearch
+                        optionFilterProp="children"
+                    >
+                        {faculties.map(f => (
+                            <Option key={f.id} value={f.id}>{f.name}</Option>
+                        ))}
+                    </Select>
+                </div>
+            </Modal>
 
             <Drawer
                 title={<span className="font-bold flex items-center gap-2"><TeamOutlined /> Chi tiết Sinh viên</span>}

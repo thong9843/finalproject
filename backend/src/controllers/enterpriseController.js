@@ -30,6 +30,9 @@ exports.getAll = async (req, res) => {
         if (req.user.role !== 'ADMIN') {
             query += ' AND e.faculty_id = ?';
             params.push(req.user.faculty_id);
+        } else if (req.query.faculty_id) {
+            query += ' AND e.faculty_id = ?';
+            params.push(req.query.faculty_id);
         }
 
         const { status, search, sort_by, sort_order } = req.query;

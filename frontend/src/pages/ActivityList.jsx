@@ -71,9 +71,12 @@ const ActivityList = () => {
     const [faculties, setFaculties] = useState([]);
     const [filterFaculty, setFilterFaculty] = useState(undefined);
 
+    const [isExportFacultyModalOpen, setIsExportFacultyModalOpen] = useState(false);
+    const [exportSelectedFacultyId, setExportSelectedFacultyId] = useState(undefined);
+
     useEffect(() => {
         setCurrentPage(1);
-    }, [searchText, filterType, filterStatus, filterEnterprise, dateRange, sortOption]);
+    }, [searchText, filterType, filterStatus, filterEnterprise, dateRange, sortOption, filterFaculty]);
 
     const [showDeleted, setShowDeleted] = useState(false);
 
@@ -741,12 +744,23 @@ const ActivityList = () => {
         }
     ];
 
-    const handleExport = () => {
-        if (!filteredData || filteredData.length === 0) {
+    const handleExportClick = () => {
+        const isAdmin = user?.role === 'ADMIN';
+        if (isAdmin && !filterFaculty) {
+            setExportSelectedFacultyId(undefined);
+            setIsExportFacultyModalOpen(true);
+        } else {
+            const targetFacultyId = filterFaculty || user?.faculty_id;
+            performExport(filteredData, targetFacultyId);
+        }
+    };
+
+    const performExport = (exportList, facultyId) => {
+        if (!exportList || exportList.length === 0) {
             message.warning('Không có dữ liệu để xuất');
             return;
         }
-        const exportData = filteredData.map(item => ({
+        const exportData = exportList.map(item => ({
             'Mã hoạt động': item.id,
             'Mã doanh nghiệp (ID)': item.enterprise_id || '',
             'Tên doanh nghiệp': item.enterprise_name || '',
@@ -755,6 +769,10 @@ const ActivityList = () => {
             'Đối tượng': item.target_names || '',
             'Ngày bắt đầu': item.start_date ? dayjs(item.start_date).format('DD/MM/YYYY') : '',
             'Ngày kết thúc': item.end_date ? dayjs(item.end_date).format('DD/MM/YYYY') : '',
+            'Thời gian bắt đầu': item.start_time || '',
+            'Thời gian kết thúc': item.end_time || '',
+            'Người phụ trách': item.person_in_charge || '',
+            'Nhiệm vụ': item.tasks ? (typeof item.tasks === 'string' ? item.tasks : JSON.stringify(item.tasks)) : '',
             'Ngày hợp tác': item.collaboration_date ? dayjs(item.collaboration_date).format('DD/MM/YYYY') : '',
             'Mô tả': item.detail || '',
             'Trạng thái': item.status || '',
@@ -762,7 +780,31 @@ const ActivityList = () => {
         const ws = XLSX.utils.json_to_sheet(exportData);
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, 'HoatDong');
-        XLSX.writeFile(wb, `DanhSachHoatDong_${dayjs().format('YYYYMMDD')}.xlsx`);
+
+        let facultyName = '';
+        if (facultyId && faculties.length > 0) {
+            const fac = faculties.find(f => f.id === facultyId);
+            if (fac) facultyName = `_${fac.name.replace(/[^a-zA-Z0-9]/g, '_')}`;
+        }
+        XLSX.writeFile(wb, `DanhSachHoatDong${facultyName}_${dayjs().format('YYYYMMDD')}.xlsx`);
+        message.success('Xuất file Excel thành công');
+    };
+
+    const handleConfirmExportWithFaculty = async () => {
+        if (!exportSelectedFacultyId) {
+            message.warning('Vui lòng chọn một Khoa!');
+            return;
+        }
+        setIsExportFacultyModalOpen(false);
+        setLoading(true);
+        try {
+            const res = await api.get(`/activities?is_deleted=${showDeleted ? 1 : 0}&faculty_id=${exportSelectedFacultyId}`);
+            performExport(res.data, exportSelectedFacultyId);
+        } catch (error) {
+            message.error('Lỗi khi tải dữ liệu để xuất');
+        } finally {
+            setLoading(false);
+        }
     };
 
     const renderActivityCard = (item) => {
@@ -984,7 +1026,7 @@ const ActivityList = () => {
                     <Button
                         size="middle"
                         icon={<DownloadOutlined />}
-                        onClick={handleExport}
+                        onClick={handleExportClick}
                         className="border-emerald-600 text-emerald-600 dark:border-emerald-400 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 rounded-lg shadow-sm font-medium hover:border-emerald-700 flex-1 sm:flex-initial"
                     >
                         Xuất Excel
@@ -1439,8 +1481,39 @@ const ActivityList = () => {
                 onClose={() => setShowImport(false)}
                 onSuccess={() => { fetchData(); fetchStats(); }}
                 type="activities"
-                templateColumns={['Tên hoạt động', 'Mã doanh nghiệp (ID)', 'Loại hình', 'Đối tượng', 'Ngày bắt đầu', 'Ngày kết thúc', 'Ngày hợp tác', 'Mô tả', 'Trạng thái']}
+                templateColumns={['Tên hoạt động', 'Tên doanh nghiệp', 'Mã doanh nghiệp (ID)', 'Loại hình', 'Đối tượng', 'Ngày bắt đầu', 'Ngày kết thúc', 'Thời gian bắt đầu', 'Thời gian kết thúc', 'Người phụ trách', 'Nhiệm vụ', 'Ngày hợp tác', 'Mô tả', 'Trạng thái']}
             />
+
+            <Modal
+                title={
+                    <div className="flex items-center gap-2">
+                        <DownloadOutlined className="text-blue-600 text-xl" />
+                        <span>Chọn Khoa để xuất file Excel</span>
+                    </div>
+                }
+                open={isExportFacultyModalOpen}
+                onCancel={() => setIsExportFacultyModalOpen(false)}
+                onOk={handleConfirmExportWithFaculty}
+                okText="Xuất Excel"
+                cancelText="Hủy"
+                destroyOnClose
+            >
+                <div className="py-4 space-y-3">
+                    <p className="text-slate-500 text-sm">Bạn đang đăng nhập với tư cách <strong>Admin</strong>. Vui lòng chọn Khoa quản lý muốn xuất dữ liệu:</p>
+                    <Select
+                        placeholder="Vui lòng chọn Khoa..."
+                        className="w-full h-10"
+                        value={exportSelectedFacultyId}
+                        onChange={setExportSelectedFacultyId}
+                        showSearch
+                        optionFilterProp="children"
+                    >
+                        {faculties.map(f => (
+                            <Option key={f.id} value={f.id}>{f.name}</Option>
+                        ))}
+                    </Select>
+                </div>
+            </Modal>
 
             <Drawer
                 title={<span className="font-bold flex items-center gap-2"><UnorderedListOutlined /> Chi tiết Hoạt động</span>}

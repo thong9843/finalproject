@@ -61,6 +61,9 @@ const EnterpriseList = () => {
     const [showImport, setShowImport] = useState(false);
     const [sortOption, setSortOption] = useState(null);
     const [selectedRowKeys, setSelectedRowKeys] = useState([]);
+    const [filterFaculty, setFilterFaculty] = useState(undefined);
+    const [isExportFacultyModalOpen, setIsExportFacultyModalOpen] = useState(false);
+    const [exportSelectedFacultyId, setExportSelectedFacultyId] = useState(undefined);
 
     const [showDeleted, setShowDeleted] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
@@ -136,7 +139,7 @@ const EnterpriseList = () => {
 
     useEffect(() => {
         setCurrentPage(1);
-    }, [searchText, statusFilter, filterScale, filterField, filterIsHcmc, filterDistrict, sortOption, showDeleted, filterPopular]);
+    }, [searchText, statusFilter, filterScale, filterField, filterIsHcmc, filterDistrict, sortOption, showDeleted, filterPopular, filterFaculty]);
 
     useEffect(() => {
         document.title = "Quản lý Doanh nghiệp | VLU Enterprise Link Manager";
@@ -175,12 +178,14 @@ const EnterpriseList = () => {
 
     useEffect(() => {
         fetchData();
-    }, [showDeleted]);
+    }, [showDeleted, filterFaculty]);
 
     const fetchData = async () => {
         setLoading(true);
         try {
-            const res = await api.get(`/enterprises?is_deleted=${showDeleted ? 1 : 0}`);
+            let url = `/enterprises?is_deleted=${showDeleted ? 1 : 0}`;
+            if (filterFaculty) url += `&faculty_id=${filterFaculty}`;
+            const res = await api.get(url);
             setData(res.data);
         } catch (error) {
             message.error('Lỗi khi tải dữ liệu doanh nghiệp');
@@ -408,9 +413,22 @@ const EnterpriseList = () => {
         statusCounts[s] = (statusCounts[s] || 0) + 1;
     });
 
-    const handleExport = () => {
-        if (!data || data.length === 0) { message.warning('Không có dữ liệu để xuất'); return; }
-        const exportData = filteredData.map(item => ({
+    const handleExportClick = () => {
+        if (isAdmin && !filterFaculty) {
+            setExportSelectedFacultyId(undefined);
+            setIsExportFacultyModalOpen(true);
+        } else {
+            const targetFacultyId = filterFaculty || user?.faculty_id;
+            performExport(filteredData, targetFacultyId);
+        }
+    };
+
+    const performExport = (exportList, facultyId) => {
+        if (!exportList || exportList.length === 0) {
+            message.warning('Không có dữ liệu để xuất');
+            return;
+        }
+        const exportData = exportList.map(item => ({
             'Tên doanh nghiệp': item.name,
             'Mã số thuế': item.tax_code || '',
             'Quy mô': item.scale_name || '',
@@ -431,7 +449,31 @@ const EnterpriseList = () => {
         const ws = XLSX.utils.json_to_sheet(exportData);
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, 'DoanhNghiep');
-        XLSX.writeFile(wb, `DanhSachDoanhNghiep_${dayjs().format('YYYYMMDD')}.xlsx`);
+
+        let facultyName = '';
+        if (facultyId && faculties.length > 0) {
+            const fac = faculties.find(f => f.id === facultyId);
+            if (fac) facultyName = `_${fac.name.replace(/[^a-zA-Z0-9]/g, '_')}`;
+        }
+        XLSX.writeFile(wb, `DanhSachDoanhNghiep${facultyName}_${dayjs().format('YYYYMMDD')}.xlsx`);
+        message.success('Xuất file Excel thành công');
+    };
+
+    const handleConfirmExportWithFaculty = async () => {
+        if (!exportSelectedFacultyId) {
+            message.warning('Vui lòng chọn một Khoa!');
+            return;
+        }
+        setIsExportFacultyModalOpen(false);
+        setLoading(true);
+        try {
+            const res = await api.get(`/enterprises?is_deleted=${showDeleted ? 1 : 0}&faculty_id=${exportSelectedFacultyId}`);
+            performExport(res.data, exportSelectedFacultyId);
+        } catch (error) {
+            message.error('Lỗi khi tải dữ liệu để xuất');
+        } finally {
+            setLoading(false);
+        }
     };
 
     const uniqueDistricts = [...new Set(data.map(item => item.district).filter(Boolean))];
@@ -465,7 +507,7 @@ const EnterpriseList = () => {
         }
     });
 
-    const activeFilterCount = [statusFilter, filterScale, filterField, filterIsHcmc !== undefined ? filterIsHcmc : undefined, filterDistrict, sortOption, showDeleted ? true : null, filterPopular ? true : null].filter(v => v !== undefined && v !== null).length;
+    const activeFilterCount = [statusFilter, filterScale, filterField, filterIsHcmc !== undefined ? filterIsHcmc : undefined, filterDistrict, sortOption, showDeleted ? true : null, filterPopular ? true : null, filterFaculty].filter(v => v !== undefined && v !== null).length;
 
     const paginatedData = filteredData.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
@@ -490,6 +532,11 @@ const EnterpriseList = () => {
             <div>
                 <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5 flex items-center gap-1"><FilterOutlined /> Bộ lọc</div>
                 <div className="flex flex-col gap-2">
+                    {isAdmin && (
+                        <Select allowClear placeholder="Lọc theo Khoa" onChange={setFilterFaculty} value={filterFaculty} className="w-full" showSearch optionFilterProp="children">
+                            {faculties.map(f => <Option key={f.id} value={f.id}>{f.name}</Option>)}
+                        </Select>
+                    )}
                     <Select allowClear placeholder="Lọc trạng thái" onChange={setStatusFilter} value={statusFilter} className="w-full">
                         {Object.keys(statusColors).map(s => <Option key={s} value={s}>{s}</Option>)}
                     </Select>
@@ -518,7 +565,7 @@ const EnterpriseList = () => {
                 <Switch size="small" checked={filterPopular} onChange={setFilterPopular} />
             </div>
             <Button icon={<ClearOutlined />} type="default" block onClick={() => {
-                setStatusFilter(undefined); setFilterScale(undefined); setFilterField(undefined); setFilterIsHcmc(undefined); setFilterDistrict(undefined); setSortOption(null); setShowDeleted(false); setFilterPopular(false);
+                setStatusFilter(undefined); setFilterScale(undefined); setFilterField(undefined); setFilterIsHcmc(undefined); setFilterDistrict(undefined); setSortOption(null); setShowDeleted(false); setFilterPopular(false); setFilterFaculty(undefined);
             }}>Xóa tất cả bộ lọc</Button>
         </div>
     );
@@ -668,7 +715,7 @@ const EnterpriseList = () => {
                     <Button
                         size="middle"
                         icon={<DownloadOutlined />}
-                        onClick={handleExport}
+                        onClick={handleExportClick}
                         className="border-emerald-600 text-emerald-600 dark:border-emerald-400 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 rounded-lg shadow-sm font-medium hover:border-emerald-700 flex-1 sm:flex-initial"
                     >
                         Xuất Excel
@@ -1222,6 +1269,37 @@ const EnterpriseList = () => {
                 type="enterprises"
                 templateColumns={['Tên doanh nghiệp', 'Mã số thuế', 'Quy mô', 'Lĩnh vực', 'Ở TP.HCM', 'Danh xưng', 'Họ và tên', 'Chức vụ', 'Số điện thoại', 'Email', 'Địa chỉ', 'Quận/Huyện', 'Tỉnh/Thành', 'Quốc gia', 'Bộ môn ID', 'Trạng thái']}
             />
+
+            <Modal
+                title={
+                    <div className="flex items-center gap-2">
+                        <DownloadOutlined className="text-blue-600 text-xl" />
+                        <span>Chọn Khoa để xuất file Excel</span>
+                    </div>
+                }
+                open={isExportFacultyModalOpen}
+                onCancel={() => setIsExportFacultyModalOpen(false)}
+                onOk={handleConfirmExportWithFaculty}
+                okText="Xuất Excel"
+                cancelText="Hủy"
+                destroyOnClose
+            >
+                <div className="py-4 space-y-3">
+                    <p className="text-slate-500 text-sm">Bạn đang đăng nhập với tư cách <strong>Admin</strong>. Vui lòng chọn Khoa quản lý muốn xuất dữ liệu:</p>
+                    <Select
+                        placeholder="Vui lòng chọn Khoa..."
+                        className="w-full h-10"
+                        value={exportSelectedFacultyId}
+                        onChange={setExportSelectedFacultyId}
+                        showSearch
+                        optionFilterProp="children"
+                    >
+                        {faculties.map(f => (
+                            <Option key={f.id} value={f.id}>{f.name}</Option>
+                        ))}
+                    </Select>
+                </div>
+            </Modal>
 
             {/* Note Modal */}
             <Modal

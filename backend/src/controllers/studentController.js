@@ -5,10 +5,13 @@ exports.getAll = async (req, res) => {
         let query = `
             SELECT s.*, 
                    e.name as enterprise_name, 
-                   f.name as faculty_name
+                   f.name as faculty_name,
+                   a.title as activity_title,
+                   TIMESTAMPDIFF(MONTH, s.start_date, s.end_date) as duration_months
             FROM students s 
             LEFT JOIN enterprises e ON s.enterprise_id = e.id
             LEFT JOIN faculties f ON s.faculty_id = f.id
+            LEFT JOIN activities a ON s.activity_id = a.id
             WHERE s.is_deleted = ?`;
         const showDeleted = req.query.is_deleted === '1' || req.query.is_deleted === 'true';
         let params = [showDeleted ? 1 : 0];
@@ -16,6 +19,9 @@ exports.getAll = async (req, res) => {
         if (req.user.role !== 'ADMIN') {
             query += ' AND s.faculty_id = ?';
             params.push(req.user.faculty_id);
+        } else if (req.query.faculty_id) {
+            query += ' AND s.faculty_id = ?';
+            params.push(req.query.faculty_id);
         }
 
         const { status: statusFilter, search, enterprise_id, major, date_from, date_to, sort_by, sort_order } = req.query;

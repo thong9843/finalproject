@@ -9,6 +9,8 @@ import {
 import api from '../utils/api';
 import dayjs from 'dayjs';
 import Cookies from 'js-cookie';
+import * as XLSX from 'xlsx';
+import ImportModal from '../components/ImportModal';
 
 const { Option } = Select;
 const { TextArea } = Input;
@@ -42,6 +44,7 @@ const MOUList = () => {
     const [editingId, setEditingId] = useState(null);
     const [form] = Form.useForm();
     const [searchText, setSearchText] = useState('');
+    const [showImport, setShowImport] = useState(false);
 
     // AI Scan states
     const [isScanModalOpen, setIsScanModalOpen] = useState(false);
@@ -62,6 +65,8 @@ const MOUList = () => {
     const [faculties, setFaculties] = useState([]);
     const [filterFaculty, setFilterFaculty] = useState(undefined);
     const [filterEnterprise, setFilterEnterprise] = useState(undefined);
+    const [isExportFacultyModalOpen, setIsExportFacultyModalOpen] = useState(false);
+    const [exportSelectedFacultyId, setExportSelectedFacultyId] = useState(undefined);
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
     const [selectedMOU, setSelectedMOU] = useState(null);
     const [currentPage, setCurrentPage] = useState(1);
@@ -415,6 +420,76 @@ const MOUList = () => {
             message.error('Lỗi khi xuất PDF. Vui lòng thử lại!');
         } finally {
             setExportingId(null);
+        }
+    };
+
+    const handleExportClick = () => {
+        const isAdmin = user?.role === 'ADMIN';
+        if (isAdmin && !filterFaculty) {
+            setExportSelectedFacultyId(undefined);
+            setIsExportFacultyModalOpen(true);
+        } else {
+            const targetFacultyId = filterFaculty || user?.faculty_id;
+            performExport(filteredData, targetFacultyId);
+        }
+    };
+
+    const performExport = (exportList, facultyId) => {
+        if (!exportList || exportList.length === 0) {
+            message.warning('Không có dữ liệu để xuất');
+            return;
+        }
+        const exportData = exportList.map(item => ({
+            'Mã MOU': item.mou_code || '',
+            'Mã doanh nghiệp (ID)': item.enterprise_id || '',
+            'Tên doanh nghiệp': item.enterprise_name || '',
+            'Ngày ký': item.signing_date ? dayjs(item.signing_date).format('DD/MM/YYYY') : '',
+            'Đầu mối đối tác': item.partner_contact || '',
+            'Loại tổ chức': item.org_type || '',
+            'Quốc gia': item.country || '',
+            'Mảng hợp tác': item.collaboration_scope || '',
+            'Bộ môn ID': item.executing_unit_id || '',
+            'Bộ môn triển khai': item.executing_unit_name || '',
+            'Đầu mối VLU': item.vlu_contact || '',
+            'Nhiệm vụ': item.tasks_ay24_25 || '',
+            'Bước tiếp theo': item.next_steps || '',
+            'Hoạt động đã qua': item.past_activities || '',
+            'Số liệu liên quan': item.related_data || '',
+            'Thư mục làm việc': item.working_dir || '',
+            'Mã hoạt động (ID)': item.activity_id || '',
+            'Hoạt động liên kết': item.activity_title || '',
+            'Link tài liệu': item.file_url || '',
+        }));
+
+        const ws = XLSX.utils.json_to_sheet(exportData);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Danh sách MOU");
+
+        let facultyName = '';
+        if (facultyId && faculties.length > 0) {
+            const fac = faculties.find(f => f.id === facultyId);
+            if (fac) facultyName = `_${fac.name.replace(/[^a-zA-Z0-9]/g, '_')}`;
+        }
+        XLSX.writeFile(wb, `Danh_Sach_MOU${facultyName}_${dayjs().format('YYYYMMDD')}.xlsx`);
+        message.success('Xuất file Excel thành công');
+    };
+
+    const handleConfirmExportWithFaculty = async () => {
+        if (!exportSelectedFacultyId) {
+            message.warning('Vui lòng chọn một Khoa!');
+            return;
+        }
+        setIsExportFacultyModalOpen(false);
+        setLoading(true);
+        try {
+            let url = `/mous?is_deleted=${showDeleted ? 1 : 0}&faculty_id=${exportSelectedFacultyId}`;
+            if (filterEnterprise) url += `&enterprise_id=${filterEnterprise}`;
+            const res = await api.get(url);
+            performExport(res.data, exportSelectedFacultyId);
+        } catch (error) {
+            message.error('Lỗi khi tải dữ liệu để xuất');
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -908,6 +983,24 @@ const MOUList = () => {
                     </div>
                 </div>
                 <div id="tour-mou-actions" className="flex gap-2 w-full sm:w-auto header-actions">
+                    {!isLecturer && (
+                        <Button
+                            size="middle"
+                            icon={<UploadOutlined />}
+                            onClick={() => setShowImport(true)}
+                            className="border-blue-600 text-blue-600 dark:border-blue-400 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/20 rounded-lg shadow-sm font-medium hover:border-blue-700 flex-1 sm:flex-initial"
+                        >
+                            Import
+                        </Button>
+                    )}
+                    <Button
+                        size="middle"
+                        icon={<DownloadOutlined />}
+                        onClick={handleExportClick}
+                        className="border-emerald-600 text-emerald-600 dark:border-emerald-400 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 rounded-lg shadow-sm font-medium hover:border-emerald-700 flex-1 sm:flex-initial"
+                    >
+                        Xuất Excel
+                    </Button>
                     {!isLecturer && (
                         <>
                             <Button
@@ -1723,6 +1816,47 @@ const MOUList = () => {
                 localStorage.setItem('vlu-tour-mou-completed', 'true');
                 setTourOpen(false);
             }} steps={tourSteps} />
+
+            <ImportModal
+                open={showImport}
+                onClose={() => setShowImport(false)}
+                onSuccess={fetchMOUs}
+                type="mous"
+                templateColumns={[
+                    'Mã MOU', 'Tên doanh nghiệp', 'Mã doanh nghiệp (ID)', 'Ngày ký', 'Đầu mối đối tác', 'Loại tổ chức', 'Quốc gia', 'Mảng hợp tác', 'Bộ môn triển khai', 'Bộ môn ID', 'Đầu mối VLU', 'Nhiệm vụ', 'Bước tiếp theo', 'Hoạt động đã qua', 'Số liệu liên quan', 'Thư mục làm việc', 'Hoạt động liên kết', 'Mã hoạt động (ID)', 'Link tài liệu'
+                ]}
+            />
+
+            <Modal
+                title={
+                    <div className="flex items-center gap-2">
+                        <DownloadOutlined className="text-blue-600 text-xl" />
+                        <span>Chọn Khoa để xuất file Excel</span>
+                    </div>
+                }
+                open={isExportFacultyModalOpen}
+                onCancel={() => setIsExportFacultyModalOpen(false)}
+                onOk={handleConfirmExportWithFaculty}
+                okText="Xuất Excel"
+                cancelText="Hủy"
+                destroyOnClose
+            >
+                <div className="py-4 space-y-3">
+                    <p className="text-slate-500 text-sm">Bạn đang đăng nhập với tư cách <strong>Admin</strong>. Vui lòng chọn Khoa quản lý muốn xuất dữ liệu:</p>
+                    <Select
+                        placeholder="Vui lòng chọn Khoa..."
+                        className="w-full h-10"
+                        value={exportSelectedFacultyId}
+                        onChange={setExportSelectedFacultyId}
+                        showSearch
+                        optionFilterProp="children"
+                    >
+                        {faculties.map(f => (
+                            <Option key={f.id} value={f.id}>{f.name}</Option>
+                        ))}
+                    </Select>
+                </div>
+            </Modal>
         </div>
     );
 };

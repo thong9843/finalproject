@@ -20,30 +20,144 @@ const upload = multer({
     }
 });
 
+const ALIAS_MAP = {
+    students: {
+        'mssv': ['mssv', 'student_code', 'student code', 'mã sinh viên', 'ma sinh vien', 'mã sv', 'ma sv', 'mã số sinh viên', 'ma so sinh vien'],
+        'họ tên': ['họ tên', 'ho ten', 'họ và tên', 'ho va ten', 'tên', 'ten', 'name', 'tên sinh viên', 'ten sinh vien', 'họ & tên'],
+        'email': ['email', 'thư điện tử', 'thu dien tu'],
+        'lớp': ['lớp', 'lop', 'class', 'lớp học', 'lop hoc'],
+        'ngành học': ['ngành học', 'nganh hoc', 'ngành', 'nganh', 'major', 'chuyên ngành', 'chuyen nganh'],
+        'giảng viên hd': ['giảng viên hd', 'giang vien hd', 'giảng viên hướng dẫn', 'giang vien huong dan', 'gvhd', 'advisor', 'gv hướng dẫn', 'gv huong dan'],
+        'nơi thực tập/làm việc': ['nơi thực tập/làm việc', 'noi thuc tap/lam viec', 'nơi thực tập / làm việc', 'nơi thực tập', 'noi thuc tap', 'tên doanh nghiệp', 'ten doanh nghiep', 'doanh nghiệp', 'doanh nghiep', 'công ty', 'cong ty', 'enterprise', 'enterprise_name'],
+        'mã doanh nghiệp (id)': ['mã doanh nghiệp (id)', 'enterprise_id', 'mã doanh nghiệp', 'ma doanh nghiep'],
+        'hoạt động tham gia': ['hoạt động tham gia', 'hoat dong tham gia', 'hoạt động', 'hoat dong', 'tên hoạt động', 'ten hoat dong', 'activity', 'activity_title'],
+        'mã hoạt động (id)': ['mã hoạt động (id)', 'activity_id', 'mã hoạt động', 'ma hoat dong'],
+        'vị trí': ['vị trí', 'vi tri', 'position', 'vị trí thực tập', 'vi tri thuc tap'],
+        'trạng thái': ['trạng thái', 'trang thai', 'status'],
+        'gpa': ['gpa', 'điểm', 'diem', 'điểm trung bình', 'diem trung binh'],
+        'ngày bắt đầu': ['ngày bắt đầu', 'ngay bat dau', 'start_date', 'start date', 'từ ngày', 'tu ngay'],
+        'ngày kết thúc': ['ngày kết thúc', 'ngay ket thuc', 'end_date', 'end date', 'đến ngày', 'den ngay']
+    },
+    enterprises: {
+        'tên doanh nghiệp': ['tên doanh nghiệp', 'ten doanh nghiep', 'name', 'tên công ty', 'ten cong ty', 'tên', 'ten', 'doanh nghiệp', 'doanh nghiep'],
+        'mã số thuế': ['mã số thuế', 'ma so thue', 'tax_code', 'tax code', 'mst'],
+        'quy mô': ['quy mô', 'quy mo', 'scale', 'scale_name'],
+        'lĩnh vực': ['lĩnh vực', 'linh vuc', 'fields', 'ngành nghề', 'nganh nghe'],
+        'ở tp.hcm': ['ở tp.hcm', 'o tp.hcm', 'is_hcmc', 'tp.hcm', 'hcm', 'tphcm', 'ở tphcm'],
+        'danh xưng': ['danh xưng', 'danh xung', 'rep_title', 'title'],
+        'họ và tên': ['họ và tên', 'ho va ten', 'rep_name', 'rep_full_name', 'người đại diện', 'nguoi dai dien', 'họ tên', 'ho ten'],
+        'chức vụ': ['chức vụ', 'chuc vu', 'rep_role', 'role'],
+        'số điện thoại': ['số điện thoại', 'so dien thoai', 'rep_phone', 'sđt', 'sdt', 'phone'],
+        'email': ['email', 'rep_email'],
+        'địa chỉ': ['địa chỉ', 'dia chi', 'building_street', 'address', 'địa chỉ chi tiết'],
+        'quận/huyện': ['quận/huyện', 'quan/huyen', 'district'],
+        'tỉnh/thành': ['tỉnh/thành', 'tinh/thanh', 'province', 'tỉnh/thành phố'],
+        'quốc gia': ['quốc gia', 'quoc gia', 'country'],
+        'bộ môn id': ['bộ môn id', 'bo mon id', 'department_id'],
+        'trạng thái': ['trạng thái', 'trang thai', 'status']
+    },
+    activities: {
+        'tên hoạt động': ['tên hoạt động', 'ten hoat dong', 'title', 'activity_title'],
+        'tên doanh nghiệp': ['tên doanh nghiệp', 'ten doanh nghiep', 'enterprise_name', 'doanh nghiệp', 'doanh nghiep', 'công ty', 'cong ty'],
+        'mã doanh nghiệp (id)': ['mã doanh nghiệp (id)', 'enterprise_id', 'mã doanh nghiệp', 'ma doanh nghiep'],
+        'loại hình': ['loại hình', 'loai hinh', 'type', 'activity_type', 'loại hình hoạt động'],
+        'đối tượng': ['đối tượng', 'doi tuong', 'target'],
+        'mô tả': ['mô tả', 'mo ta', 'detail', 'mô tả nội dung', 'description', 'nội dung'],
+        'ngày bắt đầu': ['ngày bắt đầu', 'ngay bat dau', 'start_date'],
+        'ngày kết thúc': ['ngày kết thúc', 'ngay ket thuc', 'end_date'],
+        'thời gian bắt đầu': ['thời gian bắt đầu', 'thoi gian bat dau', 'start_time', 'start time', 'giờ bắt đầu', 'gio bat dau'],
+        'thời gian kết thúc': ['thời gian kết thúc', 'thoi gian ket thuc', 'end_time', 'end time', 'giờ kết thúc', 'gio ket thuc'],
+        'người phụ trách': ['người phụ trách', 'nguoi phu trach', 'person_in_charge', 'person in charge', 'phụ trách', 'phu trach'],
+        'nhiệm vụ': ['nhiệm vụ', 'nhiem vu', 'tasks', 'công việc', 'cong viec'],
+        'ngày hợp tác': ['ngày hợp tác', 'ngay hop tac', 'collaboration_date'],
+        'trạng thái': ['trạng thái', 'trang thai', 'status']
+    },
+    mous: {
+        'mã mou': ['mã mou', 'ma mou', 'mou_code', 'mã biên bản', 'ma bien ban'],
+        'tên doanh nghiệp': ['tên doanh nghiệp', 'ten doanh nghiep', 'enterprise_name', 'doanh nghiệp', 'doanh nghiep', 'công ty', 'cong ty', 'đối tác', 'doi tac'],
+        'mã doanh nghiệp (id)': ['mã doanh nghiệp (id)', 'enterprise_id', 'mã doanh nghiệp', 'ma doanh nghiep'],
+        'ngày ký': ['ngày ký', 'ngay ky', 'signing_date', 'ngày ký kết', 'ngay ky ket'],
+        'đầu mối đối tác': ['đầu mối đối tác', 'dau moi doi tac', 'partner_contact', 'đại diện đối tác'],
+        'loại tổ chức': ['loại tổ chức', 'loai to chuc', 'org_type', 'phân loại tổ chức'],
+        'quốc gia': ['quốc gia', 'quoc gia', 'country'],
+        'mảng hợp tác': ['mảng hợp tác', 'mang hop tac', 'collaboration_scope', 'phạm vi hợp tác'],
+        'bộ môn id': ['bộ môn id', 'bo mon id', 'executing_unit_id', 'department_id'],
+        'bộ môn triển khai': ['bộ môn triển khai', 'bo mon trien khai', 'executing_unit_name', 'department_name'],
+        'đầu mối vlu': ['đầu mối vlu', 'dau moi vlu', 'vlu_contact'],
+        'nhiệm vụ': ['nhiệm vụ', 'nhiem vu', 'tasks_ay24_25'],
+        'bước tiếp theo': ['bước tiếp theo', 'buoc tiep theo', 'next_steps'],
+        'hoạt động đã qua': ['hoạt động đã qua', 'hoat dong da qua', 'past_activities'],
+        'số liệu liên quan': ['số liệu liên quan', 'so lieu lien quan', 'related_data'],
+        'thư mục làm việc': ['thư mục làm việc', 'thu muc lam viec', 'working_dir', 'working dir', 'folder'],
+        'hoạt động liên kết': ['hoạt động liên kết', 'hoat dong lien ket', 'activity_title', 'hoạt động', 'hoat dong', 'tên hoạt động', 'ten hoat dong', 'activity'],
+        'mã hoạt động (id)': ['mã hoạt động (id)', 'activity_id', 'mã hoạt động', 'ma hoat dong'],
+        'link tài liệu': ['link tài liệu', 'link tai lieu', 'file_url', 'file url']
+    }
+};
+
+const standardizeRowKeys = (row, entityType) => {
+    const standardized = {};
+    const typeMapping = ALIAS_MAP[entityType] || {};
+    
+    // First, convert row keys to lowercase and trim
+    const normalizedRow = {};
+    for (const key in row) {
+        normalizedRow[key.trim().toLowerCase()] = typeof row[key] === 'string' ? row[key].trim() : row[key];
+    }
+
+    // Map according to our ALIAS_MAP
+    for (const canonicalKey in typeMapping) {
+        const aliases = typeMapping[canonicalKey];
+        // Find if any of the aliases exists in the normalized row
+        const matchedAlias = aliases.find(alias => alias in normalizedRow);
+        if (matchedAlias !== undefined) {
+            standardized[canonicalKey] = normalizedRow[matchedAlias];
+        } else {
+            // Default to fallback to check if canonical key exists as is
+            standardized[canonicalKey] = normalizedRow[canonicalKey] !== undefined ? normalizedRow[canonicalKey] : undefined;
+        }
+    }
+
+    // Keep any other keys that were not mapped, just in case
+    for (const key in normalizedRow) {
+        let isMapped = false;
+        for (const canonicalKey in typeMapping) {
+            if (typeMapping[canonicalKey].includes(key)) {
+                isMapped = true;
+                break;
+            }
+        }
+        if (!isMapped) {
+            standardized[key] = normalizedRow[key];
+        }
+    }
+
+    return standardized;
+};
+
 // Hàm đọc file Excel/CSV từ buffer -> JSON
-function parseFileToJSON(buffer, originalname) {
+function parseFileToJSON(buffer, originalname, type) {
     const workbook = XLSX.read(buffer, { type: 'buffer' });
     const sheetName = workbook.SheetNames[0];
     const sheet = workbook.Sheets[sheetName];
     const rawRows = XLSX.utils.sheet_to_json(sheet);
 
-    // Chuẩn hóa keys: xóa khoảng trắng 2 đầu và chuyển thành chữ thường để dễ mapping
-    return rawRows.map(row => {
-        const normalizedRow = {};
-        for (const key in row) {
-            normalizedRow[key.trim().toLowerCase()] = typeof row[key] === 'string' ? row[key].trim() : row[key];
-        }
-        return normalizedRow;
-    });
+    // Chuẩn hóa và ánh xạ các cột dữ liệu theo aliases
+    return rawRows.map(row => standardizeRowKeys(row, type));
 }
 
 // Import Doanh nghiệp
 const importEnterprises = async (req, res) => {
     try {
-        const rows = parseFileToJSON(req.file.buffer, req.file.originalname);
+        const rows = req.file ? parseFileToJSON(req.file.buffer, req.file.originalname, 'enterprises') : req.body.rows;
         let inserted = 0;
         let skipped = 0;
         let errors = [];
+        const facultyId = req.user.role === 'ADMIN' ? (req.body.faculty_id || null) : req.user.faculty_id;
+
+        if (!facultyId) {
+            return res.status(400).json({ message: "Thiếu thông tin Khoa quản lý." });
+        }
 
         for (let i = 0; i < rows.length; i++) {
             const r = rows[i];
@@ -55,7 +169,7 @@ const importEnterprises = async (req, res) => {
                 const tax_code = r['mã số thuế'] || r['tax_code'] || r['ma_so_thue'] || null;
                 const scaleStr = r['quy mô'] || r['scale'] || '';
                 const fieldStr = r['lĩnh vực'] || r['fields'] || '';
-                const is_hcmc = r['ở tp.hcm'] ? (r['ở tp.hcm'].toString().toLowerCase() === 'có' || r['ở tp.hcm'] === 1) : true;
+                const is_hcmc = r['ở tp.hcm'] ? (r['ở tp.hcm'].toString().toLowerCase() === 'có' || r['ở tp.hcm'] === 1 || r['ở tp.hcm'].toString().toLowerCase() === 'true') : true;
 
                 const rep_title = r['danh xưng'] || null;
                 const rep_full_name = r['họ và tên'] || null;
@@ -69,8 +183,16 @@ const importEnterprises = async (req, res) => {
                 const country = r['quốc gia'] || 'Việt Nam';
 
                 const status = r['trạng thái'] || r['status'] || 'Tiềm năng';
-                const department_id = r['bộ môn id'] || r['department_id'] || null;
-                const facultyId = req.user.role === 'ADMIN' ? (r['faculty_id'] || null) : req.user.faculty_id;
+                
+                // Lookup department ID by name if ID not provided
+                let department_id = r['bộ môn id'] || r['department_id'] || null;
+                const deptName = r['bộ môn'] || r['department_name'] || r['department'] || '';
+                if (deptName && !department_id) {
+                    const [deptRows] = await conn.query('SELECT id FROM departments WHERE name LIKE ? AND faculty_id = ? LIMIT 1', [`%${deptName}%`, facultyId]);
+                    if (deptRows.length > 0) {
+                        department_id = deptRows[0].id;
+                    }
+                }
 
                 if (!name) { errors.push(`Dòng ${i + 2}: Thiếu tên doanh nghiệp`); continue; }
 
@@ -124,7 +246,7 @@ const importEnterprises = async (req, res) => {
 
                 // 6. Insert into enterprise_fields (many-to-many)
                 if (fieldStr) {
-                    const fieldNames = fieldStr.split(',').map(s => s.trim()).filter(Boolean);
+                    const fieldNames = typeof fieldStr === 'string' ? fieldStr.split(',').map(s => s.trim()).filter(Boolean) : [fieldStr];
                     for (const fn of fieldNames) {
                         const [fRows] = await conn.query('SELECT id FROM fields WHERE name LIKE ? AND (faculty_id = 0 OR faculty_id = ?) LIMIT 1', [`%${fn}%`, facultyId || 0]);
                         if (fRows.length > 0) {
@@ -152,10 +274,15 @@ const importEnterprises = async (req, res) => {
 // Import Hoạt động
 const importActivities = async (req, res) => {
     try {
-        const rows = parseFileToJSON(req.file.buffer, req.file.originalname);
+        const rows = req.file ? parseFileToJSON(req.file.buffer, req.file.originalname, 'activities') : req.body.rows;
         let inserted = 0;
         let skipped = 0;
         let errors = [];
+        const facultyId = req.user.role === 'ADMIN' ? (req.body.faculty_id || null) : req.user.faculty_id;
+
+        if (!facultyId) {
+            return res.status(400).json({ message: "Thiếu thông tin Khoa quản lý." });
+        }
 
         for (let i = 0; i < rows.length; i++) {
             const r = rows[i];
@@ -164,18 +291,47 @@ const importActivities = async (req, res) => {
                 await conn.beginTransaction();
 
                 const title = r['tên hoạt động'] || r['title'] || r['ten_hoat_dong'];
-                const enterprise_id = r['mã doanh nghiệp (id)'] || r['enterprise_id'];
+                
+                // Lookup enterprise ID by name if not provided directly
+                let enterprise_id = r['mã doanh nghiệp (id)'] || r['enterprise_id'] || null;
+                const entName = r['tên doanh nghiệp'] || r['enterprise_name'] || r['enterprise'] || '';
+                if (entName && !enterprise_id) {
+                    const [entRows] = await conn.query('SELECT id FROM enterprises WHERE name = ? AND faculty_id = ? AND is_deleted = 0 LIMIT 1', [entName.trim(), facultyId]);
+                    if (entRows.length > 0) {
+                        enterprise_id = entRows[0].id;
+                    }
+                }
+
                 const typeStr = r['loại hình'] || r['type'] || r['loai_hinh'] || 'Khác';
                 const targetStr = r['đối tượng'] || '';
                 const detail = r['mô tả'] || r['detail'] || r['mo_ta'] || '';
 
-                // Format DD/MM/YYYY to YYYY-MM-DD if needed, but assuming ISO format from export for simplicity, 
-                // or just leave it if MySQL accepts it / handle Date object if parsed by xlsx.
                 let start_date = r['ngày bắt đầu'] || r['start_date'] || null;
                 let end_date = r['ngày kết thúc'] || r['end_date'] || null;
                 let collaboration_date = r['ngày hợp tác'] || r['collaboration_date'] || null;
 
-                // Simple date parse helper for DD/MM/YYYY strings from excel exports
+                const start_time = r['thời gian bắt đầu'] || r['start_time'] || null;
+                const end_time = r['thời gian kết thúc'] || r['end_time'] || null;
+                const person_in_charge = r['người phụ trách'] || r['person_in_charge'] || null;
+                const tasksRaw = r['nhiệm vụ'] || r['tasks'] || null;
+                let tasks = null;
+                if (tasksRaw) {
+                    try {
+                        if (typeof tasksRaw === 'string') {
+                            if (tasksRaw.trim().startsWith('[') || tasksRaw.trim().startsWith('{')) {
+                                tasks = JSON.parse(tasksRaw);
+                            } else {
+                                tasks = tasksRaw.split(',').map(t => t.trim()).filter(Boolean);
+                            }
+                        } else {
+                            tasks = tasksRaw;
+                        }
+                    } catch (e) {
+                        tasks = [tasksRaw];
+                    }
+                }
+                const tasksJson = tasks ? JSON.stringify(tasks) : null;
+
                 const parseDateStr = (d) => {
                     if (!d) return null;
                     if (typeof d === 'string' && d.includes('/')) {
@@ -189,12 +345,11 @@ const importActivities = async (req, res) => {
                 collaboration_date = parseDateStr(collaboration_date);
 
                 const status = r['trạng thái'] || r['status'] || 'Đề xuất';
-                const facultyId = req.user.role === 'ADMIN' ? (r['faculty_id'] || null) : req.user.faculty_id;
 
                 if (!title) { errors.push(`Dòng ${i + 2}: Thiếu tên hoạt động`); continue; }
-                if (!enterprise_id) { errors.push(`Dòng ${i + 2}: Thiếu mã doanh nghiệp (ID)`); continue; }
+                if (!enterprise_id) { errors.push(`Dòng ${i + 2}: Thiếu mã doanh nghiệp (ID) hoặc Không tìm thấy tên doanh nghiệp`); continue; }
 
-                const [existingAct] = await conn.query('SELECT id FROM activities WHERE title = ? AND enterprise_id = ?', [title, enterprise_id]);
+                const [existingAct] = await conn.query('SELECT id FROM activities WHERE title = ? AND enterprise_id = ? AND is_deleted = 0', [title, enterprise_id]);
                 if (existingAct.length > 0) {
                     skipped++;
                     errors.push(`Dòng ${i + 2}: Đã tồn tại hoạt động này cho doanh nghiệp (ID: ${enterprise_id})`);
@@ -205,14 +360,14 @@ const importActivities = async (req, res) => {
 
                 // 1. Insert into activities
                 const [result] = await conn.query(
-                    'INSERT INTO activities (enterprise_id, title, detail, start_date, end_date, collaboration_date, status, faculty_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-                    [enterprise_id, title, detail, start_date, end_date, collaboration_date, status, facultyId]
+                    'INSERT INTO activities (enterprise_id, title, detail, start_date, end_date, start_time, end_time, person_in_charge, tasks, collaboration_date, status, faculty_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                    [enterprise_id, title, detail, start_date, end_date, start_time, end_time, person_in_charge, tasksJson, collaboration_date, status, facultyId]
                 );
                 const activityId = result.insertId;
 
                 // 2. Insert types
                 if (typeStr) {
-                    const typeNames = typeStr.split(',').map(s => s.trim()).filter(Boolean);
+                    const typeNames = typeof typeStr === 'string' ? typeStr.split(',').map(s => s.trim()).filter(Boolean) : [typeStr];
                     for (const tn of typeNames) {
                         const [tRows] = await conn.query('SELECT id FROM act_types WHERE name LIKE ? LIMIT 1', [`%${tn}%`]);
                         if (tRows.length > 0) {
@@ -223,7 +378,7 @@ const importActivities = async (req, res) => {
 
                 // 3. Insert targets
                 if (targetStr) {
-                    const targetNames = targetStr.split(',').map(s => s.trim()).filter(Boolean);
+                    const targetNames = typeof targetStr === 'string' ? targetStr.split(',').map(s => s.trim()).filter(Boolean) : [targetStr];
                     for (const tn of targetNames) {
                         const [tgRows] = await conn.query('SELECT id FROM targets WHERE name LIKE ? LIMIT 1', [`%${tn}%`]);
                         if (tgRows.length > 0) {
@@ -251,21 +406,48 @@ const importActivities = async (req, res) => {
 // Import Sinh viên
 const importStudents = async (req, res) => {
     try {
-        const rows = parseFileToJSON(req.file.buffer, req.file.originalname);
+        const rows = req.file ? parseFileToJSON(req.file.buffer, req.file.originalname, 'students') : req.body.rows;
         let inserted = 0;
         let skipped = 0;
         let errors = [];
+        const facultyId = req.user.role === 'ADMIN' ? (req.body.faculty_id || null) : req.user.faculty_id;
+
+        if (!facultyId) {
+            return res.status(400).json({ message: "Thiếu thông tin Khoa quản lý." });
+        }
 
         for (let i = 0; i < rows.length; i++) {
             const r = rows[i];
+            const conn = await pool.getConnection();
             try {
+                await conn.beginTransaction();
+
                 const student_code = r['mssv'] || r['student_code'];
                 const name = r['họ tên'] || r['name'] || r['ho_ten'];
                 const email = r['email'] || '';
                 const className = r['lớp'] || r['class'] || r['lop'] || '';
                 const major = r['ngành học'] || r['major'] || r['nganh_hoc'] || '';
                 const advisor = r['giảng viên hd'] || r['advisor'] || r['gvhd'] || '';
-                const activity_id = r['mã hoạt động (id)'] || r['activity_id'] || null;
+                
+                // Lookup enterprise and activity by name if IDs not provided directly
+                let enterprise_id = r['mã doanh nghiệp (id)'] || r['enterprise_id'] || null;
+                const entName = r['nơi thực tập/làm việc'] || r['enterprise_name'] || r['enterprise'] || '';
+                if (entName && !enterprise_id) {
+                    const [entRows] = await conn.query('SELECT id FROM enterprises WHERE name = ? AND faculty_id = ? AND is_deleted = 0 LIMIT 1', [entName.trim(), facultyId]);
+                    if (entRows.length > 0) {
+                        enterprise_id = entRows[0].id;
+                    }
+                }
+
+                let activity_id = r['mã hoạt động (id)'] || r['activity_id'] || null;
+                const actTitle = r['hoạt động tham gia'] || r['activity_title'] || r['activity'] || '';
+                if (actTitle && !activity_id) {
+                    const [actRows] = await conn.query('SELECT id FROM activities WHERE title = ? AND faculty_id = ? AND is_deleted = 0 LIMIT 1', [actTitle.trim(), facultyId]);
+                    if (actRows.length > 0) {
+                        activity_id = actRows[0].id;
+                    }
+                }
+
                 const position = r['vị trí'] || r['position'] || r['vi_tri'] || '';
                 const status = r['trạng thái'] || r['status'] || 'Chờ phân công';
                 const gpa = r['gpa'] || null;
@@ -283,23 +465,28 @@ const importStudents = async (req, res) => {
 
                 if (!student_code || !name) { errors.push(`Dòng ${i + 2}: Thiếu MSSV hoặc Họ tên`); continue; }
 
-                const [existingStu] = await pool.query('SELECT id FROM students WHERE student_code = ?', [student_code]);
+                const [existingStu] = await conn.query('SELECT id FROM students WHERE student_code = ? AND is_deleted = 0', [student_code]);
                 if (existingStu.length > 0) {
                     skipped++;
                     errors.push(`Dòng ${i + 2}: Đã tồn tại sinh viên với MSSV ${student_code}`);
+                    await conn.rollback();
+                    conn.release();
                     continue;
                 }
 
-                const facultyId = req.user.role === 'ADMIN' ? (r['faculty_id'] || null) : req.user.faculty_id;
-
-                await pool.query(
-                    `INSERT INTO students (student_code, name, email, class, major, advisor, activity_id, position, status, gpa, start_date, end_date, faculty_id) 
-                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-                    [student_code, name, email, className, major, advisor, activity_id, position, status, gpa, start_date, end_date, facultyId]
+                await conn.query(
+                    `INSERT INTO students (student_code, name, email, class, major, advisor, activity_id, enterprise_id, position, status, gpa, start_date, end_date, faculty_id) 
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                    [student_code, name, email, className, major, advisor, activity_id, enterprise_id, position, status, gpa, start_date, end_date, facultyId]
                 );
+
+                await conn.commit();
                 inserted++;
             } catch (e) {
+                await conn.rollback();
                 errors.push(`Dòng ${i + 2}: ${e.message}`);
+            } finally {
+                conn.release();
             }
         }
 
@@ -309,13 +496,125 @@ const importStudents = async (req, res) => {
     }
 };
 
-const { GoogleGenerativeAI } = require("@google/generative-ai");
+// Import MOUs
+const importMous = async (req, res) => {
+    try {
+        const rows = req.file ? parseFileToJSON(req.file.buffer, req.file.originalname, 'mous') : req.body.rows;
+        let inserted = 0;
+        let skipped = 0;
+        let errors = [];
+        const facultyId = req.user.role === 'ADMIN' ? (req.body.faculty_id || null) : req.user.faculty_id;
 
+        if (!facultyId) {
+            return res.status(400).json({ message: "Thiếu thông tin Khoa quản lý." });
+        }
+
+        for (let i = 0; i < rows.length; i++) {
+            const r = rows[i];
+            const conn = await pool.getConnection();
+            try {
+                await conn.beginTransaction();
+
+                const mou_code = r['mã mou'] || r['mou_code'] || r['ma_mou'];
+                let enterprise_id = r['mã doanh nghiệp (id)'] || r['enterprise_id'] || null;
+                const entName = r['tên doanh nghiệp'] || r['enterprise_name'] || r['enterprise'] || '';
+                
+                // Lookup enterprise by name if ID not provided
+                if (entName && !enterprise_id) {
+                    const [entRows] = await conn.query('SELECT id FROM enterprises WHERE name = ? AND faculty_id = ? AND is_deleted = 0 LIMIT 1', [entName.trim(), facultyId]);
+                    if (entRows.length > 0) {
+                        enterprise_id = entRows[0].id;
+                    }
+                }
+
+                // If enterprise still doesn't exist, we skip or throw error
+                if (!enterprise_id) {
+                    throw new Error(`Doanh nghiệp "${entName || 'Chưa xác định'}" không tồn tại trên hệ thống.`);
+                }
+
+                let signing_date = r['ngày ký'] || r['signing_date'] || null;
+                const parseDateStr = (d) => {
+                    if (!d) return null;
+                    if (typeof d === 'string' && d.includes('/')) {
+                        const parts = d.split('/');
+                        if (parts.length === 3) return `${parts[2]}-${parts[1]}-${parts[0]}`;
+                    }
+                    return d;
+                };
+                signing_date = parseDateStr(signing_date);
+
+                const partner_contact = r['đầu mối đối tác'] || r['partner_contact'] || '';
+                const org_type = r['loại tổ chức'] || r['org_type'] || '';
+                const country = r['quốc gia'] || r['country'] || 'Việt Nam';
+                const collaboration_scope = r['mảng hợp tác'] || r['collaboration_scope'] || '';
+                
+                let executing_unit_id = r['bộ môn id'] || r['executing_unit_id'] || null;
+                const deptName = r['bộ môn triển khai'] || r['executing_unit_name'] || '';
+                if (deptName && !executing_unit_id) {
+                    const [deptRows] = await conn.query('SELECT id FROM departments WHERE name LIKE ? AND faculty_id = ? LIMIT 1', [`%${deptName}%`, facultyId]);
+                    if (deptRows.length > 0) {
+                        executing_unit_id = deptRows[0].id;
+                    }
+                }
+
+                const vlu_contact = r['đầu mối vlu'] || r['vlu_contact'] || '';
+                const tasks_ay24_25 = r['nhiệm vụ'] || r['tasks_ay24_25'] || '';
+                const next_steps = r['bước tiếp theo'] || r['next_steps'] || '';
+                const past_activities = r['hoạt động đã qua'] || r['past_activities'] || '';
+                const related_data = r['số liệu liên quan'] || r['related_data'] || '';
+                const working_dir = r['thư mục làm việc'] || r['working_dir'] || '';
+
+                let activity_id = r['mã hoạt động (id)'] || r['activity_id'] || null;
+                const actTitle = r['hoạt động liên kết'] || r['activity_title'] || r['activity'] || '';
+                if (actTitle && !activity_id) {
+                    const [actRows] = await conn.query('SELECT id FROM activities WHERE title = ? AND faculty_id = ? AND is_deleted = 0 LIMIT 1', [actTitle.trim(), facultyId]);
+                    if (actRows.length > 0) {
+                        activity_id = actRows[0].id;
+                    }
+                }
+
+                const file_url = r['link tài liệu'] || r['file_url'] || '';
+
+                if (!mou_code) {
+                    throw new Error('Thiếu mã MOU');
+                }
+
+                const [existing] = await conn.query('SELECT id FROM mous WHERE mou_code = ? AND is_deleted = 0', [mou_code]);
+                if (existing.length > 0) {
+                    skipped++;
+                    await conn.rollback();
+                    conn.release();
+                    continue;
+                }
+
+                await conn.query(`
+                    INSERT INTO mous (
+                        mou_code, enterprise_id, signing_date, partner_contact, org_type, country,
+                        collaboration_scope, executing_unit_id, vlu_contact, tasks_ay24_25, next_steps, past_activities, related_data, working_dir, activity_id, file_url, faculty_id
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                `, [mou_code, enterprise_id, signing_date, partner_contact, org_type, country, collaboration_scope, executing_unit_id, vlu_contact, tasks_ay24_25, next_steps, past_activities, related_data, working_dir, activity_id, file_url, facultyId]);
+                
+                await conn.commit();
+                inserted++;
+            } catch (e) {
+                await conn.rollback();
+                errors.push(`Dòng ${i + 2}: ${e.message}`);
+            } finally {
+                conn.release();
+            }
+        }
+        res.json({ message: `Import hoàn tất. Thêm mới: ${inserted}, Bỏ qua (trùng): ${skipped}, Lỗi: ${errors.length}`, inserted, skipped, total: rows.length, errors });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+const { GoogleGenerativeAI } = require("@google/generative-ai");
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 function getGenerativeModel() {
     if (!process.env.GEMINI_API_KEY) throw new Error("GEMINI_API_KEY chưa được cấu hình");
-    return genAI.getGenerativeModel({ model: "gemini-3.1-flash-lite" });
+    return genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 }
 
 const system_prompt = `
@@ -332,7 +631,7 @@ QUY TẮC PHÂN LOẠI ÉP BUỘC (TUYỆT ĐỐI CHỈ CHỌN TRONG DANH SÁCH 
 2. Cột \`field_names\` (Ngành nghề): Hãy gom nhóm lại. BẮT BUỘC CHỈ CHỌN 1 hoặc nhiều từ danh sách sau:
    ["Phần mềm & Outsource", "Giải pháp CNTT & Chuyển đổi số", "Hạ tầng & Viễn thông", "Tài chính & Fintech", "Phần cứng & Điện tử", "Marketing & Truyền thông", "Khác"]
 
-3. Cột \`activity_type_names\` (Loại hoạt động): KHÔNG ĐƯỢC phân mảnh chi tiết. BẮT BUỘC CHỈ CHỌN từ danh sách sau:
+3. Cột \`activity_type_names\` (Loại hoạt động): KHÔNG ĐƯỢC phân mạch chi tiết. BẮT BUỘC CHỈ CHỌN từ danh sách sau:
    ["Tuyển dụng & Thực tập", "Hội thảo & Đào tạo", "Tài trợ & Học bổng", "Tham quan doanh nghiệp", "Kiểm định & Đánh giá", "Ký kết MOU", "Khác"]
    (Lưu ý: Phỏng vấn, Ứng viên, Thực tập sinh -> Gom hết vào "Tuyển dụng & Thực tập". Tọa đàm, Ngày hội, Hướng dẫn -> Gom vào "Hội thảo & Đào tạo").
 
@@ -392,7 +691,7 @@ const aiParseRow = async (req, res) => {
         for (let attempt = 0; attempt < maxRetries; attempt++) {
             try {
                 const model = getGenerativeModel();
-                const result = await model.generateContent(system_prompt + "\\nDỮ LIỆU ĐẦU VÀO:\\n" + rowText);
+                const result = await model.generateContent(system_prompt + "\nDỮ LIỆU ĐẦU VÀO:\n" + rowText);
                 const text = result.response.text();
 
                 let rawJson = text.trim();
@@ -539,4 +838,326 @@ const aiParseRow = async (req, res) => {
     }
 };
 
-module.exports = { upload, importEnterprises, importActivities, importStudents, aiParseRow };
+const validateEnterprises = async (req, res) => {
+    try {
+        const rows = req.body.rows || [];
+        const facultyId = req.user.role === 'ADMIN' ? (req.body.faculty_id || null) : req.user.faculty_id;
+        const validatedRows = [];
+
+        if (!facultyId) {
+            return res.status(400).json({ message: "Thiếu thông tin Khoa quản lý." });
+        }
+
+        const conn = await pool.getConnection();
+        try {
+            for (let i = 0; i < rows.length; i++) {
+                const r = rows[i];
+                const name = r['tên doanh nghiệp'] || r['name'] || r['ten_doanh_nghiep'];
+                const tax_code = r['mã số thuế'] || r['tax_code'] || r['ma_so_thue'] || null;
+                const scaleStr = r['quy mô'] || r['scale'] || '';
+                const fieldStr = r['lĩnh vực'] || r['fields'] || '';
+                const rep_full_name = r['họ và tên'] || r['rep_name'] || r['rep_full_name'] || null;
+                const rep_phone = r['số điện thoại'] || r['rep_phone'] || null;
+                const rep_email = r['email'] || r['rep_email'] || null;
+                const building_street = r['địa chỉ'] || r['building_street'] || null;
+
+                const errors = [];
+                const warnings = [];
+                let status = 'success';
+
+                if (!name) {
+                    errors.push('Thiếu Tên doanh nghiệp.');
+                    status = 'error';
+                }
+
+                if (name) {
+                    // Check duplicate
+                    let checkQuery = 'SELECT id FROM enterprises WHERE (name = ?';
+                    let checkParams = [name];
+                    if (tax_code) {
+                        checkQuery += ' OR tax_code = ?';
+                        checkParams.push(tax_code);
+                    }
+                    checkQuery += ') AND (faculty_id = ? OR (faculty_id IS NULL AND ? IS NULL)) AND is_deleted = 0 LIMIT 1';
+                    checkParams.push(facultyId, facultyId);
+
+                    const [existing] = await conn.query(checkQuery, checkParams);
+                    if (existing.length > 0) {
+                        errors.push('Doanh nghiệp đã tồn tại trong Khoa này.');
+                        status = 'duplicate';
+                    }
+                }
+
+                if (status !== 'error' && status !== 'duplicate') {
+                    if (!tax_code) warnings.push('Thiếu Mã số thuế.');
+                    if (!scaleStr) warnings.push('Thiếu Quy mô doanh nghiệp.');
+                    if (!fieldStr) warnings.push('Thiếu Lĩnh vực.');
+                    if (!rep_full_name) warnings.push('Thiếu Họ tên người đại diện.');
+                    if (!rep_phone && !rep_email) warnings.push('Thiếu Số điện thoại và Email liên hệ.');
+                    if (!building_street) warnings.push('Thiếu Địa chỉ.');
+
+                    if (warnings.length > 0) {
+                        status = 'warning';
+                    }
+                }
+
+                validatedRows.push({ row: r, status, errors, warnings });
+            }
+        } finally {
+            conn.release();
+        }
+
+        res.json({ validatedRows });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+const validateActivities = async (req, res) => {
+    try {
+        const rows = req.body.rows || [];
+        const facultyId = req.user.role === 'ADMIN' ? (req.body.faculty_id || null) : req.user.faculty_id;
+        const validatedRows = [];
+
+        if (!facultyId) {
+            return res.status(400).json({ message: "Thiếu thông tin Khoa quản lý." });
+        }
+
+        const conn = await pool.getConnection();
+        try {
+            for (let i = 0; i < rows.length; i++) {
+                const r = rows[i];
+                const title = r['tên hoạt động'] || r['title'] || r['ten_hoat_dong'];
+                const entName = r['tên doanh nghiệp'] || r['enterprise_name'] || r['enterprise'] || '';
+                let enterprise_id = r['mã doanh nghiệp (id)'] || r['enterprise_id'] || null;
+
+                const errors = [];
+                const warnings = [];
+                let status = 'success';
+
+                if (!title) {
+                    errors.push('Thiếu Tên hoạt động.');
+                    status = 'error';
+                }
+
+                // Check parent enterprise existence
+                let matchedEntId = enterprise_id;
+                if (entName && !matchedEntId) {
+                    const [entRows] = await conn.query('SELECT id FROM enterprises WHERE name = ? AND faculty_id = ? AND is_deleted = 0 LIMIT 1', [entName.trim(), facultyId]);
+                    if (entRows.length > 0) {
+                        matchedEntId = entRows[0].id;
+                    }
+                }
+
+                if (!matchedEntId) {
+                    errors.push(`Doanh nghiệp "${entName || 'Chưa xác định'}" không tồn tại trên hệ thống. Cần import doanh nghiệp này trước.`);
+                    status = 'error';
+                }
+
+                if (title && matchedEntId) {
+                    // Check duplicate
+                    const [existing] = await conn.query('SELECT id FROM activities WHERE title = ? AND enterprise_id = ? AND is_deleted = 0 LIMIT 1', [title, matchedEntId]);
+                    if (existing.length > 0) {
+                        errors.push('Hoạt động này đã được khởi tạo cho doanh nghiệp này.');
+                        status = 'duplicate';
+                    }
+                }
+
+                if (status !== 'error' && status !== 'duplicate') {
+                    if (!r['loại hình'] && !r['type'] && !r['loai_hinh']) warnings.push('Thiếu Loại hình hoạt động.');
+                    if (!r['đối tượng'] && !r['target']) warnings.push('Thiếu Đối tượng tham gia.');
+                    if (!r['ngày bắt đầu'] && !r['start_date'] && !r['ngay_bat_dau']) warnings.push('Thiếu Ngày bắt đầu.');
+                    
+                    if (warnings.length > 0) {
+                        status = 'warning';
+                    }
+                }
+
+                validatedRows.push({ row: r, status, errors, warnings });
+            }
+        } finally {
+            conn.release();
+        }
+
+        res.json({ validatedRows });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+const validateMous = async (req, res) => {
+    try {
+        const rows = req.body.rows || [];
+        const facultyId = req.user.role === 'ADMIN' ? (req.body.faculty_id || null) : req.user.faculty_id;
+        const validatedRows = [];
+
+        if (!facultyId) {
+            return res.status(400).json({ message: "Thiếu thông tin Khoa quản lý." });
+        }
+
+        const conn = await pool.getConnection();
+        try {
+            for (let i = 0; i < rows.length; i++) {
+                const r = rows[i];
+                const mou_code = r['mã mou'] || r['mou_code'] || r['ma_mou'];
+                const entName = r['tên doanh nghiệp'] || r['enterprise_name'] || r['enterprise'] || '';
+                let enterprise_id = r['mã doanh nghiệp (id)'] || r['enterprise_id'] || null;
+                const deptName = r['bộ môn triển khai'] || r['executing_unit_name'] || '';
+                let executing_unit_id = r['bộ môn id'] || r['executing_unit_id'] || null;
+
+                const errors = [];
+                const warnings = [];
+                let status = 'success';
+
+                if (!mou_code) {
+                    errors.push('Thiếu Mã MOU.');
+                    status = 'error';
+                }
+
+                // Check enterprise dependency
+                let matchedEntId = enterprise_id;
+                if (entName && !matchedEntId) {
+                    const [entRows] = await conn.query('SELECT id FROM enterprises WHERE name = ? AND faculty_id = ? AND is_deleted = 0 LIMIT 1', [entName.trim(), facultyId]);
+                    if (entRows.length > 0) {
+                        matchedEntId = entRows[0].id;
+                    }
+                }
+
+                if (!matchedEntId) {
+                    errors.push(`Doanh nghiệp "${entName || 'Chưa xác định'}" không tồn tại trên hệ thống. Cần import doanh nghiệp này trước.`);
+                    status = 'error';
+                }
+
+                // Check executing unit (department) dependency
+                if (deptName && !executing_unit_id) {
+                    const [deptRows] = await conn.query('SELECT id FROM departments WHERE name LIKE ? AND faculty_id = ? LIMIT 1', [`%${deptName}%`, facultyId]);
+                    if (deptRows.length === 0) {
+                        warnings.push(`Bộ môn triển khai "${deptName}" không tồn tại trên hệ thống.`);
+                    }
+                }
+
+                // Check activity dependency if provided
+                const actTitle = r['hoạt động liên kết'] || r['activity_title'] || r['activity'] || '';
+                let activity_id = r['mã hoạt động (id)'] || r['activity_id'] || null;
+                if ((actTitle || activity_id) && status !== 'error') {
+                    let matchedActId = activity_id;
+                    if (actTitle && !matchedActId) {
+                        const [actRows] = await conn.query('SELECT id FROM activities WHERE title = ? AND faculty_id = ? AND is_deleted = 0 LIMIT 1', [actTitle.trim(), facultyId]);
+                        if (actRows.length > 0) {
+                            matchedActId = actRows[0].id;
+                        }
+                    }
+                    if (!matchedActId) {
+                        errors.push(`Hoạt động "${actTitle || 'Chưa xác định'}" không tồn tại trên hệ thống. Cần import hoạt động này trước.`);
+                        status = 'error';
+                    }
+                }
+
+                if (mou_code) {
+                    // Check duplicate
+                    const [existing] = await conn.query('SELECT id FROM mous WHERE mou_code = ? AND is_deleted = 0 LIMIT 1', [mou_code]);
+                    if (existing.length > 0) {
+                        errors.push('Mã MOU đã tồn tại trên hệ thống.');
+                        status = 'duplicate';
+                    }
+                }
+
+                if (status !== 'error' && status !== 'duplicate') {
+                    if (!r['ngày ký'] && !r['signing_date'] && !r['ngay_ky']) warnings.push('Thiếu Ngày ký kết.');
+                    if (!r['đầu mối đối tác'] && !r['partner_contact']) warnings.push('Thiếu Thông tin đầu mối đối tác.');
+                    if (!r['đầu mối vlu'] && !r['vlu_contact']) warnings.push('Thiếu Thông tin đầu mối VLU.');
+                    if (!r['mảng hợp tác'] && !r['collaboration_scope']) warnings.push('Thiếu Mảng hợp tác.');
+
+                    if (warnings.length > 0) {
+                        status = 'warning';
+                    }
+                }
+
+                validatedRows.push({ row: r, status, errors, warnings });
+            }
+        } finally {
+            conn.release();
+        }
+
+        res.json({ validatedRows });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+const validateStudents = async (req, res) => {
+    try {
+        const rows = req.body.rows || [];
+        const facultyId = req.user.role === 'ADMIN' ? (req.body.faculty_id || null) : req.user.faculty_id;
+        const validatedRows = [];
+
+        if (!facultyId) {
+            return res.status(400).json({ message: "Thiếu thông tin Khoa quản lý." });
+        }
+
+        const conn = await pool.getConnection();
+        try {
+            for (let i = 0; i < rows.length; i++) {
+                const r = rows[i];
+                const student_code = r['mssv'] || r['student_code'];
+                const name = r['họ tên'] || r['name'] || r['ho_ten'];
+                const actTitle = r['hoạt động tham gia'] || r['activity_title'] || r['activity'] || '';
+                let activity_id = r['mã hoạt động (id)'] || r['activity_id'] || null;
+
+                const errors = [];
+                const warnings = [];
+                let status = 'success';
+
+                if (!student_code || !name) {
+                    errors.push('Thiếu MSSV hoặc Họ tên sinh viên.');
+                    status = 'error';
+                }
+
+                // Check activity dependency if provided
+                if ((actTitle || activity_id) && status !== 'error') {
+                    let matchedActId = activity_id;
+                    if (actTitle && !matchedActId) {
+                        const [actRows] = await conn.query('SELECT id FROM activities WHERE title = ? AND faculty_id = ? AND is_deleted = 0 LIMIT 1', [actTitle.trim(), facultyId]);
+                        if (actRows.length > 0) {
+                            matchedActId = actRows[0].id;
+                        }
+                    }
+
+                    if (!matchedActId) {
+                        errors.push(`Hoạt động "${actTitle || 'Chưa xác định'}" không tồn tại trên hệ thống. Cần import hoạt động này trước.`);
+                        status = 'error';
+                    }
+                }
+
+                if (student_code) {
+                    // Check duplicate
+                    const [existing] = await conn.query('SELECT id FROM students WHERE student_code = ? AND is_deleted = 0 LIMIT 1', [student_code]);
+                    if (existing.length > 0) {
+                        errors.push('Sinh viên với MSSV này đã tồn tại trên hệ thống.');
+                        status = 'duplicate';
+                    }
+                }
+
+                if (status !== 'error' && status !== 'duplicate') {
+                    if (!r['lớp'] && !r['class'] && !r['lop']) warnings.push('Thiếu lớp học.');
+                    if (!r['ngành học'] && !r['major'] && !r['nganh_hoc']) warnings.push('Thiếu Ngành học.');
+                    if (!r['gpa']) warnings.push('Thiếu Điểm GPA.');
+
+                    if (warnings.length > 0) {
+                        status = 'warning';
+                    }
+                }
+
+                validatedRows.push({ row: r, status, errors, warnings });
+            }
+        } finally {
+            conn.release();
+        }
+
+        res.json({ validatedRows });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+module.exports = { upload, importEnterprises, importActivities, importStudents, importMous, aiParseRow, validateEnterprises, validateActivities, validateMous, validateStudents };
