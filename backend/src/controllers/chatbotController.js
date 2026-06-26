@@ -345,7 +345,7 @@ const tools = [
             },
             {
                 name: 'create_student',
-                description: 'Yêu cầu thêm sinh viên thực tập mới vào hệ thống. AI trích xuất mã số sinh viên, họ tên, ngành học, lớp, GPA, trạng thái.',
+                description: 'Yêu cầu thêm sinh viên thực tập mới vào hệ thống. AI trích xuất mã số sinh viên, họ tên, ngành học, lớp, GPA, trạng thái, giảng viên hướng dẫn, công ty thực tập, vị trí thực tập, ngày bắt đầu và kết thúc.',
                 parameters: {
                     type: 'OBJECT',
                     properties: {
@@ -354,7 +354,12 @@ const tools = [
                         major: { type: 'STRING', description: 'Ngành học (tùy chọn)' },
                         class: { type: 'STRING', description: 'Lớp học (tùy chọn)' },
                         gpa: { type: 'NUMBER', description: 'Điểm trung bình tích lũy GPA (tùy chọn)' },
-                        status: { type: 'STRING', description: 'Trạng thái: Chờ phân công | Đang thực tập | Hoàn thành | Đã nghỉ (tùy chọn)' }
+                        status: { type: 'STRING', description: 'Trạng thái: Chờ phân công | Đang thực tập | Hoàn thành | Đã nghỉ (tùy chọn)' },
+                        advisor: { type: 'STRING', description: 'Giảng viên hướng dẫn (tùy chọn)' },
+                        enterprise_name: { type: 'STRING', description: 'Tên doanh nghiệp thực tập (tùy chọn, ví dụ: FPT Software)' },
+                        position: { type: 'STRING', description: 'Vị trí thực tập (tùy chọn)' },
+                        start_date: { type: 'STRING', description: 'Ngày bắt đầu thực tập dạng YYYY-MM-DD (tùy chọn)' },
+                        end_date: { type: 'STRING', description: 'Ngày kết thúc thực tập dạng YYYY-MM-DD (tùy chọn)' }
                     },
                     required: ['student_code', 'name']
                 }
