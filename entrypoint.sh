@@ -58,7 +58,7 @@ fi
 echo "Waiting for database server to start..."
 counter=0
 while true; do
-    if mysqladmin -u root ping --silent || mysqladmin -u root -prootpassword ping --silent; do
+    if mysqladmin -u root ping --silent || mysqladmin -u root -prootpassword ping --silent; then
         break
     fi
     echo "Database is starting up..."

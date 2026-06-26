@@ -581,9 +581,10 @@ const ActivityList = () => {
 
     const paginatedData = filteredData.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
+    const proposedCount = filteredData.filter(item => item.status === 'Đề xuất').length;
+    const internalApprovedCount = filteredData.filter(item => item.status === 'Phê duyệt nội bộ').length;
     const activeCount = filteredData.filter(item => item.status === 'Đã triển khai').length;
     const completedCount = filteredData.filter(item => item.status === 'Đã kết thúc').length;
-    const pendingCount = filteredData.filter(item => item.status === 'Đề xuất' || item.status === 'Phê duyệt nội bộ').length;
     const totalStudents = filteredData.reduce((sum, item) => sum + (item.student_count || 0), 0);
 
     const tableColumns = [
@@ -1137,39 +1138,7 @@ const ActivityList = () => {
 
             {/* Stats Cards */}
             <div id="tour-activity-stats" className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                {/* Green Card */}
-                <div className="group relative overflow-hidden bg-gradient-to-br from-emerald-50 to-emerald-100/30 dark:from-emerald-950/20 dark:to-emerald-900/10 rounded-2xl p-3.5 sm:p-5 border-l-4 border-l-emerald-500 border-t border-r border-b border-slate-100 dark:border-emerald-900/30 transition-all duration-300 hover:-translate-y-1 hover:shadow-md cursor-default">
-                    <div className="absolute -right-2 -bottom-2 opacity-10 transition-transform duration-500 group-hover:scale-110">
-                        <SyncOutlined className="text-4xl sm:text-6xl text-emerald-600 dark:text-emerald-400" />
-                    </div>
-                    <div className="flex items-center gap-2.5 sm:gap-3.5 relative z-10">
-                        <div className="w-9 h-9 sm:w-12 sm:h-12 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-lg sm:rounded-xl flex items-center justify-center shadow-md shadow-emerald-200 dark:shadow-none group-hover:scale-105 transition-transform duration-300">
-                            <SyncOutlined className="text-white text-base sm:text-lg" />
-                        </div>
-                        <div>
-                            <div className="text-lg sm:text-2xl md:text-3xl font-extrabold text-emerald-800 dark:text-emerald-400 leading-none mb-1">{activeCount}</div>
-                            <div className="text-[10px] sm:text-xs font-semibold text-emerald-600/80 uppercase tracking-wider">Đang hoạt động</div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Blue Card */}
-                <div className="group relative overflow-hidden bg-gradient-to-br from-blue-50 to-blue-100/30 dark:from-blue-950/20 dark:to-blue-900/10 rounded-2xl p-3.5 sm:p-5 border-l-4 border-l-blue-500 border-t border-r border-b border-slate-100 dark:border-blue-900/30 transition-all duration-300 hover:-translate-y-1 hover:shadow-md cursor-default">
-                    <div className="absolute -right-2 -bottom-2 opacity-10 transition-transform duration-500 group-hover:scale-110">
-                        <CheckCircleOutlined className="text-4xl sm:text-6xl text-blue-600 dark:text-blue-400" />
-                    </div>
-                    <div className="flex items-center gap-2.5 sm:gap-3.5 relative z-10">
-                        <div className="w-9 h-9 sm:w-12 sm:h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg sm:rounded-xl flex items-center justify-center shadow-md shadow-blue-200 dark:shadow-none group-hover:scale-105 transition-transform duration-300">
-                            <CheckCircleOutlined className="text-white text-base sm:text-lg" />
-                        </div>
-                        <div>
-                            <div className="text-lg sm:text-2xl md:text-3xl font-extrabold text-blue-800 dark:text-blue-400 leading-none mb-1">{completedCount}</div>
-                            <div className="text-[10px] sm:text-xs font-semibold text-blue-600/80 uppercase tracking-wider">Hoàn thành</div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Orange Card */}
+                {/* Proposed Card */}
                 <div className="group relative overflow-hidden bg-gradient-to-br from-orange-50 to-orange-100/30 dark:from-orange-950/20 dark:to-orange-900/10 rounded-2xl p-3.5 sm:p-5 border-l-4 border-l-orange-500 border-t border-r border-b border-slate-100 dark:border-orange-900/30 transition-all duration-300 hover:-translate-y-1 hover:shadow-md cursor-default">
                     <div className="absolute -right-2 -bottom-2 opacity-10 transition-transform duration-500 group-hover:scale-110">
                         <ClockCircleOutlined className="text-4xl sm:text-6xl text-orange-600 dark:text-orange-400" />
@@ -1179,24 +1148,56 @@ const ActivityList = () => {
                             <ClockCircleOutlined className="text-white text-base sm:text-lg" />
                         </div>
                         <div>
-                            <div className="text-lg sm:text-2xl md:text-3xl font-extrabold text-orange-800 dark:text-orange-400 leading-none mb-1">{pendingCount}</div>
-                            <div className="text-[10px] sm:text-xs font-semibold text-orange-600/80 uppercase tracking-wider">Chờ triển khai</div>
+                            <div className="text-lg sm:text-2xl md:text-3xl font-extrabold text-orange-800 dark:text-orange-400 leading-none mb-1">{proposedCount}</div>
+                            <div className="text-[10px] sm:text-xs font-semibold text-orange-600/80 uppercase tracking-wider">Đề xuất</div>
                         </div>
                     </div>
                 </div>
 
-                {/* Purple Card */}
+                {/* Internal Approved Card */}
                 <div className="group relative overflow-hidden bg-gradient-to-br from-purple-50 to-purple-100/30 dark:from-purple-950/20 dark:to-purple-900/10 rounded-2xl p-3.5 sm:p-5 border-l-4 border-l-purple-500 border-t border-r border-b border-slate-100 dark:border-purple-900/30 transition-all duration-300 hover:-translate-y-1 hover:shadow-md cursor-default">
                     <div className="absolute -right-2 -bottom-2 opacity-10 transition-transform duration-500 group-hover:scale-110">
-                        <TeamOutlined className="text-4xl sm:text-6xl text-purple-600 dark:text-purple-400" />
+                        <SyncOutlined className="text-4xl sm:text-6xl text-purple-600 dark:text-purple-400" />
                     </div>
                     <div className="flex items-center gap-2.5 sm:gap-3.5 relative z-10">
                         <div className="w-9 h-9 sm:w-12 sm:h-12 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-lg sm:rounded-xl flex items-center justify-center shadow-md shadow-purple-200 dark:shadow-none group-hover:scale-105 transition-transform duration-300">
-                            <TeamOutlined className="text-white text-base sm:text-lg" />
+                            <SyncOutlined className="text-white text-base sm:text-lg" />
                         </div>
                         <div>
-                            <div className="text-lg sm:text-2xl md:text-3xl font-extrabold text-purple-800 dark:text-purple-400 leading-none mb-1">{totalStudents}</div>
-                            <div className="text-[10px] sm:text-xs font-semibold text-purple-600/80 uppercase tracking-wider">Sinh viên tham gia</div>
+                            <div className="text-lg sm:text-2xl md:text-3xl font-extrabold text-purple-800 dark:text-purple-400 leading-none mb-1">{internalApprovedCount}</div>
+                            <div className="text-[10px] sm:text-xs font-semibold text-purple-600/80 uppercase tracking-wider">Phê duyệt nội bộ</div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Active Card */}
+                <div className="group relative overflow-hidden bg-gradient-to-br from-emerald-50 to-emerald-100/30 dark:from-emerald-950/20 dark:to-emerald-900/10 rounded-2xl p-3.5 sm:p-5 border-l-4 border-l-emerald-500 border-t border-r border-b border-slate-100 dark:border-emerald-900/30 transition-all duration-300 hover:-translate-y-1 hover:shadow-md cursor-default">
+                    <div className="absolute -right-2 -bottom-2 opacity-10 transition-transform duration-500 group-hover:scale-110">
+                        <CheckOutlined className="text-4xl sm:text-6xl text-emerald-600 dark:text-emerald-400" />
+                    </div>
+                    <div className="flex items-center gap-2.5 sm:gap-3.5 relative z-10">
+                        <div className="w-9 h-9 sm:w-12 sm:h-12 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-lg sm:rounded-xl flex items-center justify-center shadow-md shadow-emerald-200 dark:shadow-none group-hover:scale-105 transition-transform duration-300">
+                            <CheckOutlined className="text-white text-base sm:text-lg" />
+                        </div>
+                        <div>
+                            <div className="text-lg sm:text-2xl md:text-3xl font-extrabold text-emerald-800 dark:text-emerald-400 leading-none mb-1">{activeCount}</div>
+                            <div className="text-[10px] sm:text-xs font-semibold text-emerald-600/80 uppercase tracking-wider">Đang triển khai</div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Completed Card */}
+                <div className="group relative overflow-hidden bg-gradient-to-br from-blue-50 to-blue-100/30 dark:from-blue-950/20 dark:to-blue-900/10 rounded-2xl p-3.5 sm:p-5 border-l-4 border-l-blue-500 border-t border-r border-b border-slate-100 dark:border-blue-900/30 transition-all duration-300 hover:-translate-y-1 hover:shadow-md cursor-default">
+                    <div className="absolute -right-2 -bottom-2 opacity-10 transition-transform duration-500 group-hover:scale-110">
+                        <PauseCircleOutlined className="text-4xl sm:text-6xl text-blue-600 dark:text-blue-400" />
+                    </div>
+                    <div className="flex items-center gap-2.5 sm:gap-3.5 relative z-10">
+                        <div className="w-9 h-9 sm:w-12 sm:h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg sm:rounded-xl flex items-center justify-center shadow-md shadow-blue-200 dark:shadow-none group-hover:scale-105 transition-transform duration-300">
+                            <PauseCircleOutlined className="text-white text-base sm:text-lg" />
+                        </div>
+                        <div>
+                            <div className="text-lg sm:text-2xl md:text-3xl font-extrabold text-blue-800 dark:text-blue-400 leading-none mb-1">{completedCount}</div>
+                            <div className="text-[10px] sm:text-xs font-semibold text-blue-600/80 uppercase tracking-wider">Đã kết thúc</div>
                         </div>
                     </div>
                 </div>
