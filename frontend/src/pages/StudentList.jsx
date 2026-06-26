@@ -405,8 +405,6 @@ const StudentList = () => {
             'Nơi thực tập/Làm việc': item.enterprise_name || '',
             'Mã doanh nghiệp (ID)': item.enterprise_id || '',
             'Vị trí': item.position || '',
-            'Hoạt động tham gia': item.activity_title || '',
-            'Mã hoạt động (ID)': item.activity_id || '',
             'Trạng thái': item.status || '',
             'Thời gian làm việc (tháng)': item.duration_months || '',
             'Ngày bắt đầu': item.start_date ? dayjs(item.start_date).format('DD/MM/YYYY') : '',
@@ -425,8 +423,8 @@ const StudentList = () => {
             { wch: 10 }, // GPA
             { wch: 25 }, // Giảng viên HD
             { wch: 30 }, // Nơi thực tập/Làm việc
+            { wch: 20 }, // Mã doanh nghiệp (ID)
             { wch: 20 }, // Vị trí
-            { wch: 35 }, // Hoạt động tham gia
             { wch: 15 }, // Trạng thái
             { wch: 25 }, // Thời gian làm việc (tháng)
             { wch: 15 }, // Ngày bắt đầu
@@ -1166,7 +1164,7 @@ const StudentList = () => {
                 onClose={() => setShowImport(false)}
                 onSuccess={() => { fetchData(); fetchStats(); }}
                 type="students"
-                templateColumns={['MSSV', 'Họ tên', 'Email', 'Lớp', 'Ngành học', 'Giảng viên HD', 'Nơi thực tập/làm việc', 'Mã doanh nghiệp (ID)', 'Hoạt động tham gia', 'Mã hoạt động (ID)', 'Vị trí', 'Trạng thái', 'GPA', 'Ngày bắt đầu', 'Ngày kết thúc']}
+                templateColumns={['MSSV', 'Họ tên', 'Email', 'Lớp', 'Ngành học', 'Giảng viên HD', 'Nơi thực tập/làm việc', 'Mã doanh nghiệp (ID)', 'Vị trí', 'Trạng thái', 'GPA', 'Ngày bắt đầu', 'Ngày kết thúc']}
             />
 
             <Modal

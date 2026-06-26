@@ -6,12 +6,22 @@ exports.getAll = async (req, res) => {
             SELECT s.*, 
                    e.name as enterprise_name, 
                    f.name as faculty_name,
-                   a.title as activity_title,
+                   (
+                       SELECT GROUP_CONCAT(act.title SEPARATOR ', ')
+                       FROM student_activities sa
+                       JOIN activities act ON sa.activity_id = act.id
+                       WHERE sa.student_id = s.id AND act.is_deleted = 0
+                   ) as activity_title,
+                   (
+                       SELECT GROUP_CONCAT(act.id SEPARATOR ', ')
+                       FROM student_activities sa
+                       JOIN activities act ON sa.activity_id = act.id
+                       WHERE sa.student_id = s.id AND act.is_deleted = 0
+                   ) as activity_id,
                    TIMESTAMPDIFF(MONTH, s.start_date, s.end_date) as duration_months
             FROM students s 
             LEFT JOIN enterprises e ON s.enterprise_id = e.id
             LEFT JOIN faculties f ON s.faculty_id = f.id
-            LEFT JOIN activities a ON s.activity_id = a.id
             WHERE s.is_deleted = ?`;
         const showDeleted = req.query.is_deleted === '1' || req.query.is_deleted === 'true';
         let params = [showDeleted ? 1 : 0];

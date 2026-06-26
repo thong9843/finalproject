@@ -92,6 +92,14 @@ const ALIAS_MAP = {
         'hoạt động liên kết': ['hoạt động liên kết', 'hoat dong lien ket', 'activity_title', 'hoạt động', 'hoat dong', 'tên hoạt động', 'ten hoat dong', 'activity'],
         'mã hoạt động (id)': ['mã hoạt động (id)', 'activity_id', 'mã hoạt động', 'ma hoat dong'],
         'link tài liệu': ['link tài liệu', 'link tai lieu', 'file_url', 'file url']
+    },
+    activity_students: {
+        'mssv': ['mssv', 'student_code', 'student code', 'mã sinh viên', 'ma sinh vien', 'mã sv', 'ma sv', 'mã số sinh viên', 'ma so sinh vien'],
+        'họ tên': ['họ tên', 'ho ten', 'họ và tên', 'ho va ten', 'tên', 'ten', 'name', 'tên sinh viên', 'ten sinh vien', 'họ & tên'],
+        'mã hoạt động (id)': ['mã hoạt động (id)', 'activity_id', 'mã hoạt động', 'ma hoat dong', 'mã hđ (id)', 'ma hd (id)', 'mã hđ', 'ma hd'],
+        'tên hoạt động': ['tên hoạt động', 'ten hoat dong', 'activity', 'activity_title', 'hoạt động', 'hoat dong'],
+        'tên doanh nghiệp': ['tên doanh nghiệp', 'ten doanh nghiep', 'enterprise_name', 'doanh nghiệp', 'doanh nghiep', 'công ty', 'cong ty', 'tên công ty', 'ten cong ty'],
+        'ngày tham gia': ['ngày tham gia', 'ngay tham gia', 'joined_at', 'joined date', 'ngày tham gia hoạt động']
     }
 };
 
@@ -292,13 +300,22 @@ const importActivities = async (req, res) => {
 
                 const title = r['tên hoạt động'] || r['title'] || r['ten_hoat_dong'];
                 
-                // Lookup enterprise ID by name if not provided directly
-                let enterprise_id = r['mã doanh nghiệp (id)'] || r['enterprise_id'] || null;
+                // Lookup enterprise primarily by name
+                let enterprise_id = null;
                 const entName = r['tên doanh nghiệp'] || r['enterprise_name'] || r['enterprise'] || '';
-                if (entName && !enterprise_id) {
+                if (entName) {
                     const [entRows] = await conn.query('SELECT id FROM enterprises WHERE name = ? AND faculty_id = ? AND is_deleted = 0 LIMIT 1', [entName.trim(), facultyId]);
                     if (entRows.length > 0) {
                         enterprise_id = entRows[0].id;
+                    }
+                }
+                if (!enterprise_id) {
+                    const sheetEntId = r['mã doanh nghiệp (id)'] || r['enterprise_id'];
+                    if (sheetEntId) {
+                        const [entRows] = await conn.query('SELECT id FROM enterprises WHERE id = ? AND faculty_id = ? AND is_deleted = 0 LIMIT 1', [sheetEntId, facultyId]);
+                        if (entRows.length > 0) {
+                            enterprise_id = entRows[0].id;
+                        }
                     }
                 }
 
@@ -429,22 +446,22 @@ const importStudents = async (req, res) => {
                 const major = r['ngành học'] || r['major'] || r['nganh_hoc'] || '';
                 const advisor = r['giảng viên hd'] || r['advisor'] || r['gvhd'] || '';
                 
-                // Lookup enterprise and activity by name if IDs not provided directly
-                let enterprise_id = r['mã doanh nghiệp (id)'] || r['enterprise_id'] || null;
+                // Lookup enterprise primarily by name
+                let enterprise_id = null;
                 const entName = r['nơi thực tập/làm việc'] || r['enterprise_name'] || r['enterprise'] || '';
-                if (entName && !enterprise_id) {
+                if (entName) {
                     const [entRows] = await conn.query('SELECT id FROM enterprises WHERE name = ? AND faculty_id = ? AND is_deleted = 0 LIMIT 1', [entName.trim(), facultyId]);
                     if (entRows.length > 0) {
                         enterprise_id = entRows[0].id;
                     }
                 }
-
-                let activity_id = r['mã hoạt động (id)'] || r['activity_id'] || null;
-                const actTitle = r['hoạt động tham gia'] || r['activity_title'] || r['activity'] || '';
-                if (actTitle && !activity_id) {
-                    const [actRows] = await conn.query('SELECT id FROM activities WHERE title = ? AND faculty_id = ? AND is_deleted = 0 LIMIT 1', [actTitle.trim(), facultyId]);
-                    if (actRows.length > 0) {
-                        activity_id = actRows[0].id;
+                if (!enterprise_id) {
+                    const sheetEntId = r['mã doanh nghiệp (id)'] || r['enterprise_id'];
+                    if (sheetEntId) {
+                        const [entRows] = await conn.query('SELECT id FROM enterprises WHERE id = ? AND faculty_id = ? AND is_deleted = 0 LIMIT 1', [sheetEntId, facultyId]);
+                        if (entRows.length > 0) {
+                            enterprise_id = entRows[0].id;
+                        }
                     }
                 }
 
@@ -475,18 +492,10 @@ const importStudents = async (req, res) => {
                 }
 
                 const [insertResult] = await conn.query(
-                    `INSERT INTO students (student_code, name, email, class, major, advisor, activity_id, enterprise_id, position, status, gpa, start_date, end_date, faculty_id) 
-                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-                    [student_code, name, email, className, major, advisor, activity_id, enterprise_id, position, status, gpa, start_date, end_date, facultyId]
+                    `INSERT INTO students (student_code, name, email, class, major, advisor, enterprise_id, position, status, gpa, start_date, end_date, faculty_id) 
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                    [student_code, name, email, className, major, advisor, enterprise_id, position, status, gpa, start_date, end_date, facultyId]
                 );
-
-                // Sync student_activities junction table
-                if (activity_id) {
-                    await conn.query(
-                        'INSERT IGNORE INTO student_activities (student_id, activity_id) VALUES (?, ?)',
-                        [insertResult.insertId, activity_id]
-                    );
-                }
 
                 await conn.commit();
                 inserted++;
@@ -524,14 +533,24 @@ const importMous = async (req, res) => {
                 await conn.beginTransaction();
 
                 const mou_code = r['mã mou'] || r['mou_code'] || r['ma_mou'];
-                let enterprise_id = r['mã doanh nghiệp (id)'] || r['enterprise_id'] || null;
+                
+                let enterprise_id = null;
                 const entName = r['tên doanh nghiệp'] || r['enterprise_name'] || r['enterprise'] || '';
                 
-                // Lookup enterprise by name if ID not provided
-                if (entName && !enterprise_id) {
+                // Lookup enterprise primarily by name
+                if (entName) {
                     const [entRows] = await conn.query('SELECT id FROM enterprises WHERE name = ? AND faculty_id = ? AND is_deleted = 0 LIMIT 1', [entName.trim(), facultyId]);
                     if (entRows.length > 0) {
                         enterprise_id = entRows[0].id;
+                    }
+                }
+                if (!enterprise_id) {
+                    const sheetEntId = r['mã doanh nghiệp (id)'] || r['enterprise_id'];
+                    if (sheetEntId) {
+                        const [entRows] = await conn.query('SELECT id FROM enterprises WHERE id = ? AND faculty_id = ? AND is_deleted = 0 LIMIT 1', [sheetEntId, facultyId]);
+                        if (entRows.length > 0) {
+                            enterprise_id = entRows[0].id;
+                        }
                     }
                 }
 
@@ -572,12 +591,28 @@ const importMous = async (req, res) => {
                 const related_data = r['số liệu liên quan'] || r['related_data'] || '';
                 const working_dir = r['thư mục làm việc'] || r['working_dir'] || '';
 
-                let activity_id = r['mã hoạt động (id)'] || r['activity_id'] || null;
+                let activity_id = null;
                 const actTitle = r['hoạt động liên kết'] || r['activity_title'] || r['activity'] || '';
-                if (actTitle && !activity_id) {
-                    const [actRows] = await conn.query('SELECT id FROM activities WHERE title = ? AND faculty_id = ? AND is_deleted = 0 LIMIT 1', [actTitle.trim(), facultyId]);
+                if (actTitle) {
+                    // Try to match by title AND enterprise_id
+                    const [actRows] = await conn.query('SELECT id FROM activities WHERE title = ? AND enterprise_id = ? AND faculty_id = ? AND is_deleted = 0 LIMIT 1', [actTitle.trim(), enterprise_id, facultyId]);
                     if (actRows.length > 0) {
                         activity_id = actRows[0].id;
+                    } else {
+                        // Fallback to general title search
+                        const [generalActRows] = await conn.query('SELECT id FROM activities WHERE title = ? AND faculty_id = ? AND is_deleted = 0 LIMIT 1', [actTitle.trim(), facultyId]);
+                        if (generalActRows.length > 0) {
+                            activity_id = generalActRows[0].id;
+                        }
+                    }
+                }
+                if (!activity_id) {
+                    const sheetActId = r['mã hoạt động (id)'] || r['activity_id'];
+                    if (sheetActId) {
+                        const [actRows] = await conn.query('SELECT id FROM activities WHERE id = ? AND faculty_id = ? AND is_deleted = 0 LIMIT 1', [sheetActId, facultyId]);
+                        if (actRows.length > 0) {
+                            activity_id = actRows[0].id;
+                        }
                     }
                 }
 
@@ -949,11 +984,20 @@ const validateActivities = async (req, res) => {
                 }
 
                 // Check parent enterprise existence
-                let matchedEntId = enterprise_id;
-                if (entName && !matchedEntId) {
+                let matchedEntId = null;
+                if (entName) {
                     const [entRows] = await conn.query('SELECT id FROM enterprises WHERE name = ? AND faculty_id = ? AND is_deleted = 0 LIMIT 1', [entName.trim(), facultyId]);
                     if (entRows.length > 0) {
                         matchedEntId = entRows[0].id;
+                    }
+                }
+                if (!matchedEntId) {
+                    const sheetEntId = r['mã doanh nghiệp (id)'] || r['enterprise_id'];
+                    if (sheetEntId) {
+                        const [entRows] = await conn.query('SELECT id FROM enterprises WHERE id = ? AND faculty_id = ? AND is_deleted = 0 LIMIT 1', [sheetEntId, facultyId]);
+                        if (entRows.length > 0) {
+                            matchedEntId = entRows[0].id;
+                        }
                     }
                 }
 
@@ -1023,11 +1067,20 @@ const validateMous = async (req, res) => {
                 }
 
                 // Check enterprise dependency
-                let matchedEntId = enterprise_id;
-                if (entName && !matchedEntId) {
+                let matchedEntId = null;
+                if (entName) {
                     const [entRows] = await conn.query('SELECT id FROM enterprises WHERE name = ? AND faculty_id = ? AND is_deleted = 0 LIMIT 1', [entName.trim(), facultyId]);
                     if (entRows.length > 0) {
                         matchedEntId = entRows[0].id;
+                    }
+                }
+                if (!matchedEntId) {
+                    const sheetEntId = r['mã doanh nghiệp (id)'] || r['enterprise_id'];
+                    if (sheetEntId) {
+                        const [entRows] = await conn.query('SELECT id FROM enterprises WHERE id = ? AND faculty_id = ? AND is_deleted = 0 LIMIT 1', [sheetEntId, facultyId]);
+                        if (entRows.length > 0) {
+                            matchedEntId = entRows[0].id;
+                        }
                     }
                 }
 
@@ -1048,13 +1101,27 @@ const validateMous = async (req, res) => {
                 const actTitle = r['hoạt động liên kết'] || r['activity_title'] || r['activity'] || '';
                 let activity_id = r['mã hoạt động (id)'] || r['activity_id'] || null;
                 if ((actTitle || activity_id) && status !== 'error') {
-                    let matchedActId = activity_id;
-                    if (actTitle && !matchedActId) {
-                        const [actRows] = await conn.query('SELECT id FROM activities WHERE title = ? AND faculty_id = ? AND is_deleted = 0 LIMIT 1', [actTitle.trim(), facultyId]);
+                    let matchedActId = null;
+                    if (actTitle) {
+                        // Match title AND enterprise_id
+                        const [actRows] = await conn.query('SELECT id FROM activities WHERE title = ? AND enterprise_id = ? AND faculty_id = ? AND is_deleted = 0 LIMIT 1', [actTitle.trim(), matchedEntId, facultyId]);
+                        if (actRows.length > 0) {
+                            matchedActId = actRows[0].id;
+                        } else {
+                            // Fallback to general title search
+                            const [generalActRows] = await conn.query('SELECT id FROM activities WHERE title = ? AND faculty_id = ? AND is_deleted = 0 LIMIT 1', [actTitle.trim(), facultyId]);
+                            if (generalActRows.length > 0) {
+                                matchedActId = generalActRows[0].id;
+                            }
+                        }
+                    }
+                    if (!matchedActId && activity_id) {
+                        const [actRows] = await conn.query('SELECT id FROM activities WHERE id = ? AND faculty_id = ? AND is_deleted = 0 LIMIT 1', [activity_id, facultyId]);
                         if (actRows.length > 0) {
                             matchedActId = actRows[0].id;
                         }
                     }
+
                     if (!matchedActId) {
                         errors.push(`Hoạt động "${actTitle || 'Chưa xác định'}" không tồn tại trên hệ thống. Cần import hoạt động này trước.`);
                         status = 'error';
@@ -1109,8 +1176,6 @@ const validateStudents = async (req, res) => {
                 const r = rows[i];
                 const student_code = r['mssv'] || r['student_code'];
                 const name = r['họ tên'] || r['name'] || r['ho_ten'];
-                const actTitle = r['hoạt động tham gia'] || r['activity_title'] || r['activity'] || '';
-                let activity_id = r['mã hoạt động (id)'] || r['activity_id'] || null;
 
                 const errors = [];
                 const warnings = [];
@@ -1121,28 +1186,34 @@ const validateStudents = async (req, res) => {
                     status = 'error';
                 }
 
-                // Check activity dependency if provided
-                if ((actTitle || activity_id) && status !== 'error') {
-                    let matchedActId = activity_id;
-                    if (actTitle && !matchedActId) {
-                        const [actRows] = await conn.query('SELECT id FROM activities WHERE title = ? AND faculty_id = ? AND is_deleted = 0 LIMIT 1', [actTitle.trim(), facultyId]);
-                        if (actRows.length > 0) {
-                            matchedActId = actRows[0].id;
-                        }
-                    }
-
-                    if (!matchedActId) {
-                        errors.push(`Hoạt động "${actTitle || 'Chưa xác định'}" không tồn tại trên hệ thống. Cần import hoạt động này trước.`);
-                        status = 'error';
-                    }
-                }
-
                 if (student_code) {
                     // Check duplicate
                     const [existing] = await conn.query('SELECT id FROM students WHERE student_code = ? AND is_deleted = 0 LIMIT 1', [student_code]);
                     if (existing.length > 0) {
                         errors.push('Sinh viên với MSSV này đã tồn tại trên hệ thống.');
                         status = 'duplicate';
+                    }
+                }
+
+                // Check enterprise mapping if provided
+                const entName = r['nơi thực tập/làm việc'] || r['enterprise_name'] || r['enterprise'] || '';
+                const enterprise_id = r['mã doanh nghiệp (id)'] || r['enterprise_id'] || null;
+                if (entName || enterprise_id) {
+                    let matchedEntId = null;
+                    if (entName) {
+                        const [entRows] = await conn.query('SELECT id FROM enterprises WHERE name = ? AND faculty_id = ? AND is_deleted = 0 LIMIT 1', [entName.trim(), facultyId]);
+                        if (entRows.length > 0) {
+                            matchedEntId = entRows[0].id;
+                        }
+                    }
+                    if (!matchedEntId && enterprise_id) {
+                        const [entRows] = await conn.query('SELECT id FROM enterprises WHERE id = ? AND faculty_id = ? AND is_deleted = 0 LIMIT 1', [enterprise_id, facultyId]);
+                        if (entRows.length > 0) {
+                            matchedEntId = entRows[0].id;
+                        }
+                    }
+                    if (!matchedEntId) {
+                        warnings.push(`Doanh nghiệp "${entName || 'Chưa xác định'}" không tồn tại trên hệ thống. Cần import doanh nghiệp này trước.`);
                     }
                 }
 
@@ -1156,6 +1227,7 @@ const validateStudents = async (req, res) => {
                     }
                 }
 
+
                 validatedRows.push({ row: r, status, errors, warnings });
             }
         } finally {
@@ -1168,4 +1240,288 @@ const validateStudents = async (req, res) => {
     }
 };
 
-module.exports = { upload, importEnterprises, importActivities, importStudents, importMous, aiParseRow, validateEnterprises, validateActivities, validateMous, validateStudents };
+const validateActivityStudents = async (req, res) => {
+    try {
+        const rows = req.body.rows || [];
+        const facultyId = req.user.role === 'ADMIN' ? (req.body.faculty_id || null) : req.user.faculty_id;
+        const validatedRows = [];
+
+        if (!facultyId) {
+            return res.status(400).json({ message: "Thiếu thông tin Khoa quản lý." });
+        }
+
+        const conn = await pool.getConnection();
+        const seenPairs = new Set();
+        const debugLog = {
+            timestamp: new Date().toISOString(),
+            facultyId,
+            totalRows: rows.length,
+            rowsProcessed: []
+        };
+
+        try {
+            for (let i = 0; i < rows.length; i++) {
+                const r = rows[i];
+                const student_code = r['mssv'] || r['student_code'];
+                const activity_id = r['mã hoạt động (id)'] || r['activity_id'];
+                const actTitle = r['tên hoạt động'] || r['activity_title'];
+                const entName = r['tên doanh nghiệp'] || r['enterprise_name'] || r['enterprise'] || '';
+
+                const errors = [];
+                const warnings = [];
+                let status = 'success';
+
+                if (!student_code) {
+                    errors.push('Thiếu MSSV.');
+                    status = 'error';
+                }
+
+                if (!activity_id && !actTitle) {
+                    errors.push('Thiếu thông tin Hoạt động (Mã hoạt động hoặc Tên hoạt động).');
+                    status = 'error';
+                }
+
+                let matchedStudentId = null;
+                let matchedActId = null;
+
+                if (student_code) {
+                    const [studRows] = await conn.query('SELECT id, name, faculty_id FROM students WHERE student_code = ? AND is_deleted = 0 LIMIT 1', [student_code.toString().trim()]);
+                    if (studRows.length > 0) {
+                        matchedStudentId = studRows[0].id;
+                        if (studRows[0].faculty_id !== facultyId) {
+                            warnings.push(`Sinh viên thuộc Khoa khác (ID khoa: ${studRows[0].faculty_id}).`);
+                        }
+                    } else {
+                        errors.push(`Sinh viên với MSSV "${student_code}" không tồn tại trên hệ thống. Cần import sinh viên trước.`);
+                        status = 'error';
+                    }
+                }
+
+                if (status !== 'error') {
+                    let matchedEntId = null;
+                    if (entName) {
+                        const [entRows] = await conn.query('SELECT id FROM enterprises WHERE name = ? AND faculty_id = ? AND is_deleted = 0 LIMIT 1', [entName.trim(), facultyId]);
+                        if (entRows.length > 0) {
+                            matchedEntId = entRows[0].id;
+                        } else {
+                            warnings.push(`Không tìm thấy Doanh nghiệp "${entName}" trên hệ thống.`);
+                        }
+                    }
+
+                    if (actTitle) {
+                        if (matchedEntId) {
+                            const [actRows] = await conn.query('SELECT id, title FROM activities WHERE title = ? AND enterprise_id = ? AND faculty_id = ? AND is_deleted = 0 LIMIT 1', [actTitle.toString().trim(), matchedEntId, facultyId]);
+                            if (actRows.length > 0) {
+                                matchedActId = actRows[0].id;
+                            }
+                        }
+                        if (!matchedActId) {
+                            const [actRows] = await conn.query('SELECT id, title FROM activities WHERE title = ? AND faculty_id = ? AND is_deleted = 0 LIMIT 1', [actTitle.toString().trim(), facultyId]);
+                            if (actRows.length > 0) {
+                                matchedActId = actRows[0].id;
+                            }
+                        }
+                    }
+
+                    if (!matchedActId && activity_id) {
+                        const [actRows] = await conn.query('SELECT id, title FROM activities WHERE id = ? AND faculty_id = ? AND is_deleted = 0 LIMIT 1', [activity_id, facultyId]);
+                        if (actRows.length > 0) {
+                            matchedActId = actRows[0].id;
+                        } else {
+                            const [globalAct] = await conn.query('SELECT id, title FROM activities WHERE id = ? AND is_deleted = 0 LIMIT 1', [activity_id]);
+                            if (globalAct.length > 0) {
+                                errors.push(`Hoạt động này không thuộc Khoa quản lý của bạn.`);
+                            } else {
+                                errors.push(`Hoạt động với ID "${activity_id}" không tồn tại trên hệ thống.`);
+                            }
+                            status = 'error';
+                        }
+                    }
+
+                    if (status !== 'error' && !matchedActId) {
+                        errors.push(`Hoạt động "${actTitle || 'Chưa xác định'}" không tồn tại ở Khoa của bạn. Cần import hoạt động trước.`);
+                        status = 'error';
+                    }
+                }
+
+                if (status !== 'error' && matchedStudentId && matchedActId) {
+                    const pairKey = `${matchedStudentId}-${matchedActId}`;
+                    if (seenPairs.has(pairKey)) {
+                        errors.push('Dòng này bị trùng lặp với một dòng khác trong cùng file Excel.');
+                        status = 'duplicate';
+                    } else {
+                        seenPairs.add(pairKey);
+                        const [existing] = await conn.query('SELECT student_id FROM student_activities WHERE student_id = ? AND activity_id = ? LIMIT 1', [matchedStudentId, matchedActId]);
+                        if (existing.length > 0) {
+                            errors.push('Sinh viên đã được gán vào hoạt động này rồi (Trùng lặp với dữ liệu trên hệ thống).');
+                            status = 'duplicate';
+                        }
+                    }
+                }
+
+                debugLog.rowsProcessed.push({
+                    index: i,
+                    rawRow: r,
+                    student_code,
+                    activity_id,
+                    actTitle,
+                    entName,
+                    matchedStudentId,
+                    matchedActId,
+                    status,
+                    errors,
+                    warnings
+                });
+
+                validatedRows.push({ row: r, status, errors, warnings });
+            }
+        } finally {
+            conn.release();
+        }
+
+        // Write debug file
+        try {
+            require('fs').writeFileSync(
+                require('path').join(__dirname, '../../debug_validate.json'),
+                JSON.stringify(debugLog, null, 2),
+                'utf8'
+            );
+        } catch (fsErr) {
+            console.error('Failed to write debug log:', fsErr);
+        }
+
+        res.json({ validatedRows });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+const importActivityStudents = async (req, res) => {
+    try {
+        const rows = req.file ? parseFileToJSON(req.file.buffer, req.file.originalname, 'activity_students') : req.body.rows;
+        let inserted = 0;
+        let skipped = 0;
+        let errors = [];
+        const facultyId = req.user.role === 'ADMIN' ? (req.body.faculty_id || null) : req.user.faculty_id;
+
+        if (!facultyId) {
+            return res.status(400).json({ message: "Thiếu thông tin Khoa quản lý." });
+        }
+
+        for (let i = 0; i < rows.length; i++) {
+            const r = rows[i];
+            const conn = await pool.getConnection();
+            try {
+                await conn.beginTransaction();
+
+                const student_code = r['mssv'] || r['student_code'];
+                const activity_id = r['mã hoạt động (id)'] || r['activity_id'];
+                const actTitle = r['tên hoạt động'] || r['activity_title'];
+                let joined_at = r['ngày tham gia'] || r['joined_at'] || null;
+
+                const parseDateStr = (d) => {
+                    if (!d) return null;
+                    if (typeof d === 'string' && d.includes('/')) {
+                        const parts = d.split('/');
+                        if (parts.length === 3) return `${parts[2]}-${parts[1]}-${parts[0]}`;
+                    }
+                    return d;
+                };
+                joined_at = parseDateStr(joined_at);
+
+                if (!student_code) { errors.push(`Dòng ${i + 2}: Thiếu MSSV`); continue; }
+                if (!activity_id && !actTitle) { errors.push(`Dòng ${i + 2}: Thiếu thông tin hoạt động`); continue; }
+
+                const [studRows] = await conn.query('SELECT id FROM students WHERE student_code = ? AND is_deleted = 0 LIMIT 1', [student_code.toString().trim()]);
+                if (studRows.length === 0) {
+                    errors.push(`Dòng ${i + 2}: Sinh viên MSSV ${student_code} không tồn tại`);
+                    await conn.rollback();
+                    conn.release();
+                    continue;
+                }
+                const studentId = studRows[0].id;
+
+                let activityId = null;
+                const entName = r['tên doanh nghiệp'] || r['enterprise_name'] || r['enterprise'] || '';
+                let matchedEntId = null;
+                if (entName) {
+                    const [entRows] = await conn.query('SELECT id FROM enterprises WHERE name = ? AND faculty_id = ? AND is_deleted = 0 LIMIT 1', [entName.trim(), facultyId]);
+                    if (entRows.length > 0) {
+                        matchedEntId = entRows[0].id;
+                    }
+                }
+
+                if (actTitle) {
+                    if (matchedEntId) {
+                        const [actRows] = await conn.query('SELECT id FROM activities WHERE title = ? AND enterprise_id = ? AND faculty_id = ? AND is_deleted = 0 LIMIT 1', [actTitle.toString().trim(), matchedEntId, facultyId]);
+                        if (actRows.length > 0) {
+                            activityId = actRows[0].id;
+                        }
+                    }
+                    if (!activityId) {
+                        const [actRows] = await conn.query('SELECT id FROM activities WHERE title = ? AND faculty_id = ? AND is_deleted = 0 LIMIT 1', [actTitle.toString().trim(), facultyId]);
+                        if (actRows.length > 0) {
+                            activityId = actRows[0].id;
+                        }
+                    }
+                }
+
+                if (!activityId && activity_id) {
+                    const [actRows] = await conn.query('SELECT id FROM activities WHERE id = ? AND faculty_id = ? AND is_deleted = 0 LIMIT 1', [activity_id, facultyId]);
+                    if (actRows.length > 0) {
+                        activityId = actRows[0].id;
+                    }
+                }
+
+                if (!activityId) {
+                    errors.push(`Dòng ${i + 2}: Không xác định được hoạt động`);
+                    await conn.rollback();
+                    conn.release();
+                    continue;
+                }
+
+                const [existing] = await conn.query('SELECT student_id FROM student_activities WHERE student_id = ? AND activity_id = ? LIMIT 1', [studentId, activityId]);
+                if (existing.length > 0) {
+                    skipped++;
+                    errors.push(`Dòng ${i + 2}: Sinh viên đã tham gia hoạt động này rồi`);
+                    await conn.rollback();
+                    conn.release();
+                    continue;
+                }
+
+                if (joined_at) {
+                    await conn.query('INSERT INTO student_activities (student_id, activity_id, joined_at) VALUES (?, ?, ?)', [studentId, activityId, joined_at]);
+                } else {
+                    await conn.query('INSERT INTO student_activities (student_id, activity_id) VALUES (?, ?)', [studentId, activityId]);
+                }
+
+                await conn.commit();
+                inserted++;
+            } catch (e) {
+                await conn.rollback();
+                errors.push(`Dòng ${i + 2}: ${e.message}`);
+            } finally {
+                conn.release();
+            }
+        }
+
+        res.json({ message: `Import hoàn tất. Thêm mới: ${inserted}, Bỏ qua (trùng): ${skipped}, Lỗi: ${errors.length}`, inserted, skipped, total: rows.length, errors });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+module.exports = {
+    upload,
+    importEnterprises,
+    importActivities,
+    importStudents,
+    importMous,
+    aiParseRow,
+    validateEnterprises,
+    validateActivities,
+    validateMous,
+    validateStudents,
+    validateActivityStudents,
+    importActivityStudents
+};

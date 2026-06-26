@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Modal, Upload, Button, message, Alert, Typography, Table, Tag, Steps, Select, Spin, Space, App as AntApp, Tooltip } from 'antd';
+import { Modal, Upload, Button, message, Alert, Typography, Table, Tag, Steps, Select, Spin, Space, App as AntApp, Tooltip, Radio } from 'antd';
 import { UploadOutlined, FileExcelOutlined, InboxOutlined, DownloadOutlined, ArrowLeftOutlined, ArrowRightOutlined, CheckCircleOutlined } from '@ant-design/icons';
 import api from '../utils/api';
 import * as XLSX from 'xlsx';
@@ -81,6 +81,14 @@ const ALIAS_MAP = {
         'hoạt động liên kết': ['hoạt động liên kết', 'hoat dong lien ket', 'activity_title', 'hoạt động', 'hoat dong', 'tên hoạt động', 'ten hoat dong', 'activity'],
         'mã hoạt động (id)': ['mã hoạt động (id)', 'activity_id', 'mã hoạt động', 'ma hoat dong'],
         'link tài liệu': ['link tài liệu', 'link tai lieu', 'file_url', 'file url']
+    },
+    activity_students: {
+        'mssv': ['mssv', 'student_code', 'student code', 'mã sinh viên', 'ma sinh vien', 'mã sv', 'ma sv', 'mã số sinh viên', 'ma so sinh vien'],
+        'họ tên': ['họ tên', 'ho ten', 'họ và tên', 'ho va ten', 'tên', 'ten', 'name', 'tên sinh viên', 'ten sinh vien', 'họ & tên'],
+        'mã hoạt động (id)': ['mã hoạt động (id)', 'activity_id', 'mã hoạt động', 'ma hoat dong', 'mã hđ (id)', 'ma hd (id)', 'mã hđ', 'ma hd'],
+        'tên hoạt động': ['tên hoạt động', 'ten hoat dong', 'activity', 'activity_title', 'hoạt động', 'hoat dong'],
+        'tên doanh nghiệp': ['tên doanh nghiệp', 'ten doanh nghiep', 'enterprise_name', 'doanh nghiệp', 'doanh nghiep', 'công ty', 'cong ty', 'tên công ty', 'ten cong ty'],
+        'ngày tham gia': ['ngày tham gia', 'ngay tham gia', 'joined_at', 'joined date', 'ngày tham gia hoạt động']
     }
 };
 
@@ -135,15 +143,24 @@ const ImportModal = ({ open, onClose, onSuccess, type, templateColumns }) => {
     const [originalFile, setOriginalFile] = useState(null);
     const [step2Loading, setStep2Loading] = useState(false);
     const [filterType, setFilterType] = useState('all');
+    const [importSubMode, setImportSubMode] = useState('info'); // 'info' or 'students'
+    const [workbook, setWorkbook] = useState(null);
+    const [sheetNames, setSheetNames] = useState([]);
+    const [selectedSheetName, setSelectedSheetName] = useState('');
 
     // Get user role
     const userCookie = Cookies.get('user');
     const user = userCookie ? JSON.parse(userCookie) : null;
     const isAdmin = user?.role === 'ADMIN';
 
+    const currentImportType = type === 'activities' && importSubMode === 'students' ? 'activity-students' : type;
+    const currentTemplateColumns = type === 'activities' && importSubMode === 'students'
+        ? ['MSSV', 'Mã hoạt động (ID)', 'Tên hoạt động', 'Doanh nghiệp', 'Ngày tham gia']
+        : templateColumns;
+
     const typeLabels = {
         enterprises: 'Doanh nghiệp',
-        activities: 'Hoạt động',
+        activities: importSubMode === 'students' ? 'Sinh viên tham gia hoạt động' : 'Hoạt động',
         students: 'Sinh viên',
         mous: 'Biên bản ghi nhớ (MOU)',
     };
@@ -163,47 +180,87 @@ const ImportModal = ({ open, onClose, onSuccess, type, templateColumns }) => {
         }
     }, [open, isAdmin]);
 
+    const handleParseSheet = (sheetName, wb = workbook) => {
+        if (!wb || !sheetName) return;
+        setStep2Loading(true);
+        setCurrentStep(1);
+
+        try {
+            const sheet = wb.Sheets[sheetName];
+            const json = XLSX.utils.sheet_to_json(sheet);
+
+            if (json.length === 0) {
+                message.error(`Sheet "${sheetName}" không có dữ liệu!`);
+                handleReset();
+                return;
+            }
+
+            // Standardize keys
+            const standardType = type === 'activities' && importSubMode === 'students' ? 'activity_students' : type;
+            const normalized = json.map(row => standardizeRowKeys(row, standardType));
+
+            // Post to validate endpoint
+            api.post(`/import/${currentImportType}/validate`, {
+                rows: normalized,
+                faculty_id: isAdmin ? selectedFacultyId : undefined
+            }).then((res) => {
+                setParsedRows(res.data.validatedRows);
+                setStep2Loading(false);
+                setCurrentStep(2);
+            }).catch((err) => {
+                message.error('Lỗi khi kiểm tra dữ liệu: ' + (err.response?.data?.message || err.message));
+                handleReset();
+            });
+        } catch (err) {
+            message.error('Lỗi khi đọc sheet Excel: ' + err.message);
+            handleReset();
+        }
+    };
+
     // Handle file selection in Step 1
     const handleBeforeUpload = (file) => {
         if (isAdmin && !selectedFacultyId) {
             message.error('Vui lòng chọn Khoa quản lý trước khi tải file lên!');
             return false;
         }
-        setOriginalFile(file);
-        setStep2Loading(true);
-        setCurrentStep(1);
 
         // Process file
         const reader = new FileReader();
         reader.onload = (e) => {
             try {
                 const data = new Uint8Array(e.target.result);
-                const workbook = XLSX.read(data, { type: 'array' });
-                const firstSheetName = workbook.SheetNames[0];
-                const sheet = workbook.Sheets[firstSheetName];
-                const json = XLSX.utils.sheet_to_json(sheet);
+                const wb = XLSX.read(data, { type: 'array' });
+                const names = wb.SheetNames;
 
-                if (json.length === 0) {
-                    message.error('File Excel không có dữ liệu!');
-                    handleReset();
+                if (names.length === 0) {
+                    message.error('File Excel không có sheet nào!');
                     return;
                 }
 
-                // Standardize keys
-                const normalized = json.map(row => standardizeRowKeys(row, type));
+                setOriginalFile(file);
+                setWorkbook(wb);
+                setSheetNames(names);
 
-                // Post to validate endpoint
-                api.post(`/import/${type}/validate`, {
-                    rows: normalized,
-                    faculty_id: isAdmin ? selectedFacultyId : undefined
-                }).then((res) => {
-                    setParsedRows(res.data.validatedRows);
-                    setStep2Loading(false);
-                    setCurrentStep(2);
-                }).catch((err) => {
-                    message.error('Lỗi khi kiểm tra dữ liệu: ' + (err.response?.data?.message || err.message));
-                    handleReset();
-                });
+                // Auto-detect best sheet name if we have multiple sheets
+                let defaultSheet = names[0];
+                if (type === 'activities' && importSubMode === 'students') {
+                    const matchedName = names.find(n => 
+                        n.toLowerCase().includes('sinh viên') || 
+                        n.toLowerCase().includes('sinh vien') || 
+                        n.toLowerCase().includes('tham gia') || 
+                        n.toLowerCase().includes('student')
+                    );
+                    if (matchedName) {
+                        defaultSheet = matchedName;
+                    }
+                }
+                setSelectedSheetName(defaultSheet);
+
+                if (names.length === 1) {
+                    handleParseSheet(defaultSheet, wb);
+                } else {
+                    message.info(`File có ${names.length} tabs. Vui lòng chọn tab muốn import.`);
+                }
 
             } catch (err) {
                 message.error('Lỗi khi đọc file Excel: ' + err.message);
@@ -232,7 +289,7 @@ const ImportModal = ({ open, onClose, onSuccess, type, templateColumns }) => {
                 faculty_id: isAdmin ? selectedFacultyId : undefined
             };
 
-            const res = await api.post(`/import/${type}`, payload);
+            const res = await api.post(`/import/${currentImportType}`, payload);
             setResult(res.data);
             if (res.data.inserted > 0) {
                 message.success(res.data.message);
@@ -249,11 +306,11 @@ const ImportModal = ({ open, onClose, onSuccess, type, templateColumns }) => {
 
     const downloadTemplate = () => {
         const ws = XLSX.utils.json_to_sheet([
-            templateColumns.reduce((obj, col) => ({ ...obj, [col]: '' }), {})
+            currentTemplateColumns.reduce((obj, col) => ({ ...obj, [col]: '' }), {})
         ]);
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, 'Template');
-        XLSX.writeFile(wb, `template_${type}.xlsx`);
+        XLSX.writeFile(wb, `template_${currentImportType}.xlsx`);
         message.success('Đã tải file mẫu');
     };
 
@@ -264,6 +321,10 @@ const ImportModal = ({ open, onClose, onSuccess, type, templateColumns }) => {
         setStep2Loading(false);
         setCurrentStep(0);
         setFilterType('all');
+        setImportSubMode('info');
+        setWorkbook(null);
+        setSheetNames([]);
+        setSelectedSheetName('');
     };
 
     const handleClose = () => {
@@ -393,83 +454,118 @@ const ImportModal = ({ open, onClose, onSuccess, type, templateColumns }) => {
                 }
             ];
         } else if (type === 'activities') {
-            entityColumns = [
-                {
-                    title: 'Tên Hoạt động',
-                    render: (_, r) => r.row['tên hoạt động'] || r.row['title'] || r.row['ten_hoat_dong'] || '---',
-                    width: 180,
-                },
-                {
-                    title: 'Doanh nghiệp',
-                    render: (_, r) => r.row['tên doanh nghiệp'] || r.row['enterprise_name'] || r.row['enterprise'] || '---',
-                    width: 180,
-                },
-                {
-                    title: 'Mã DN (ID)',
-                    render: (_, r) => r.row['mã doanh nghiệp (id)'] || r.row['enterprise_id'] || '---',
-                    width: 100,
-                },
-                {
-                    title: 'Loại hình',
-                    render: (_, r) => r.row['loại hình'] || r.row['type'] || r.row['loai_hinh'] || '---',
-                    width: 130,
-                },
-                {
-                    title: 'Đối tượng',
-                    render: (_, r) => r.row['đối tượng'] || r.row['target'] || '---',
-                    width: 120,
-                },
-                {
-                    title: 'Mô tả',
-                    render: (_, r) => r.row['mô tả'] || r.row['detail'] || r.row['description'] || '---',
-                    width: 200,
-                    ellipsis: true,
-                },
-                {
-                    title: 'Ngày bắt đầu',
-                    render: (_, r) => r.row['ngày bắt đầu'] || r.row['start_date'] || '---',
-                    width: 110,
-                },
-                {
-                    title: 'Ngày kết thúc',
-                    render: (_, r) => r.row['ngày kết thúc'] || r.row['end_date'] || '---',
-                    width: 110,
-                },
-                {
-                    title: 'Ngày hợp tác',
-                    render: (_, r) => r.row['ngày hợp tác'] || r.row['collaboration_date'] || '---',
-                    width: 110,
-                },
-                {
-                    title: 'Thời gian bắt đầu',
-                    render: (_, r) => r.row['thời gian bắt đầu'] || r.row['start_time'] || '---',
-                    width: 120,
-                },
-                {
-                    title: 'Thời gian kết thúc',
-                    render: (_, r) => r.row['thời gian kết thúc'] || r.row['end_time'] || '---',
-                    width: 120,
-                },
-                {
-                    title: 'Người phụ trách',
-                    render: (_, r) => r.row['người phụ trách'] || r.row['person_in_charge'] || '---',
-                    width: 150,
-                },
-                {
-                    title: 'Nhiệm vụ',
-                    render: (_, r) => {
-                        const tasks = r.row['nhiệm vụ'] || r.row['tasks'];
-                        return tasks ? (typeof tasks === 'string' ? tasks : JSON.stringify(tasks)) : '---';
+            if (importSubMode === 'info') {
+                entityColumns = [
+                    {
+                        title: 'Tên Hoạt động',
+                        render: (_, r) => r.row['tên hoạt động'] || r.row['title'] || r.row['ten_hoat_dong'] || '---',
+                        width: 180,
                     },
-                    width: 200,
-                    ellipsis: true,
-                },
-                {
-                    title: 'Trạng thái',
-                    render: (_, r) => r.row['trạng thái'] || r.row['status'] || '---',
-                    width: 110,
-                }
-            ];
+                    {
+                        title: 'Doanh nghiệp',
+                        render: (_, r) => r.row['tên doanh nghiệp'] || r.row['enterprise_name'] || r.row['enterprise'] || '---',
+                        width: 180,
+                    },
+                    {
+                        title: 'Mã DN (ID)',
+                        render: (_, r) => r.row['mã doanh nghiệp (id)'] || r.row['enterprise_id'] || '---',
+                        width: 100,
+                    },
+                    {
+                        title: 'Loại hình',
+                        render: (_, r) => r.row['loại hình'] || r.row['type'] || r.row['loai_hinh'] || '---',
+                        width: 130,
+                    },
+                    {
+                        title: 'Đối tượng',
+                        render: (_, r) => r.row['đối tượng'] || r.row['target'] || '---',
+                        width: 120,
+                    },
+                    {
+                        title: 'Mô tả',
+                        render: (_, r) => r.row['mô tả'] || r.row['detail'] || r.row['description'] || '---',
+                        width: 200,
+                        ellipsis: true,
+                    },
+                    {
+                        title: 'Ngày bắt đầu',
+                        render: (_, r) => r.row['ngày bắt đầu'] || r.row['start_date'] || '---',
+                        width: 110,
+                    },
+                    {
+                        title: 'Ngày kết thúc',
+                        render: (_, r) => r.row['ngày kết thúc'] || r.row['end_date'] || '---',
+                        width: 110,
+                    },
+                    {
+                        title: 'Ngày hợp tác',
+                        render: (_, r) => r.row['ngày hợp tác'] || r.row['collaboration_date'] || '---',
+                        width: 110,
+                    },
+                    {
+                        title: 'Thời gian bắt đầu',
+                        render: (_, r) => r.row['thời gian bắt đầu'] || r.row['start_time'] || '---',
+                        width: 120,
+                    },
+                    {
+                        title: 'Thời gian kết thúc',
+                        render: (_, r) => r.row['thời gian kết thúc'] || r.row['end_time'] || '---',
+                        width: 120,
+                    },
+                    {
+                        title: 'Người phụ trách',
+                        render: (_, r) => r.row['người phụ trách'] || r.row['person_in_charge'] || '---',
+                        width: 150,
+                    },
+                    {
+                        title: 'Nhiệm vụ',
+                        render: (_, r) => {
+                            const tasks = r.row['nhiệm vụ'] || r.row['tasks'];
+                            return tasks ? (typeof tasks === 'string' ? tasks : JSON.stringify(tasks)) : '---';
+                        },
+                        width: 200,
+                        ellipsis: true,
+                    },
+                    {
+                        title: 'Trạng thái',
+                        render: (_, r) => r.row['trạng thái'] || r.row['status'] || '---',
+                        width: 110,
+                    }
+                ];
+            } else {
+                entityColumns = [
+                    {
+                        title: 'MSSV',
+                        render: (_, r) => r.row['mssv'] || r.row['student_code'] || '---',
+                        width: 120,
+                    },
+                    {
+                        title: 'Họ tên',
+                        render: (_, r) => r.row['họ tên'] || r.row['name'] || '---',
+                        width: 150,
+                    },
+                    {
+                        title: 'Mã HĐ (ID)',
+                        render: (_, r) => r.row['mã hoạt động (id)'] || r.row['activity_id'] || '---',
+                        width: 100,
+                    },
+                    {
+                        title: 'Tên Hoạt động',
+                        render: (_, r) => r.row['tên hoạt động'] || r.row['activity_title'] || '---',
+                        width: 180,
+                    },
+                    {
+                        title: 'Doanh nghiệp',
+                        render: (_, r) => r.row['tên doanh nghiệp'] || r.row['enterprise_name'] || r.row['enterprise'] || '---',
+                        width: 180,
+                    },
+                    {
+                        title: 'Ngày tham gia',
+                        render: (_, r) => r.row['ngày tham gia'] || r.row['joined_at'] || '---',
+                        width: 120,
+                    }
+                ];
+            }
         } else if (type === 'students') {
             entityColumns = [
                 {
@@ -701,6 +797,31 @@ const ImportModal = ({ open, onClose, onSuccess, type, templateColumns }) => {
                 {/* STEP 1: Upload and options */}
                 {currentStep === 0 && (
                     <div className="space-y-4">
+                        {type === 'activities' && (
+                            <div className="bg-slate-50 dark:bg-gray-800/40 p-4 rounded-xl border border-slate-200 dark:border-gray-700">
+                                <div className="text-sm font-semibold text-slate-700 dark:text-gray-200 mb-3">
+                                    Chọn loại dữ liệu muốn import <span className="text-red-500">*</span>
+                                </div>
+                                <Radio.Group
+                                    onChange={(e) => setImportSubMode(e.target.value)}
+                                    value={importSubMode}
+                                    className="flex flex-col gap-2"
+                                >
+                                    <Radio value="info">1. Import thông tin hoạt động</Radio>
+                                    <Radio value="students">2. Import danh sách sinh viên tham gia hoạt động</Radio>
+                                </Radio.Group>
+                            </div>
+                        )}
+
+                        {type === 'activities' && importSubMode === 'students' && (
+                            <Alert
+                                message="Lưu ý"
+                                description="Nên import thông tin hoạt động và thông tin sinh viên trước để tránh bị lỗi."
+                                type="warning"
+                                showIcon
+                            />
+                        )}
+
                         <Alert
                             message="Hướng dẫn Import"
                             description={
@@ -742,21 +863,51 @@ const ImportModal = ({ open, onClose, onSuccess, type, templateColumns }) => {
                             Tải file mẫu (.xlsx)
                         </Button>
 
-                        <Dragger
-                            name="file"
-                            multiple={false}
-                            accept=".csv,.xlsx,.xls"
-                            beforeUpload={handleBeforeUpload}
-                            showUploadList={false}
-                            disabled={isAdmin && !selectedFacultyId}
-                        >
-                            <p className="text-4xl text-gray-300 mb-2"><InboxOutlined /></p>
-                            <p className="text-gray-600 font-medium dark:text-gray-300">Kéo thả file vào đây hoặc bấm để chọn file</p>
-                            <p className="text-gray-400 text-xs mt-1">Hỗ trợ: .csv, .xlsx, .xls</p>
-                            {isAdmin && !selectedFacultyId && (
-                                <p className="text-red-400 text-xs mt-2 font-medium">⚠ Hãy chọn Khoa trước khi upload file</p>
-                            )}
-                        </Dragger>
+                        {sheetNames.length > 1 ? (
+                            <div className="bg-slate-50 dark:bg-gray-800/40 p-4 rounded-xl border border-slate-200 dark:border-gray-700 space-y-3">
+                                <div className="text-sm font-semibold text-slate-700 dark:text-gray-200">
+                                    Đã tải lên file: <span className="text-blue-600">{originalFile?.name}</span>
+                                </div>
+                                <div className="text-sm font-semibold text-slate-700 dark:text-gray-200">
+                                    Chọn Tab / Sheet để import dữ liệu:
+                                </div>
+                                <Select
+                                    value={selectedSheetName}
+                                    onChange={setSelectedSheetName}
+                                    className="w-full h-10"
+                                >
+                                    {sheetNames.map(name => (
+                                        <Option key={name} value={name}>{name}</Option>
+                                    ))}
+                                </Select>
+                                <div className="flex gap-2 justify-end pt-2">
+                                    <Button onClick={handleReset}>Chọn file khác</Button>
+                                    <Button 
+                                        type="primary" 
+                                        onClick={() => handleParseSheet(selectedSheetName)}
+                                        className="bg-green-600 border-none text-white rounded-lg font-medium"
+                                    >
+                                        Tiếp tục phân tích
+                                    </Button>
+                                </div>
+                            </div>
+                        ) : (
+                            <Dragger
+                                name="file"
+                                multiple={false}
+                                accept=".csv,.xlsx,.xls"
+                                beforeUpload={handleBeforeUpload}
+                                showUploadList={false}
+                                disabled={isAdmin && !selectedFacultyId}
+                            >
+                                <p className="text-4xl text-gray-300 mb-2"><InboxOutlined /></p>
+                                <p className="text-gray-600 font-medium dark:text-gray-300">Kéo thả file vào đây hoặc bấm để chọn file</p>
+                                <p className="text-gray-400 text-xs mt-1">Hỗ trợ: .csv, .xlsx, .xls</p>
+                                {isAdmin && !selectedFacultyId && (
+                                    <p className="text-red-400 text-xs mt-2 font-medium">⚠ Hãy chọn Khoa trước khi upload file</p>
+                                )}
+                            </Dragger>
+                        )}
                     </div>
                 )}
 

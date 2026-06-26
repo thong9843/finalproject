@@ -752,23 +752,25 @@ const ActivityList = () => {
         }
     ];
 
-    const handleExportClick = () => {
+    const handleExportClick = async () => {
         const isAdmin = user?.role === 'ADMIN';
         if (isAdmin && !filterFaculty) {
             setExportSelectedFacultyId(undefined);
             setIsExportFacultyModalOpen(true);
         } else {
             const targetFacultyId = filterFaculty || user?.faculty_id;
-            performExport(filteredData, targetFacultyId);
+            await performExport(filteredData, targetFacultyId);
         }
     };
 
-    const performExport = (exportList, facultyId) => {
+    const performExport = async (exportList, facultyId) => {
         if (!exportList || exportList.length === 0) {
             message.warning('Không có dữ liệu để xuất');
             return;
         }
-        const exportData = exportList.map(item => ({
+
+        // === Sheet 1: Danh sách Hoạt động ===
+        const activitySheet = exportList.map(item => ({
             'Mã hoạt động': item.id,
             'Mã doanh nghiệp (ID)': item.enterprise_id || '',
             'Tên doanh nghiệp': item.enterprise_name || '',
@@ -784,10 +786,61 @@ const ActivityList = () => {
             'Ngày hợp tác': item.collaboration_date ? dayjs(item.collaboration_date).format('DD/MM/YYYY') : '',
             'Mô tả': item.detail || '',
             'Trạng thái': item.status || '',
+            'Số SV tham gia': item.student_count || 0,
         }));
-        const ws = XLSX.utils.json_to_sheet(exportData);
+
+        // === Sheet 2: Sinh viên tham gia ===
+        message.loading({ content: 'Đang tải danh sách sinh viên...', key: 'export_students' });
+        let studentRows = [];
+        try {
+            for (const act of exportList) {
+                const res = await api.get(`/activities/${act.id}/students`);
+                const students = res.data || [];
+                students.forEach(s => {
+                    studentRows.push({
+                        'Mã hoạt động': act.id,
+                        'Tên hoạt động': act.title,
+                        'Doanh nghiệp': act.enterprise_name || '',
+                        'MSSV': s.student_code || '',
+                        'Họ tên': s.name || '',
+                        'Lớp': s.class || '',
+                        'Ngành học': s.major || '',
+                        'Email': s.email || '',
+                        'GPA': s.gpa || '',
+                        'Vị trí': s.position || '',
+                        'Trạng thái': s.status || '',
+                        'Ngày bắt đầu TT': s.start_date ? dayjs(s.start_date).format('DD/MM/YYYY') : '',
+                        'Ngày kết thúc TT': s.end_date ? dayjs(s.end_date).format('DD/MM/YYYY') : '',
+                        'GV Hướng dẫn': s.advisor || '',
+                        'Khoa': s.faculty_name || '',
+                    });
+                });
+            }
+        } catch (e) {
+            message.warning({ content: 'Một số dữ liệu sinh viên không tải được', key: 'export_students' });
+        }
+
+        const ws1 = XLSX.utils.json_to_sheet(activitySheet);
+        const ws2 = studentRows.length > 0
+            ? XLSX.utils.json_to_sheet(studentRows)
+            : XLSX.utils.json_to_sheet([{ 'Thông tin': 'Không có sinh viên tham gia' }]);
+
+        // Auto column widths for Sheet 1
+        ws1['!cols'] = [
+            { wch: 12 }, { wch: 16 }, { wch: 28 }, { wch: 40 }, { wch: 22 },
+            { wch: 22 }, { wch: 14 }, { wch: 14 }, { wch: 14 }, { wch: 14 },
+            { wch: 22 }, { wch: 30 }, { wch: 14 }, { wch: 35 }, { wch: 16 }, { wch: 12 },
+        ];
+        // Auto column widths for Sheet 2
+        ws2['!cols'] = [
+            { wch: 12 }, { wch: 40 }, { wch: 26 }, { wch: 14 }, { wch: 28 },
+            { wch: 14 }, { wch: 20 }, { wch: 28 }, { wch: 8 }, { wch: 16 },
+            { wch: 16 }, { wch: 14 }, { wch: 14 }, { wch: 24 }, { wch: 16 },
+        ];
+
         const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, 'HoatDong');
+        XLSX.utils.book_append_sheet(wb, ws1, 'Hoạt Động');
+        XLSX.utils.book_append_sheet(wb, ws2, 'Sinh Viên Tham Gia');
 
         let facultyName = '';
         if (facultyId && faculties.length > 0) {
@@ -795,7 +848,7 @@ const ActivityList = () => {
             if (fac) facultyName = `_${fac.name.replace(/[^a-zA-Z0-9]/g, '_')}`;
         }
         XLSX.writeFile(wb, `DanhSachHoatDong${facultyName}_${dayjs().format('YYYYMMDD')}.xlsx`);
-        message.success('Xuất file Excel thành công');
+        message.success({ content: `Xuất file Excel thành công! (${activitySheet.length} hoạt động, ${studentRows.length} sinh viên)`, key: 'export_students', duration: 4 });
     };
 
     const handleConfirmExportWithFaculty = async () => {
@@ -807,7 +860,7 @@ const ActivityList = () => {
         setLoading(true);
         try {
             const res = await api.get(`/activities?is_deleted=${showDeleted ? 1 : 0}&faculty_id=${exportSelectedFacultyId}`);
-            performExport(res.data, exportSelectedFacultyId);
+            await performExport(res.data, exportSelectedFacultyId);
         } catch (error) {
             message.error('Lỗi khi tải dữ liệu để xuất');
         } finally {
