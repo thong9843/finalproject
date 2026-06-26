@@ -4,11 +4,12 @@ const { GoogleGenerativeAI } = require('@google/generative-ai');
 const fs = require('fs');
 const path = require('path');
 
-// Font paths (Roboto TTF - ho tro tieng Viet Unicode)
+// Font paths (Times New Roman TTF - ho tro tieng Viet Unicode)
 const FONTS = {
-    regular: path.join(__dirname, '../fonts/Roboto-Regular.ttf'),
-    bold: path.join(__dirname, '../fonts/Roboto-Bold.ttf'),
-    italic: path.join(__dirname, '../fonts/Roboto-Italic.ttf'),
+    regular: path.join(__dirname, '../fonts/times.ttf'),
+    bold: path.join(__dirname, '../fonts/timesbd.ttf'),
+    italic: path.join(__dirname, '../fonts/timesi.ttf'),
+    boldItalic: path.join(__dirname, '../fonts/timesbi.ttf'),
 };
 
 // ==================== CRUD ====================
@@ -247,8 +248,179 @@ exports.remove = async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 };
+// Shared helper function to render beautiful MOU PDF
+function renderMouPdf(doc, mou) {
+    const s = (v) => v || '';
+    const signingDate = mou.signing_date
+        ? new Date(mou.signing_date).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })
+        : '__/__/____';
+    const today = new Date().toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
 
-// ==================== EXPORT PDF (Roboto TTF - Unicode safe) ====================
+    // Register Times New Roman fonts
+    doc.registerFont('R', FONTS.regular);
+    doc.registerFont('B', FONTS.bold);
+    doc.registerFont('I', FONTS.italic);
+    doc.registerFont('BI', FONTS.boldItalic);
+
+    const PW = doc.page.width;
+    const ML = 54;
+    const MR = PW - 54;
+    const contentWidth = MR - ML; // 487.28
+
+    // --- Page Header ---
+    // Col 1: VLU Info (left aligned)
+    doc.font('B').fontSize(10).fillColor('#1a3c6e');
+    doc.text('TRƯỜNG ĐẠI HỌC VĂN LANG', ML, 54, { width: 220, align: 'center' });
+    doc.font('R').fontSize(9).fillColor('#555555');
+    doc.text('Đơn vị thực hiện: ' + (s(mou.executing_unit_name) || 'Phòng QHDN'), ML, 70, { width: 220, align: 'center' });
+
+    // Col 2: National Header (right aligned)
+    doc.font('B').fontSize(10).fillColor('#111111');
+    doc.text('CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM', 280, 54, { width: 260, align: 'center' });
+    doc.font('B').fontSize(10);
+    doc.text('Độc lập - Tự do - Hạnh phúc', 280, 70, { width: 260, align: 'center' });
+    
+    // Draw a small line under national header
+    doc.moveTo(360, 84).lineTo(460, 84).strokeColor('#333333').lineWidth(1).stroke();
+
+    // Space
+    doc.moveDown(2);
+
+    // --- Title ---
+    const startY = 110;
+    doc.font('B').fontSize(16).fillColor('#1a3c6e');
+    doc.text('BIÊN BẢN GHI NHỚ HỢP TÁC (MOU)', ML, startY, { width: contentWidth, align: 'center' });
+    doc.font('BI').fontSize(11).fillColor('#555555');
+    doc.text('(MEMORANDUM OF UNDERSTANDING)', ML, startY + 22, { width: contentWidth, align: 'center' });
+    doc.font('I').fontSize(10).fillColor('#111111');
+    doc.text('Số / Code: ' + mou.mou_code, ML, startY + 38, { width: contentWidth, align: 'center' });
+
+    doc.moveDown(1.5);
+
+    // --- Introduction ---
+    doc.font('I').fontSize(10.5).fillColor('#333333');
+    doc.text('- Căn cứ vào kế hoạch hợp tác và định hướng phát triển của hai đơn vị;\n- Nhằm phát huy thế mạnh của mỗi bên trong công tác đào tạo, nghiên cứu khoa học và phát triển nguồn nhân lực chất lượng cao.', { align: 'justify', lineGap: 3 });
+    doc.moveDown(0.5);
+    doc.font('R').fontSize(11).fillColor('#111111');
+    doc.text(`Hôm nay, ngày ${signingDate}, tại Trường Đại học Văn Lang, các bên gồm có:`, { lineGap: 3 });
+    doc.moveDown(0.5);
+
+    // --- Section I: Partners ---
+    doc.font('B').fontSize(12).fillColor('#1a3c6e').text('I. THÔNG TIN CÁC BÊN THAM GIA', { underline: true });
+    doc.moveDown(0.5);
+
+    // Ben A Box
+    doc.rect(ML, doc.y, contentWidth, 75).fill('#f9fafb').strokeColor('#1a3c6e').lineWidth(0.5).stroke();
+    let boxY = doc.y + 8;
+    doc.font('B').fontSize(10.5).fillColor('#1a3c6e').text('BÊN A: TRƯỜNG ĐẠI HỌC VĂN LANG (VLU)', ML + 10, boxY);
+    doc.font('R').fontSize(10).fillColor('#333333');
+    doc.text('• Địa chỉ: 69/68 Đặng Thùy Trâm, P.13, Q.Bình Thạnh, TP. Hồ Chí Minh', ML + 15, boxY + 18);
+    doc.text('• Đại diện liên hệ: ' + (s(mou.vlu_contact) || 'Phòng Quan hệ Doanh nghiệp'), ML + 15, boxY + 32);
+    doc.text('• Bộ phận thực hiện: ' + (s(mou.executing_unit_name) || 'Phòng QHDN'), ML + 15, boxY + 46);
+
+    doc.y = boxY + 75;
+    doc.moveDown(0.5);
+
+    // Ben B Box
+    const entAddress = [mou.building_street, mou.district, mou.province, mou.address_country || mou.country].filter(Boolean).join(', ') || 'Chưa cập nhật';
+    doc.rect(ML, doc.y, contentWidth, 105).fill('#fcfdff').strokeColor('#b84000').lineWidth(0.5).stroke();
+    boxY = doc.y + 8;
+    doc.font('B').fontSize(10.5).fillColor('#b84000').text('BÊN B: ' + s(mou.enterprise_name).toUpperCase(), ML + 10, boxY);
+    doc.font('R').fontSize(10).fillColor('#333333');
+    doc.text('• Địa chỉ: ' + entAddress, ML + 15, boxY + 18, { width: contentWidth - 30 });
+    doc.text('• Người đại diện: ' + s(mou.title) + ' ' + (s(mou.full_name) || 'Chưa cập nhật') + (mou.rep_role ? ` (Chức vụ: ${mou.rep_role})` : ''), ML + 15, boxY + 44);
+    doc.text('• Điện thoại: ' + (s(mou.phone) || '---') + '   |   Email: ' + (s(mou.rep_email) || '---'), ML + 15, boxY + 58);
+    doc.text('• Mã số thuế: ' + (s(mou.tax_code) || '---') + '   |   Liên hệ đối tác: ' + (s(mou.partner_contact) || '---'), ML + 15, boxY + 72);
+    doc.text('• Quốc gia: ' + (s(mou.country) || 'Việt Nam') + '   |   Loại tổ chức: ' + (s(mou.org_type) || 'Doanh nghiệp'), ML + 15, boxY + 86);
+
+    doc.y = boxY + 105;
+    doc.moveDown(1);
+
+    // --- Section II: Scope ---
+    doc.font('B').fontSize(12).fillColor('#1a3c6e').text('II. PHẠM VI HỢP TÁC', { underline: true });
+    doc.moveDown(0.4);
+    doc.font('R').fontSize(10.5).fillColor('#111111');
+    doc.text(s(mou.collaboration_scope) || 'Hai bên cùng thống nhất hợp tác trên tinh thần tự nguyện, hỗ trợ lẫn nhau trong các hoạt động liên kết đào tạo, kiến tập, thực tập cho sinh viên, ngày hội tuyển dụng, hội thảo khoa học và chia sẻ nguồn nhân lực.', { align: 'justify', lineGap: 3 });
+    doc.moveDown(0.8);
+
+    // --- Section III: Tasks ---
+    doc.font('B').fontSize(12).fillColor('#1a3c6e').text('III. NỘI DUNG TRIỂN KHAI CHI TIẾT (NIÊN KHÓA 2024 - 2025)', { underline: true });
+    doc.moveDown(0.4);
+    doc.font('R').fontSize(10.5).fillColor('#111111');
+    doc.text(s(mou.tasks_ay24_25) || 'Các nội dung chi tiết sẽ được cụ thể hóa bằng các hợp đồng, kế hoạch thực hiện riêng cho từng học kỳ hoặc từng hoạt động cụ thể.', { align: 'justify', lineGap: 3 });
+    doc.moveDown(0.8);
+
+    // --- Section IV: Next Steps ---
+    doc.font('B').fontSize(12).fillColor('#1a3c6e').text('IV. KẾ HOẠCH TIẾP THEO', { underline: true });
+    doc.moveDown(0.4);
+    doc.font('R').fontSize(10.5).fillColor('#111111');
+    doc.text(s(mou.next_steps) || 'Hai bên sẽ chỉ định các đầu mối phụ trách để thường xuyên trao đổi, lên lịch họp chi tiết nhằm hiện thực hóa các nội dung đã ghi nhớ.', { align: 'justify', lineGap: 3 });
+    doc.moveDown(0.8);
+
+    // --- Section V: History & Others ---
+    if (mou.past_activities || mou.related_data || mou.working_dir) {
+        doc.font('B').fontSize(12).fillColor('#1a3c6e').text('V. CÁC THÔNG TIN BỔ SUNG & LỊCH SỬ HỢP TÁC', { underline: true });
+        doc.moveDown(0.4);
+        doc.font('R').fontSize(10.5).fillColor('#111111');
+        
+        if (mou.past_activities) {
+            doc.font('B').fontSize(10).fillColor('#333333').text('1. Lịch sử / Các hoạt động đã triển khai trước đó:');
+            doc.font('R').fontSize(10).fillColor('#111111').text(mou.past_activities, { align: 'justify', lineGap: 2 });
+            doc.moveDown(0.4);
+        }
+        if (mou.related_data) {
+            doc.font('B').fontSize(10).fillColor('#333333').text('2. Các ghi chú / Dữ liệu liên quan khác:');
+            doc.font('R').fontSize(10).fillColor('#111111').text(mou.related_data, { align: 'justify', lineGap: 2 });
+            doc.moveDown(0.4);
+        }
+        if (mou.working_dir) {
+            doc.font('B').fontSize(10).fillColor('#333333').text('3. Thư mục lưu trữ làm việc của dự án:');
+            doc.font('R').fontSize(10).fillColor('#111111').text(mou.working_dir, { lineGap: 2 });
+            doc.moveDown(0.4);
+        }
+        doc.moveDown(0.4);
+    }
+
+    // Check if we need a new page for signatures (if close to bottom)
+    if (doc.y > 640) {
+        doc.addPage();
+    } else {
+        doc.moveDown(1.5);
+    }
+
+    // --- Signatures ---
+    const sy = doc.y;
+    doc.font('I').fontSize(10).fillColor('#555555')
+        .text('TP. Hồ Chí Minh, ngày ' + today, ML, sy, { align: 'center', width: contentWidth });
+    doc.moveDown(0.5);
+
+    const sigY = doc.y;
+    doc.font('B').fontSize(11).fillColor('#1a3c6e')
+        .text('ĐẠI DIỆN BÊN A', ML, sigY, { width: contentWidth / 2, align: 'center' })
+        .text('ĐẠI DIỆN BÊN B', ML + contentWidth / 2, sigY, { width: contentWidth / 2, align: 'center' });
+    
+    doc.font('R').fontSize(9).fillColor('#555555')
+        .text('TRƯỜNG ĐẠI HỌC VĂN LANG', ML, sigY + 15, { width: contentWidth / 2, align: 'center' })
+        .text(s(mou.enterprise_name).toUpperCase(), ML + contentWidth / 2, sigY + 15, { width: contentWidth / 2, align: 'center' });
+
+    doc.font('I').fontSize(8.5).fillColor('#888888')
+        .text('(Ký tên, ghi rõ họ tên và đóng dấu)', ML, sigY + 95, { width: contentWidth / 2, align: 'center' })
+        .text('(Ký tên, ghi rõ họ tên và đóng dấu)', ML + contentWidth / 2, sigY + 95, { width: contentWidth / 2, align: 'center' });
+
+    // --- Page Number / Footer on every page ---
+    const pages = doc.bufferedPageRange();
+    for (let i = 0; i < pages.count; i++) {
+        doc.switchToPage(i);
+        // Header line & logo or text
+        doc.moveTo(ML, 95).lineTo(MR, 95).strokeColor('#dddddd').lineWidth(0.5).stroke();
+        
+        // Footer line & text
+        doc.moveTo(ML, doc.page.height - 40).lineTo(MR, doc.page.height - 40).strokeColor('#dddddd').lineWidth(0.5).stroke();
+        doc.font('I').fontSize(8).fillColor('#777777')
+            .text(`Biên bản ghi nhớ hợp tác số: ${mou.mou_code} | Trường Đại học Văn Lang © ${new Date().getFullYear()}`, ML, doc.page.height - 32, { width: contentWidth })
+            .text(`Trang ${i + 1} / ${pages.count}`, ML, doc.page.height - 32, { width: contentWidth, align: 'right' });
+    }
+}
 
 exports.generatePdf = async (req, res) => {
     try {
@@ -257,8 +429,8 @@ exports.generatePdf = async (req, res) => {
         const [rows] = await pool.query(`
             SELECT m.*, e.name as enterprise_name, e.tax_code,
                    d.name as executing_unit_name,
-                   ea.building_street, ea.district, ea.province,
-                   er.title, er.full_name, er.phone
+                   ea.building_street, ea.district, ea.province, ea.country as address_country,
+                   er.title, er.full_name, er.phone, er.email as rep_email, er.role as rep_role
             FROM mous m
             JOIN enterprises e ON m.enterprise_id = e.id
             LEFT JOIN departments d ON m.executing_unit_id = d.id
@@ -267,149 +439,25 @@ exports.generatePdf = async (req, res) => {
             WHERE m.id = ?
         `, [id]);
 
-        if (rows.length === 0) return res.status(404).json({ message: 'MOU not found' });
+        if (rows.length === 0) return res.status(404).json({ message: 'MOU không tồn tại' });
 
         const mou = rows[0];
         if (req.user.role !== 'ADMIN' && mou.faculty_id !== req.user.faculty_id) {
-            return res.status(403).json({ message: 'Access denied to this MOU' });
+            return res.status(403).json({ message: 'Không có quyền truy cập MOU này' });
         }
-        const s = (v) => v || '';
-
-        const signingDate = mou.signing_date
-            ? new Date(mou.signing_date).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })
-            : '__/__/____';
-        const today = new Date().toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
 
         const doc = new PDFDocument({
             size: 'A4',
-            margins: { top: 60, bottom: 60, left: 70, right: 70 },
-            info: { Title: 'Bien Ban Ghi Nho', Author: 'Van Lang University' }
+            margins: { top: 60, bottom: 60, left: 54, right: 54 },
+            bufferPages: true,
+            info: { Title: 'Bien Ban Ghi Nho Hoptac VLU', Author: 'Van Lang University' }
         });
-
-        // Register Roboto for Vietnamese Unicode support
-        doc.registerFont('R', FONTS.regular);
-        doc.registerFont('B', FONTS.bold);
-        doc.registerFont('I', FONTS.italic);
 
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Disposition', `attachment; filename="MOU_${mou.mou_code.replace(/\//g, '-')}.pdf"`);
         doc.pipe(res);
 
-        const PW = doc.page.width;  // 595
-        const ML = 70, MR = 525;
-
-        const line = (y, color = '#bbbbbb', w = 0.8) =>
-            doc.moveTo(ML, y).lineTo(MR, y).strokeColor(color).lineWidth(w).stroke();
-
-        // ===== HEADER =====
-        doc.rect(0, 0, PW, 112).fill('#1a3c6e');
-
-        // Ben trai: VLU
-        doc.font('B').fontSize(8).fillColor('#ffffff')
-            .text('CONG HOA XA HOI CHU NGHIA VIET NAM', ML, 16, { width: 210, align: 'center' });
-        doc.font('R').fontSize(7.5).fillColor('#99ccff')
-            .text('Doc lap - Tu do - Hanh phuc', ML, 28, { width: 210, align: 'center' });
-        doc.font('B').fontSize(9.5).fillColor('#ffffff')
-            .text('TRUONG DAI HOC VAN LANG', ML, 45, { width: 210, align: 'center' });
-        doc.font('R').fontSize(7).fillColor('#99ccff')
-            .text('69/68 Dang Thuy Tram, P.13, Q.Binh Thanh, TP.HCM', ML, 59, { width: 210, align: 'center' });
-
-        // Ben phai: Tieu de
-        doc.font('B').fontSize(21).fillColor('#ffffff')
-            .text('BIEN BAN GHI NHO', 295, 18, { width: 230, align: 'center' });
-        doc.font('R').fontSize(9).fillColor('#FFD700')
-            .text('MEMORANDUM OF UNDERSTANDING', 295, 48, { width: 230, align: 'center' });
-        doc.font('B').fontSize(9).fillColor('#99ccff')
-            .text('Ma so: ' + mou.mou_code, 295, 65, { width: 230, align: 'center' });
-
-        // ===== INFO BOX =====
-        doc.roundedRect(ML, 120, 455, 50, 5).fill('#EEF4FF')
-            .roundedRect(ML, 120, 455, 50, 5).strokeColor('#1a3c6e').lineWidth(1).stroke();
-
-        doc.font('B').fontSize(8.5).fillColor('#1a3c6e')
-            .text('Ngay ky ket:', 85, 130)
-            .text('Loai to chuc:', 250, 130)
-            .text('Quoc gia:', 410, 130);
-        doc.font('R').fontSize(9).fillColor('#111111')
-            .text(signingDate, 85, 143)
-            .text(s(mou.org_type) || 'Doanh nghiep', 250, 143)
-            .text(s(mou.country) || 'Viet Nam', 410, 143);
-
-        // ===== SECTION I =====
-        doc.font('B').fontSize(11).fillColor('#1a3c6e').text('I. CAC BEN THAM GIA', ML, 182);
-        line(197, '#1a3c6e', 1);
-
-        // Box Ben A
-        doc.roundedRect(ML, 203, 215, 92, 4).fill('#F0F8FF');
-        doc.font('B').fontSize(9).fillColor('#1a3c6e').text('BEN A (TRUONG DH VAN LANG)', 80, 210, { width: 195 });
-        doc.font('R').fontSize(8.5).fillColor('#333333')
-            .text('Dia chi: 69/68 Dang Thuy Tram, P.13,', 80, 226, { width: 195 })
-            .text('Q.Binh Thanh, TP. Ho Chi Minh', 80, 238, { width: 195 })
-            .text('Dau moi: ' + (s(mou.vlu_contact) || 'Ban QHDN'), 80, 256, { width: 195 })
-            .text('Don vi: ' + (s(mou.executing_unit_name) || 'Phong QHDN'), 80, 270, { width: 195 });
-
-        // Box Ben B
-        const entUpper = s(mou.enterprise_name).toUpperCase();
-        const addr = [mou.building_street, mou.district, mou.province].filter(Boolean).join(', ') || 'Viet Nam';
-        doc.roundedRect(300, 203, 225, 92, 4).fill('#FFF8F0');
-        doc.font('B').fontSize(9).fillColor('#b84000').text('BEN B (' + entUpper + ')', 310, 210, { width: 205 });
-        doc.font('R').fontSize(8.5).fillColor('#333333')
-            .text('Dia chi: ' + addr, 310, 226, { width: 205 })
-            .text('MST: ' + (s(mou.tax_code) || '---'), 310, 250, { width: 205 })
-            .text('Dai dien: ' + s(mou.title) + ' ' + (s(mou.full_name) || '---'), 310, 263, { width: 205 })
-            .text('Dien thoai: ' + (s(mou.phone) || '---'), 310, 276, { width: 205 });
-
-        // ===== SECTION II =====
-        let cy = 310;
-        doc.font('B').fontSize(11).fillColor('#1a3c6e').text('II. PHAM VI HOP TAC', ML, cy);
-        line(cy + 15, '#1a3c6e', 1);
-        cy += 22;
-        doc.font('R').fontSize(9.5).fillColor('#222222')
-            .text(s(mou.collaboration_scope) || 'Hai ben hop tac trong dao tao, thuc tap sinh vien, hoi thao chuyen nganh va cac hoat dong hoc thuat khac.',
-                ML, cy, { width: 455, align: 'justify', lineGap: 3 });
-
-        // ===== SECTION III =====
-        cy = doc.y + 12;
-        doc.font('B').fontSize(11).fillColor('#1a3c6e').text('III. NOI DUNG TRIEN KHAI', ML, cy);
-        line(cy + 15, '#1a3c6e', 1);
-        cy += 22;
-        doc.font('R').fontSize(9.5).fillColor('#222222')
-            .text(s(mou.tasks_ay24_25) || 'Theo ke hoach duoc hai ben thong nhat trong tung hoc ky.',
-                ML, cy, { width: 455, align: 'justify', lineGap: 3 });
-
-        // ===== SECTION IV =====
-        cy = doc.y + 12;
-        doc.font('B').fontSize(11).fillColor('#1a3c6e').text('IV. KE HOACH TIEP THEO', ML, cy);
-        line(cy + 15, '#1a3c6e', 1);
-        cy += 22;
-        doc.font('R').fontSize(9.5).fillColor('#222222')
-            .text(s(mou.next_steps) || 'Hai ben se hop ban cu the de xac dinh lo trinh trien khai.',
-                ML, cy, { width: 455, align: 'justify', lineGap: 3 });
-
-        // ===== SIGNATURES =====
-        const sy = Math.max(doc.y + 42, 668);
-        line(sy - 6, '#1a3c6e', 1);
-        doc.font('I').fontSize(8.5).fillColor('#555555')
-            .text('TP. Ho Chi Minh, ngay ' + today, ML, sy, { align: 'center', width: 455 });
-
-        doc.font('B').fontSize(10).fillColor('#1a3c6e')
-            .text('DAI DIEN BEN A', ML, sy + 14, { width: 200, align: 'center' })
-            .text('DAI DIEN BEN B', 295, sy + 14, { width: 200, align: 'center' });
-        doc.font('R').fontSize(8.5).fillColor('#555555')
-            .text('TRUONG DAI HOC VAN LANG', ML, sy + 27, { width: 200, align: 'center' })
-            .text(entUpper, 295, sy + 27, { width: 200, align: 'center' });
-
-        doc.moveTo(90, sy + 95).lineTo(250, sy + 95).strokeColor('#aaa').lineWidth(0.5).stroke();
-        doc.moveTo(315, sy + 95).lineTo(475, sy + 95).strokeColor('#aaa').lineWidth(0.5).stroke();
-        doc.font('I').fontSize(7.5).fillColor('#999999')
-            .text('(Ky, ghi ro ho ten, dong dau)', ML, sy + 99, { width: 200, align: 'center' })
-            .text('(Ky, ghi ro ho ten, dong dau)', 295, sy + 99, { width: 200, align: 'center' });
-
-        // ===== FOOTER =====
-        doc.rect(0, doc.page.height - 26, PW, 26).fill('#1a3c6e');
-        doc.font('R').fontSize(7.5).fillColor('#99ccff')
-            .text('Bien ban ghi nho so: ' + mou.mou_code + '  |  Truong Dai hoc Van Lang (c) ' + new Date().getFullYear(),
-                0, doc.page.height - 17, { align: 'center', width: PW });
+        renderMouPdf(doc, mou);
 
         doc.end();
 
@@ -458,7 +506,8 @@ Doc tai lieu nay va trich xuat cac truong sau. Tra ve KET QUA DUY NHAT dang JSON
   "past_activities": "Cac hoat dong da thuc hien truoc do (neu co)",
   "related_data": "So lieu lien quan (neu co)",
   "tax_code": "Ma so thue cua doi tac (neu co)",
-  "activity_name": "Ten hoat dong/su kien/chuong trinh (activity) lien quan den MOU nay (neu co)"
+  "activity_name": "Ten hoat dong/su kien/chuong trinh (activity) lien quan den MOU nay (neu co)",
+  "executing_unit": "Ten khoa hoac don vi trien khai thuc hien phia Truong Dai hoc Van Lang (VD: Khoa Cong nghe thong tin, Phong QHDN...)"
 }
 
 Neu khong tim thay thong tin, de null. Tra ve JSON thuan tuy khong co markdown.`;
@@ -479,6 +528,10 @@ Neu khong tim thay thong tin, de null. Tra ve JSON thuan tuy khong co markdown.`
         let enterprise_id = null;
         let activity_id = null;
         let matched_activity = null;
+        let executing_unit_id = null;
+        let matched_executing_unit = null;
+
+        // 1. Try to find enterprise first
         if (extractedData.enterprise_name) {
             const words = extractedData.enterprise_name.toLowerCase().split(' ').slice(0, 3).join('%');
             let query = `SELECT id, name FROM enterprises WHERE LOWER(name) LIKE ?`;
@@ -492,16 +545,65 @@ Neu khong tim thay thong tin, de null. Tra ve JSON thuan tuy khong co markdown.`
             if (ents.length > 0) {
                 enterprise_id = ents[0].id;
                 extractedData.matched_enterprise = ents[0].name;
+            }
+        }
 
-                // Attempt to match activity if enterprise found
-                if (extractedData.activity_name) {
-                    const actWords = extractedData.activity_name.toLowerCase().split(' ').slice(0, 3).join('%');
-                    const [acts] = await pool.query(`SELECT id, title FROM activities WHERE enterprise_id = ? AND LOWER(title) LIKE ? LIMIT 1`, [enterprise_id, `%${actWords}%`]);
-                    if (acts.length > 0) {
-                        activity_id = acts[0].id;
-                        matched_activity = acts[0].title;
+        // 2. Try to find activity
+        if (extractedData.activity_name) {
+            const actWords = extractedData.activity_name.toLowerCase().split(' ').slice(0, 3).join('%');
+            
+            // First attempt: search within the matched enterprise
+            if (enterprise_id) {
+                const [acts] = await pool.query(
+                    `SELECT id, title FROM activities WHERE enterprise_id = ? AND LOWER(title) LIKE ? LIMIT 1`,
+                    [enterprise_id, `%${actWords}%`]
+                );
+                if (acts.length > 0) {
+                    activity_id = acts[0].id;
+                    matched_activity = acts[0].title;
+                }
+            }
+
+            // Second attempt: search globally (if not found in first attempt or no enterprise matched)
+            if (!activity_id) {
+                let actQuery = `SELECT id, title, enterprise_id FROM activities WHERE LOWER(title) LIKE ?`;
+                let actParams = [`%${actWords}%`];
+                if (req.user.role !== 'ADMIN') {
+                    actQuery += ' AND faculty_id = ?';
+                    actParams.push(req.user.faculty_id);
+                }
+                actQuery += ' LIMIT 1';
+                const [acts] = await pool.query(actQuery, actParams);
+                if (acts.length > 0) {
+                    activity_id = acts[0].id;
+                    matched_activity = acts[0].title;
+                    
+                    // If enterprise wasn't matched, resolve it from the found activity
+                    if (!enterprise_id && acts[0].enterprise_id) {
+                        const [ents] = await pool.query(`SELECT id, name FROM enterprises WHERE id = ?`, [acts[0].enterprise_id]);
+                        if (ents.length > 0) {
+                            enterprise_id = ents[0].id;
+                            extractedData.matched_enterprise = ents[0].name;
+                        }
                     }
                 }
+            }
+        }
+
+        // 3. Try to find executing unit (department)
+        if (extractedData.executing_unit) {
+            const depWords = extractedData.executing_unit.toLowerCase().split(' ').slice(0, 3).join('%');
+            let depQuery = `SELECT id, name FROM departments WHERE LOWER(name) LIKE ?`;
+            let depParams = [`%${depWords}%`];
+            if (req.user.role !== 'ADMIN') {
+                depQuery += ' AND faculty_id = ?';
+                depParams.push(req.user.faculty_id);
+            }
+            depQuery += ' LIMIT 1';
+            const [deps] = await pool.query(depQuery, depParams);
+            if (deps.length > 0) {
+                executing_unit_id = deps[0].id;
+                matched_executing_unit = deps[0].name;
             }
         }
 
@@ -509,7 +611,7 @@ Neu khong tim thay thong tin, de null. Tra ve JSON thuan tuy khong co markdown.`
         // The client will show a confirmation dialog and call /upload-scan-file separately.
         // We save the local temp file path so the client can send it back for upload.
         // Since we can't keep temp files across requests reliably, we return a flag:
-        res.status(200).json({ success: true, extracted: { ...extractedData, enterprise_id, activity_id, matched_activity, file_url: null, needsUploadConfirm: true } });
+        res.status(200).json({ success: true, extracted: { ...extractedData, enterprise_id, activity_id, matched_activity, executing_unit_id, matched_executing_unit, file_url: null, needsUploadConfirm: true } });
 
         // Clean up temp file
         try { fs.unlinkSync(req.file.path); } catch (e) { }
@@ -632,8 +734,8 @@ exports.generatePdfAndUpload = async (req, res) => {
         const [rows] = await pool.query(`
             SELECT m.*, e.name as enterprise_name, e.tax_code,
                    d.name as executing_unit_name,
-                   ea.building_street, ea.district, ea.province,
-                   er.title, er.full_name, er.phone
+                   ea.building_street, ea.district, ea.province, ea.country as address_country,
+                   er.title, er.full_name, er.phone, er.email as rep_email, er.role as rep_role
             FROM mous m
             JOIN enterprises e ON m.enterprise_id = e.id
             LEFT JOIN departments d ON m.executing_unit_id = d.id
@@ -655,21 +757,12 @@ exports.generatePdfAndUpload = async (req, res) => {
         const PDFDocument = require('pdfkit');
         const { PassThrough } = require('stream');
 
-        const s = (v) => v || '';
-        const signingDate = mou.signing_date
-            ? new Date(mou.signing_date).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })
-            : '__/__/____';
-        const today = new Date().toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
-
         const doc = new PDFDocument({
             size: 'A4',
-            margins: { top: 60, bottom: 60, left: 70, right: 70 },
-            info: { Title: 'Bien Ban Ghi Nho', Author: 'Van Lang University' }
+            margins: { top: 60, bottom: 60, left: 54, right: 54 },
+            bufferPages: true,
+            info: { Title: 'Bien Ban Ghi Nho Hoptac VLU', Author: 'Van Lang University' }
         });
-
-        doc.registerFont('R', FONTS.regular);
-        doc.registerFont('B', FONTS.bold);
-        doc.registerFont('I', FONTS.italic);
 
         // Collect PDF bytes
         const chunks = [];
@@ -679,96 +772,7 @@ exports.generatePdfAndUpload = async (req, res) => {
             doc.on('error', reject);
         });
 
-        const PW = doc.page.width;
-        const ML = 70, MR = 525;
-        const line = (y, color = '#bbbbbb', w = 0.8) =>
-            doc.moveTo(ML, y).lineTo(MR, y).strokeColor(color).lineWidth(w).stroke();
-
-        doc.rect(0, 0, PW, 112).fill('#1a3c6e');
-        doc.font('B').fontSize(8).fillColor('#ffffff')
-            .text('CONG HOA XA HOI CHU NGHIA VIET NAM', ML, 16, { width: 210, align: 'center' });
-        doc.font('R').fontSize(7.5).fillColor('#99ccff')
-            .text('Doc lap - Tu do - Hanh phuc', ML, 28, { width: 210, align: 'center' });
-        doc.font('B').fontSize(9.5).fillColor('#ffffff')
-            .text('TRUONG DAI HOC VAN LANG', ML, 45, { width: 210, align: 'center' });
-        doc.font('R').fontSize(7).fillColor('#99ccff')
-            .text('69/68 Dang Thuy Tram, P.13, Q.Binh Thanh, TP.HCM', ML, 59, { width: 210, align: 'center' });
-        doc.font('B').fontSize(21).fillColor('#ffffff')
-            .text('BIEN BAN GHI NHO', 295, 18, { width: 230, align: 'center' });
-        doc.font('R').fontSize(9).fillColor('#FFD700')
-            .text('MEMORANDUM OF UNDERSTANDING', 295, 48, { width: 230, align: 'center' });
-        doc.font('B').fontSize(9).fillColor('#99ccff')
-            .text('Ma so: ' + mou.mou_code, 295, 65, { width: 230, align: 'center' });
-
-        doc.roundedRect(ML, 120, 455, 50, 5).fill('#EEF4FF')
-            .roundedRect(ML, 120, 455, 50, 5).strokeColor('#1a3c6e').lineWidth(1).stroke();
-        doc.font('B').fontSize(8.5).fillColor('#1a3c6e')
-            .text('Ngay ky ket:', 85, 130).text('Loai to chuc:', 250, 130).text('Quoc gia:', 410, 130);
-        doc.font('R').fontSize(9).fillColor('#111111')
-            .text(signingDate, 85, 143)
-            .text(s(mou.org_type) || 'Doanh nghiep', 250, 143)
-            .text(s(mou.country) || 'Viet Nam', 410, 143);
-
-        doc.font('B').fontSize(11).fillColor('#1a3c6e').text('I. CAC BEN THAM GIA', ML, 182);
-        line(197, '#1a3c6e', 1);
-        doc.roundedRect(ML, 203, 215, 92, 4).fill('#F0F8FF');
-        doc.font('B').fontSize(9).fillColor('#1a3c6e').text('BEN A (TRUONG DH VAN LANG)', 80, 210, { width: 195 });
-        doc.font('R').fontSize(8.5).fillColor('#333333')
-            .text('Dia chi: 69/68 Dang Thuy Tram, P.13,', 80, 226, { width: 195 })
-            .text('Q.Binh Thanh, TP. Ho Chi Minh', 80, 238, { width: 195 })
-            .text('Dau moi: ' + (s(mou.vlu_contact) || 'Ban QHDN'), 80, 256, { width: 195 })
-            .text('Don vi: ' + (s(mou.executing_unit_name) || 'Phong QHDN'), 80, 270, { width: 195 });
-
-        const entUpper = s(mou.enterprise_name).toUpperCase();
-        const addr = [mou.building_street, mou.district, mou.province].filter(Boolean).join(', ') || 'Viet Nam';
-        doc.roundedRect(300, 203, 225, 92, 4).fill('#FFF8F0');
-        doc.font('B').fontSize(9).fillColor('#b84000').text('BEN B (' + entUpper + ')', 310, 210, { width: 205 });
-        doc.font('R').fontSize(8.5).fillColor('#333333')
-            .text('Dia chi: ' + addr, 310, 226, { width: 205 })
-            .text('MST: ' + (s(mou.tax_code) || '---'), 310, 250, { width: 205 })
-            .text('Dai dien: ' + s(mou.title) + ' ' + (s(mou.full_name) || '---'), 310, 263, { width: 205 })
-            .text('Dien thoai: ' + (s(mou.phone) || '---'), 310, 276, { width: 205 });
-
-        let cy = 310;
-        doc.font('B').fontSize(11).fillColor('#1a3c6e').text('II. PHAM VI HOP TAC', ML, cy);
-        line(cy + 15, '#1a3c6e', 1); cy += 22;
-        doc.font('R').fontSize(9.5).fillColor('#222222')
-            .text(s(mou.collaboration_scope) || 'Hai ben hop tac trong dao tao, thuc tap sinh vien, hoi thao chuyen nganh va cac hoat dong hoc thuat khac.',
-                ML, cy, { width: 455, align: 'justify', lineGap: 3 });
-
-        cy = doc.y + 12;
-        doc.font('B').fontSize(11).fillColor('#1a3c6e').text('III. NOI DUNG TRIEN KHAI', ML, cy);
-        line(cy + 15, '#1a3c6e', 1); cy += 22;
-        doc.font('R').fontSize(9.5).fillColor('#222222')
-            .text(s(mou.tasks_ay24_25) || 'Theo ke hoach duoc hai ben thong nhat trong tung hoc ky.',
-                ML, cy, { width: 455, align: 'justify', lineGap: 3 });
-
-        cy = doc.y + 12;
-        doc.font('B').fontSize(11).fillColor('#1a3c6e').text('IV. KE HOACH TIEP THEO', ML, cy);
-        line(cy + 15, '#1a3c6e', 1); cy += 22;
-        doc.font('R').fontSize(9.5).fillColor('#222222')
-            .text(s(mou.next_steps) || 'Hai ben se hop ban cu the de xac dinh lo trinh trien khai.',
-                ML, cy, { width: 455, align: 'justify', lineGap: 3 });
-
-        const sy = Math.max(doc.y + 42, 668);
-        line(sy - 6, '#1a3c6e', 1);
-        doc.font('I').fontSize(8.5).fillColor('#555555')
-            .text('TP. Ho Chi Minh, ngay ' + today, ML, sy, { align: 'center', width: 455 });
-        doc.font('B').fontSize(10).fillColor('#1a3c6e')
-            .text('DAI DIEN BEN A', ML, sy + 14, { width: 200, align: 'center' })
-            .text('DAI DIEN BEN B', 295, sy + 14, { width: 200, align: 'center' });
-        doc.font('R').fontSize(8.5).fillColor('#555555')
-            .text('TRUONG DAI HOC VAN LANG', ML, sy + 27, { width: 200, align: 'center' })
-            .text(entUpper, 295, sy + 27, { width: 200, align: 'center' });
-        doc.moveTo(90, sy + 95).lineTo(250, sy + 95).strokeColor('#aaa').lineWidth(0.5).stroke();
-        doc.moveTo(315, sy + 95).lineTo(475, sy + 95).strokeColor('#aaa').lineWidth(0.5).stroke();
-        doc.font('I').fontSize(7.5).fillColor('#999999')
-            .text('(Ky, ghi ro ho ten, dong dau)', ML, sy + 99, { width: 200, align: 'center' })
-            .text('(Ky, ghi ro ho ten, dong dau)', 295, sy + 99, { width: 200, align: 'center' });
-        doc.rect(0, doc.page.height - 26, PW, 26).fill('#1a3c6e');
-        doc.font('R').fontSize(7.5).fillColor('#99ccff')
-            .text('Bien ban ghi nho so: ' + mou.mou_code + '  |  Truong Dai hoc Van Lang (c) ' + new Date().getFullYear(),
-                0, doc.page.height - 17, { align: 'center', width: PW });
+        renderMouPdf(doc, mou);
 
         doc.end();
         await pdfEndPromise;
@@ -804,7 +808,7 @@ exports.restore = async (req, res) => {
     try {
         const id = req.params.id;
         const [logRows] = await pool.query(
-            'SELECT id FROM action_history WHERE entity_type = "MOU" AND entity_id = ? AND action_type = "DELETE" ORDER BY created_at DESC LIMIT 1',
+            'SELECT id FROM action_history WHERE entity_type = "MOU" AND entity_id = ? AND action_type = "DELETE" ORDER BY changed_at DESC LIMIT 1',
             [id]
         );
         if (logRows.length === 0) {

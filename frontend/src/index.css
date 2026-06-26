@@ -455,5 +455,16 @@ html.dark .vlu-mentions-input__suggestions__item--focused {
   color: #ffffff !important;
 }
 
+/* Fix Ant Design solid buttons background color overridden by Tailwind preflight */
+.ant-btn-variant-solid.ant-btn-color-primary:not(:hover):not(:active) {
+  background-color: #DA251D !important;
+  color: #ffffff !important;
+}
+
+.ant-btn-variant-solid.ant-btn-color-dangerous:not(:hover):not(:active) {
+  background-color: #ff4d4f !important;
+  color: #ffffff !important;
+}
+
 
 

@@ -269,7 +269,7 @@ exports.restore = async (req, res) => {
     try {
         const id = req.params.id;
         const [logRows] = await pool.query(
-            'SELECT id FROM action_history WHERE entity_type = "STUDENT" AND entity_id = ? AND action_type = "DELETE" ORDER BY created_at DESC LIMIT 1',
+            'SELECT id FROM action_history WHERE entity_type = "STUDENT" AND entity_id = ? AND action_type = "DELETE" ORDER BY changed_at DESC LIMIT 1',
             [id]
         );
         if (logRows.length === 0) {

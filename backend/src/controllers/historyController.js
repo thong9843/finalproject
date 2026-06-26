@@ -123,9 +123,18 @@ exports.restore = async (req, res) => {
         const entityId = log.entity_id;
         const actionType = log.action_type;
 
-        // Parse stored JSON states
-        const oldValue = log.old_value ? JSON.parse(log.old_value) : null;
-        const newValue = log.new_value ? JSON.parse(log.new_value) : null;
+        // Parse stored JSON states safely (handling pre-parsed JSON objects from mysql2)
+        const parseJsonField = (field) => {
+            if (!field) return null;
+            if (typeof field === 'object') return field;
+            try {
+                return JSON.parse(field);
+            } catch (e) {
+                return null;
+            }
+        };
+        const oldValue = parseJsonField(log.old_value);
+        const newValue = parseJsonField(log.new_value);
 
         // --- RESTORE DELETE OPERATION ---
         if (actionType === 'DELETE') {
