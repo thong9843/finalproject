@@ -6,7 +6,7 @@ import {
     UploadOutlined, DownloadOutlined, PlusOutlined, CheckCircleOutlined,
     TeamOutlined, SearchOutlined, SortAscendingOutlined, CalendarOutlined,
     FilterOutlined, ClearOutlined, AppstoreOutlined, UnorderedListOutlined,
-    DeleteOutlined, BankOutlined, EditOutlined, FileTextOutlined, QuestionCircleOutlined
+    DeleteOutlined, BankOutlined, EditOutlined, FileTextOutlined, QuestionCircleOutlined, UserOutlined
 } from '@ant-design/icons';
 import ImportModal from '../components/ImportModal';
 import api from '../utils/api';
@@ -17,11 +17,11 @@ import Cookies from 'js-cookie';
 const { Option } = Select;
 
 const STICKY_COLORS = [
-  { name: 'Vàng', hex: '#fef08a' },
-  { name: 'Xanh dương', hex: '#bfdbfe' },
-  { name: 'Xanh lá', hex: '#bbf7d0' },
-  { name: 'Hồng', hex: '#fbcfe8' },
-  { name: 'Tím', hex: '#e9d5ff' },
+    { name: 'Vàng', hex: '#fef08a' },
+    { name: 'Xanh dương', hex: '#bfdbfe' },
+    { name: 'Xanh lá', hex: '#bbf7d0' },
+    { name: 'Hồng', hex: '#fbcfe8' },
+    { name: 'Tím', hex: '#e9d5ff' },
 ];
 
 const ActivityList = () => {
@@ -43,7 +43,7 @@ const ActivityList = () => {
     const [loading, setLoading] = useState(false);
     const [isModalVisible, setIsModalVisible] = useState(false);
     const [showImport, setShowImport] = useState(false);
-    
+
     // Notes states
     const [isNoteModalVisible, setIsNoteModalVisible] = useState(false);
     const [currentNoteRecord, setCurrentNoteRecord] = useState(null);
@@ -251,8 +251,8 @@ const ActivityList = () => {
 
                 let matchedId = undefined;
                 if (data.enterprise_name && enterprises && enterprises.length > 0) {
-                    const matched = enterprises.find(e => 
-                        e.name.toLowerCase().includes(data.enterprise_name.toLowerCase()) || 
+                    const matched = enterprises.find(e =>
+                        e.name.toLowerCase().includes(data.enterprise_name.toLowerCase()) ||
                         data.enterprise_name.toLowerCase().includes(e.name.toLowerCase())
                     );
                     if (matched) matchedId = matched.id;
@@ -265,8 +265,8 @@ const ActivityList = () => {
                     api.get('/enterprises').then(res => {
                         const list = res.data || [];
                         setEnterprises(list);
-                        const matched = list.find(e => 
-                            e.name.toLowerCase().includes(data.enterprise_name.toLowerCase()) || 
+                        const matched = list.find(e =>
+                            e.name.toLowerCase().includes(data.enterprise_name.toLowerCase()) ||
                             data.enterprise_name.toLowerCase().includes(e.name.toLowerCase())
                         );
                         if (matched) {
@@ -357,6 +357,7 @@ const ActivityList = () => {
                 collaboration_date: values.collaboration_date?.format('YYYY-MM-DD') || null,
                 type_ids: values.type_ids || [],
                 target_ids: values.target_ids || [],
+                tasks: values.tasks ? values.tasks.split('\n').map(t => t.trim()).filter(Boolean) : [],
             };
             if (editingId) {
                 await api.put(`/activities/${editingId}`, formattedValues);
@@ -593,7 +594,7 @@ const ActivityList = () => {
             width: 250,
             fixed: 'left',
             render: (text, record) => (
-                <span 
+                <span
                     className="font-semibold text-slate-800 dark:text-gray-100 flex items-center gap-2 cursor-pointer hover:text-blue-600"
                     onClick={() => {
                         setSelectedActivity(record);
@@ -602,7 +603,7 @@ const ActivityList = () => {
                         setActivityStudentsLoading(true);
                         api.get(`/activities/${record.id}/students`)
                             .then(r => setActivityStudents(r.data))
-                            .catch(() => {})
+                            .catch(() => { })
                             .finally(() => setActivityStudentsLoading(false));
                     }}
                 >
@@ -650,6 +651,17 @@ const ActivityList = () => {
             render: (_, record) => (
                 <span className="text-xs text-slate-600 dark:text-gray-300">
                     {dayjs(record.start_date).format('DD/MM/YYYY')} — {record.end_date ? dayjs(record.end_date).format('DD/MM/YYYY') : 'Chưa rõ'}
+                </span>
+            )
+        },
+        {
+            title: 'Người phụ trách',
+            dataIndex: 'person_in_charge',
+            key: 'person_in_charge',
+            width: 160,
+            render: (text) => (
+                <span className="text-xs text-slate-700 dark:text-gray-300 font-medium">
+                    {text || '---'}
                 </span>
             )
         },
@@ -737,6 +749,7 @@ const ActivityList = () => {
                                     end_time: record.end_time ? dayjs(`1970-01-01 ${record.end_time}`) : null,
                                     collaboration_date: record.collaboration_date ? dayjs(record.collaboration_date) : null,
                                     faculty_id: record.faculty_id,
+                                    tasks: Array.isArray(record.tasks) ? record.tasks.join('\n') : (typeof record.tasks === 'string' && record.tasks.startsWith('[') ? JSON.parse(record.tasks).join('\n') : record.tasks || ''),
                                 });
                                 setIsModalVisible(true);
                             }} />
@@ -876,11 +889,10 @@ const ActivityList = () => {
 
         return (
             <Col xs={24} sm={viewMode === 'list' ? 24 : 12} lg={viewMode === 'list' ? 24 : 8} key={item.id}>
-                <div className={`bg-white dark:bg-gray-800 rounded-2xl border shadow-sm hover:shadow-md dark:shadow-none transition-all h-full flex flex-col overflow-hidden group cursor-pointer relative ${
-                    isChecked 
-                        ? 'border-blue-400 dark:border-blue-500 bg-blue-50/5 dark:bg-blue-955/5' 
+                <div className={`bg-white dark:bg-gray-800 rounded-2xl border shadow-sm hover:shadow-md dark:shadow-none transition-all h-full flex flex-col overflow-hidden group cursor-pointer relative ${isChecked
+                        ? 'border-blue-400 dark:border-blue-500 bg-blue-50/5 dark:bg-blue-955/5'
                         : 'border-gray-100 dark:border-gray-700 dark:hover:border-gray-500'
-                } ${item.is_deleted === 1 ? 'opacity-65 border-red-200 dark:border-red-950/30' : ''}`}
+                    } ${item.is_deleted === 1 ? 'opacity-65 border-red-200 dark:border-red-950/30' : ''}`}
                     onClick={(e) => {
                         if (e.target.closest('.action-buttons') || e.target.closest('.ant-checkbox-wrapper')) return;
                         setSelectedActivity(item);
@@ -889,7 +901,7 @@ const ActivityList = () => {
                         setActivityStudentsLoading(true);
                         api.get(`/activities/${item.id}/students`)
                             .then(r => setActivityStudents(r.data))
-                            .catch(() => {})
+                            .catch(() => { })
                             .finally(() => setActivityStudentsLoading(false));
                     }}
                 >
@@ -940,7 +952,7 @@ const ActivityList = () => {
                         )}
 
                         {/* Meta info */}
-                        <div className="flex items-center gap-4 text-xs text-gray-400 mb-3 ml-[52px] transition-colors">
+                        <div className="flex items-center gap-4 text-xs text-gray-400 mb-3 ml-[52px] transition-colors flex-wrap">
                             <span className="flex items-center gap-1">
                                 <CalendarOutlined />
                                 {dayjs(item.start_date).format('DD/MM/YYYY')} — {item.end_date ? dayjs(item.end_date).format('DD/MM/YYYY') : 'Chưa rõ'}
@@ -949,6 +961,12 @@ const ActivityList = () => {
                                 <TeamOutlined />
                                 {item.student_count || 0} sinh viên
                             </span>
+                            {item.person_in_charge && (
+                                <span className="flex items-center gap-1">
+                                    <UserOutlined />
+                                    {item.person_in_charge}
+                                </span>
+                            )}
                         </div>
 
                         {/* Tags */}
@@ -1016,6 +1034,7 @@ const ActivityList = () => {
                                                             end_time: item.end_time ? dayjs(`1970-01-01 ${item.end_time}`) : null,
                                                             collaboration_date: item.collaboration_date ? dayjs(item.collaboration_date) : null,
                                                             faculty_id: item.faculty_id,
+                                                            tasks: Array.isArray(item.tasks) ? item.tasks.join('\n') : (typeof item.tasks === 'string' && item.tasks.startsWith('[') ? JSON.parse(item.tasks).join('\n') : item.tasks || ''),
                                                         });
                                                         setIsModalVisible(true);
                                                     }}>
@@ -1067,10 +1086,10 @@ const ActivityList = () => {
                         <div className="flex items-center gap-2">
                             <h1 className="text-xl sm:text-2xl font-bold text-slate-800 dark:text-gray-100 m-0">Hoạt động hợp tác</h1>
                             <Tooltip title="Hướng dẫn trang này">
-                                <Button 
+                                <Button
                                     id="tour-activity-help"
-                                    type="text" 
-                                    icon={<QuestionCircleOutlined className="text-slate-400 hover:text-vluRed text-lg sm:text-xl" />} 
+                                    type="text"
+                                    icon={<QuestionCircleOutlined className="text-slate-400 hover:text-vluRed text-lg sm:text-xl" />}
                                     onClick={() => setTourOpen(true)}
                                     className="flex items-center justify-center p-0 h-7 w-7 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800"
                                 />
@@ -1314,17 +1333,17 @@ const ActivityList = () => {
                             <Option value="Đã triển khai">Đã triển khai</Option>
                             <Option value="Đã kết thúc">Đã kết thúc</Option>
                         </Select>
-                        <Button 
+                        <Button
                             type="primary"
-                            danger 
-                            icon={<DeleteOutlined />} 
+                            danger
+                            icon={<DeleteOutlined />}
                             onClick={handleBulkDelete}
                             className="flex items-center justify-center font-medium !bg-red-600 hover:!bg-red-500 text-white border-0"
                         >
                             Xóa
                         </Button>
-                        <Button 
-                            type="text" 
+                        <Button
+                            type="text"
                             onClick={() => setSelectedActivities([])}
                             className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
                         >
@@ -1337,82 +1356,82 @@ const ActivityList = () => {
             <div id="tour-activity-content">
                 {/* Mobile-only Select All Panel */}
                 {!isLecturer && !loading && paginatedData.length > 0 && (
-                <div className="block md:hidden bg-slate-50 dark:bg-gray-800 p-3 rounded-lg border border-slate-200 dark:border-gray-700 mb-4 flex items-center justify-between">
-                    <Checkbox
-                        checked={paginatedData.length > 0 && paginatedData.every(item => selectedActivities.includes(item.id))}
-                        indeterminate={paginatedData.some(item => selectedActivities.includes(item.id)) && !paginatedData.every(item => selectedActivities.includes(item.id))}
-                        onChange={(e) => {
-                            if (e.target.checked) {
-                                const toAdd = paginatedData.filter(item => item.is_deleted !== 1).map(item => item.id);
-                                setSelectedActivities(prev => [...new Set([...prev, ...toAdd])]);
-                            } else {
-                                const toRemove = paginatedData.map(item => item.id);
-                                setSelectedActivities(prev => prev.filter(id => !toRemove.includes(id)));
-                            }
-                        }}
-                    >
-                        Chọn tất cả trang này ({paginatedData.length} hoạt động)
-                    </Checkbox>
+                    <div className="block md:hidden bg-slate-50 dark:bg-gray-800 p-3 rounded-lg border border-slate-200 dark:border-gray-700 mb-4 flex items-center justify-between">
+                        <Checkbox
+                            checked={paginatedData.length > 0 && paginatedData.every(item => selectedActivities.includes(item.id))}
+                            indeterminate={paginatedData.some(item => selectedActivities.includes(item.id)) && !paginatedData.every(item => selectedActivities.includes(item.id))}
+                            onChange={(e) => {
+                                if (e.target.checked) {
+                                    const toAdd = paginatedData.filter(item => item.is_deleted !== 1).map(item => item.id);
+                                    setSelectedActivities(prev => [...new Set([...prev, ...toAdd])]);
+                                } else {
+                                    const toRemove = paginatedData.map(item => item.id);
+                                    setSelectedActivities(prev => prev.filter(id => !toRemove.includes(id)));
+                                }
+                            }}
+                        >
+                            Chọn tất cả trang này ({paginatedData.length} hoạt động)
+                        </Checkbox>
+                    </div>
+                )}
+
+                {/* Desktop View */}
+                <div className="hidden md:block">
+                    {loading ? (
+                        <div className="flex justify-center py-20"><Spin size="large" /></div>
+                    ) : filteredData.length === 0 ? (
+                        <Empty description="Không tìm thấy hoạt động nào" className="mt-20" />
+                    ) : viewMode === 'grid' ? (
+                        <>
+                            <Row gutter={[20, 20]}>
+                                {paginatedData.map(item => renderActivityCard(item))}
+                            </Row>
+                            {filteredData.length > 0 && renderPagination()}
+                        </>
+                    ) : (
+                        <Table
+                            rowSelection={isLecturer ? null : {
+                                selectedRowKeys: selectedActivities,
+                                onChange: setSelectedActivities,
+                            }}
+                            columns={tableColumns}
+                            dataSource={filteredData}
+                            loading={loading}
+                            rowKey="id"
+                            rowClassName={(record) => record.is_deleted === 1 ? 'opacity-65 bg-red-50/20 dark:bg-red-955/10' : ''}
+                            pagination={{
+                                current: currentPage,
+                                pageSize: pageSize,
+                                onChange: (page, size) => {
+                                    setCurrentPage(page);
+                                    setPageSize(size);
+                                },
+                                showSizeChanger: true,
+                                pageSizeOptions: ['12', '24', '48', '96'],
+                                showTotal: (total) => `Tổng số ${total} hoạt động`,
+                                style: { marginRight: '16px', marginBottom: '16px' }
+                            }}
+                            className="shadow-sm border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-xl overflow-hidden"
+                            scroll={{ x: 'max-content' }}
+                        />
+                    )}
                 </div>
-            )}
 
-            {/* Desktop View */}
-            <div className="hidden md:block">
-                {loading ? (
-                    <div className="flex justify-center py-20"><Spin size="large" /></div>
-                ) : filteredData.length === 0 ? (
-                    <Empty description="Không tìm thấy hoạt động nào" className="mt-20" />
-                ) : viewMode === 'grid' ? (
-                    <>
-                        <Row gutter={[20, 20]}>
-                            {paginatedData.map(item => renderActivityCard(item))}
-                        </Row>
-                        {filteredData.length > 0 && renderPagination()}
-                    </>
-                ) : (
-                    <Table
-                        rowSelection={isLecturer ? null : {
-                            selectedRowKeys: selectedActivities,
-                            onChange: setSelectedActivities,
-                        }}
-                        columns={tableColumns}
-                        dataSource={filteredData}
-                        loading={loading}
-                        rowKey="id"
-                        rowClassName={(record) => record.is_deleted === 1 ? 'opacity-65 bg-red-50/20 dark:bg-red-955/10' : ''}
-                        pagination={{
-                            current: currentPage,
-                            pageSize: pageSize,
-                            onChange: (page, size) => {
-                                setCurrentPage(page);
-                                setPageSize(size);
-                            },
-                            showSizeChanger: true,
-                            pageSizeOptions: ['12', '24', '48', '96'],
-                            showTotal: (total) => `Tổng số ${total} hoạt động`,
-                            style: { marginRight: '16px', marginBottom: '16px' }
-                        }}
-                        className="shadow-sm border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-xl overflow-hidden"
-                        scroll={{ x: 'max-content' }}
-                    />
-                )}
-            </div>
-
-            {/* Mobile View */}
-            <div className="block md:hidden">
-                {loading ? (
-                    <div className="flex justify-center py-20"><Spin size="large" /></div>
-                ) : filteredData.length === 0 ? (
-                    <Empty description="Không tìm thấy hoạt động nào" className="mt-20" />
-                ) : (
-                    <>
-                        <Row gutter={[20, 20]}>
-                            {paginatedData.map(item => renderActivityCard(item))}
-                        </Row>
-                        {filteredData.length > 0 && renderPagination()}
-                    </>
-                )}
-            </div>
+                {/* Mobile View */}
+                <div className="block md:hidden">
+                    {loading ? (
+                        <div className="flex justify-center py-20"><Spin size="large" /></div>
+                    ) : filteredData.length === 0 ? (
+                        <Empty description="Không tìm thấy hoạt động nào" className="mt-20" />
+                    ) : (
+                        <>
+                            <Row gutter={[20, 20]}>
+                                {paginatedData.map(item => renderActivityCard(item))}
+                            </Row>
+                            {filteredData.length > 0 && renderPagination()}
+                        </>
+                    )}
+                </div>
             </div>
 
             {/* Modal Form */}
@@ -1461,6 +1480,12 @@ const ActivityList = () => {
                             ))}
                         </Select>
                     </Form.Item>
+                    <Form.Item name="person_in_charge" label="Người phụ trách">
+                        <Input placeholder="VD: ThS. Nguyễn Văn A" />
+                    </Form.Item>
+                    <Form.Item name="tasks" label="Nhiệm vụ">
+                        <Input.TextArea rows={3} placeholder="Nhập danh sách nhiệm vụ (mỗi dòng một nhiệm vụ)..." />
+                    </Form.Item>
                     <Row gutter={16}>
                         <Col span={12}>
                             <Form.Item name="start_date" label="Ngày bắt đầu" rules={[{ required: true, message: 'Vui lòng chọn ngày bắt đầu' }]}>
@@ -1468,8 +1493,8 @@ const ActivityList = () => {
                             </Form.Item>
                         </Col>
                         <Col span={12}>
-                            <Form.Item 
-                                name="end_date" 
+                            <Form.Item
+                                name="end_date"
                                 label="Ngày kết thúc"
                                 dependencies={['start_date']}
                                 rules={[
@@ -1495,8 +1520,8 @@ const ActivityList = () => {
                             </Form.Item>
                         </Col>
                         <Col span={12}>
-                            <Form.Item 
-                                name="end_time" 
+                            <Form.Item
+                                name="end_time"
                                 label="Giờ kết thúc"
                                 dependencies={['start_date', 'end_date', 'start_time']}
                                 rules={[
@@ -1505,7 +1530,7 @@ const ActivityList = () => {
                                             const startDate = getFieldValue('start_date');
                                             const endDate = getFieldValue('end_date');
                                             const startTime = getFieldValue('start_time');
-                                            
+
                                             if (value && startTime && startDate && endDate && dayjs(startDate).isSame(dayjs(endDate), 'day')) {
                                                 if (value.isBefore(startTime, 'second') || value.isSame(startTime, 'second')) {
                                                     return Promise.reject(new Error('Thời gian kết thúc phải lớn hơn thời gian bắt đầu khi trong cùng một ngày'));
@@ -1613,6 +1638,22 @@ const ActivityList = () => {
                                 <Descriptions.Item label="Ngày bắt đầu">{selectedActivity.start_date ? dayjs(selectedActivity.start_date).format('DD/MM/YYYY') : '---'}</Descriptions.Item>
                                 <Descriptions.Item label="Ngày kết thúc">{selectedActivity.end_date ? dayjs(selectedActivity.end_date).format('DD/MM/YYYY') : '---'}</Descriptions.Item>
                                 <Descriptions.Item label="Ngày hợp tác">{selectedActivity.collaboration_date ? dayjs(selectedActivity.collaboration_date).format('DD/MM/YYYY') : '---'}</Descriptions.Item>
+                                <Descriptions.Item label="Người phụ trách">{selectedActivity.person_in_charge || '---'}</Descriptions.Item>
+                                <Descriptions.Item label="Nhiệm vụ">
+                                    {selectedActivity.tasks ? (
+                                        Array.isArray(selectedActivity.tasks) ? (
+                                            <ul className="list-disc pl-4 m-0">
+                                                {selectedActivity.tasks.map((t, idx) => <li key={idx}>{t}</li>)}
+                                            </ul>
+                                        ) : (
+                                            typeof selectedActivity.tasks === 'string' && selectedActivity.tasks.startsWith('[') ? (
+                                                <ul className="list-disc pl-4 m-0">
+                                                    {JSON.parse(selectedActivity.tasks).map((t, idx) => <li key={idx}>{t}</li>)}
+                                                </ul>
+                                            ) : selectedActivity.tasks
+                                        )
+                                    ) : '---'}
+                                </Descriptions.Item>
                             </Descriptions>
                         </div>
 
@@ -1644,8 +1685,10 @@ const ActivityList = () => {
                                         { title: 'MSSV', dataIndex: 'student_code', key: 'student_code', width: 110 },
                                         { title: 'Họ tên', dataIndex: 'name', key: 'name', ellipsis: true },
                                         { title: 'Lớp', dataIndex: 'class', key: 'class', width: 110 },
-                                        { title: 'Trạng thái', dataIndex: 'status', key: 'status', width: 130,
-                                            render: (s) => <Tag color={s === 'Đang thực tập' ? 'green' : s === 'Hoàn thành' ? 'blue' : 'default'}>{s}</Tag> },
+                                        {
+                                            title: 'Trạng thái', dataIndex: 'status', key: 'status', width: 130,
+                                            render: (s) => <Tag color={s === 'Đang thực tập' ? 'green' : s === 'Hoàn thành' ? 'blue' : 'default'}>{s}</Tag>
+                                        },
                                         { title: 'GPA', dataIndex: 'gpa', key: 'gpa', width: 70 },
                                     ]}
                                 />

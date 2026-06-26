@@ -364,6 +364,10 @@ const ChatbotWidget = ({ isOpen, onClose }) => {
             onDrop={handleDrop}
         >
             <style>{`
+                .markdown-content {
+                    word-break: break-word;
+                    overflow-wrap: break-word;
+                }
                 .markdown-content p {
                     margin-bottom: 0.5rem;
                 }
@@ -391,6 +395,7 @@ const ChatbotWidget = ({ isOpen, onClose }) => {
                     padding: 0.1rem 0.3rem;
                     border-radius: 0.25rem;
                     border: 1px solid #e2e8f0;
+                    word-break: break-all;
                 }
                 .dark .markdown-content code {
                     color: #f87171;
@@ -405,6 +410,7 @@ const ChatbotWidget = ({ isOpen, onClose }) => {
                     overflow-x: auto;
                     margin-bottom: 0.5rem;
                     border: 1px solid #334155;
+                    max-width: 100%;
                 }
                 .markdown-content pre code {
                     background-color: transparent;
@@ -412,6 +418,7 @@ const ChatbotWidget = ({ isOpen, onClose }) => {
                     padding: 0;
                     border-radius: 0;
                     border: none;
+                    word-break: normal;
                 }
                 .markdown-content a {
                     color: #dc2626;
@@ -423,6 +430,31 @@ const ChatbotWidget = ({ isOpen, onClose }) => {
                 }
                 .markdown-content a:hover {
                     text-decoration: none;
+                }
+                .markdown-content table {
+                    width: 100%;
+                    border-collapse: collapse;
+                    margin: 0.5rem 0;
+                    display: block;
+                    overflow-x: auto;
+                    max-width: 100%;
+                }
+                .markdown-content th, .markdown-content td {
+                    border: 1px solid #e2e8f0;
+                    padding: 0.4rem 0.6rem;
+                    font-size: 0.8em;
+                    text-align: left;
+                    min-width: 80px;
+                }
+                .dark .markdown-content th, .dark .markdown-content td {
+                    border-color: #374151;
+                }
+                .markdown-content th {
+                    background-color: #f8fafc;
+                    font-weight: 600;
+                }
+                .dark .markdown-content th {
+                    background-color: #1e293b;
                 }
             `}</style>
             {/* Header */}
@@ -457,7 +489,7 @@ const ChatbotWidget = ({ isOpen, onClose }) => {
                             </div>
                         )}
                         <div 
-                            className={`max-w-[80%] px-4 py-2.5 rounded-2xl text-sm leading-relaxed flex flex-col ${
+                            className={`max-w-[80%] px-4 py-2.5 rounded-2xl text-sm leading-relaxed flex flex-col break-words ${
                                 msg.role === 'user' 
                                     ? 'bg-gradient-to-br from-red-500 to-red-600 text-white rounded-br-md' 
                                     : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 shadow-sm border border-gray-100 dark:border-gray-700 rounded-bl-md'

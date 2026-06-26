@@ -2,6 +2,55 @@ const multer = require('multer');
 const XLSX = require('xlsx');
 const pool = require('../config/db');
 
+// Helper to parse dates in various formats (Dates, DD/MM/YYYY, YYYY-MM-DD, or Excel serial numbers)
+const parseDateVal = (d) => {
+    if (!d) return null;
+    if (d instanceof Date) {
+        if (isNaN(d.getTime())) return null;
+        const yyyy = d.getFullYear();
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const dd = String(d.getDate()).padStart(2, '0');
+        return `${yyyy}-${mm}-${dd}`;
+    }
+    if (typeof d === 'string') {
+        const trimmed = d.trim();
+        if (!trimmed) return null;
+        // DD/MM/YYYY or DD-MM-YYYY
+        if (trimmed.includes('/') || trimmed.includes('-')) {
+            const separator = trimmed.includes('/') ? '/' : '-';
+            const parts = trimmed.split(separator);
+            if (parts.length === 3) {
+                if (parts[0].length === 4) {
+                    return `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
+                }
+                return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+            }
+        }
+        if (/^\d+(\.\d+)?$/.test(trimmed)) {
+            const num = parseFloat(trimmed);
+            const date = new Date((num - 25569) * 86400 * 1000);
+            if (!isNaN(date.getTime())) {
+                const yyyy = date.getFullYear();
+                const mm = String(date.getMonth() + 1).padStart(2, '0');
+                const dd = String(date.getDate()).padStart(2, '0');
+                return `${yyyy}-${mm}-${dd}`;
+            }
+        }
+        return trimmed;
+    }
+    if (typeof d === 'number') {
+        const date = new Date((d - 25569) * 86400 * 1000);
+        if (!isNaN(date.getTime())) {
+            const yyyy = date.getFullYear();
+            const mm = String(date.getMonth() + 1).padStart(2, '0');
+            const dd = String(date.getDate()).padStart(2, '0');
+            return `${yyyy}-${mm}-${dd}`;
+        }
+    }
+    return d;
+};
+
+
 // Multer config: lưu file vào memory buffer
 const storage = multer.memoryStorage();
 const upload = multer({
@@ -145,7 +194,7 @@ const standardizeRowKeys = (row, entityType) => {
 
 // Hàm đọc file Excel/CSV từ buffer -> JSON
 function parseFileToJSON(buffer, originalname, type) {
-    const workbook = XLSX.read(buffer, { type: 'buffer' });
+    const workbook = XLSX.read(buffer, { type: 'buffer', cellDates: true });
     const sheetName = workbook.SheetNames[0];
     const sheet = workbook.Sheets[sheetName];
     const rawRows = XLSX.utils.sheet_to_json(sheet);
@@ -349,17 +398,9 @@ const importActivities = async (req, res) => {
                 }
                 const tasksJson = tasks ? JSON.stringify(tasks) : null;
 
-                const parseDateStr = (d) => {
-                    if (!d) return null;
-                    if (typeof d === 'string' && d.includes('/')) {
-                        const parts = d.split('/');
-                        if (parts.length === 3) return `${parts[2]}-${parts[1]}-${parts[0]}`;
-                    }
-                    return d;
-                };
-                start_date = parseDateStr(start_date);
-                end_date = parseDateStr(end_date);
-                collaboration_date = parseDateStr(collaboration_date);
+                start_date = parseDateVal(start_date);
+                end_date = parseDateVal(end_date);
+                collaboration_date = parseDateVal(collaboration_date);
 
                 const status = r['trạng thái'] || r['status'] || 'Đề xuất';
 
@@ -469,16 +510,8 @@ const importStudents = async (req, res) => {
                 const status = r['trạng thái'] || r['status'] || 'Chờ phân công';
                 const gpa = r['gpa'] || null;
 
-                const parseDateStr = (d) => {
-                    if (!d) return null;
-                    if (typeof d === 'string' && d.includes('/')) {
-                        const parts = d.split('/');
-                        if (parts.length === 3) return `${parts[2]}-${parts[1]}-${parts[0]}`;
-                    }
-                    return d;
-                };
-                const start_date = parseDateStr(r['ngày bắt đầu'] || r['start_date'] || r['ngay_bat_dau'] || null);
-                const end_date = parseDateStr(r['ngày kết thúc'] || r['end_date'] || r['ngay_ket_thuc'] || null);
+                const start_date = parseDateVal(r['ngày bắt đầu'] || r['start_date'] || r['ngay_bat_dau'] || null);
+                const end_date = parseDateVal(r['ngày kết thúc'] || r['end_date'] || r['ngay_ket_thuc'] || null);
 
                 if (!student_code || !name) { errors.push(`Dòng ${i + 2}: Thiếu MSSV hoặc Họ tên`); continue; }
 
@@ -560,15 +593,7 @@ const importMous = async (req, res) => {
                 }
 
                 let signing_date = r['ngày ký'] || r['signing_date'] || null;
-                const parseDateStr = (d) => {
-                    if (!d) return null;
-                    if (typeof d === 'string' && d.includes('/')) {
-                        const parts = d.split('/');
-                        if (parts.length === 3) return `${parts[2]}-${parts[1]}-${parts[0]}`;
-                    }
-                    return d;
-                };
-                signing_date = parseDateStr(signing_date);
+                signing_date = parseDateVal(signing_date);
 
                 const partner_contact = r['đầu mối đối tác'] || r['partner_contact'] || '';
                 const org_type = r['loại tổ chức'] || r['org_type'] || '';
@@ -938,6 +963,15 @@ const validateEnterprises = async (req, res) => {
                     if (!rep_full_name) warnings.push('Thiếu Họ tên người đại diện.');
                     if (!rep_phone && !rep_email) warnings.push('Thiếu Số điện thoại và Email liên hệ.');
                     if (!building_street) warnings.push('Thiếu Địa chỉ.');
+
+                    const deptName = r['bộ môn'] || r['department_name'] || r['department'] || '';
+                    let department_id = r['bộ môn id'] || r['department_id'] || null;
+                    if (deptName && !department_id) {
+                        const [deptRows] = await conn.query('SELECT id FROM departments WHERE name LIKE ? AND faculty_id = ? LIMIT 1', [`%${deptName}%`, facultyId]);
+                        if (deptRows.length === 0) {
+                            warnings.push(`Bộ môn "${deptName}" không tồn tại trên hệ thống.`);
+                        }
+                    }
 
                     if (warnings.length > 0) {
                         status = 'warning';
@@ -1419,15 +1453,7 @@ const importActivityStudents = async (req, res) => {
                 const actTitle = r['tên hoạt động'] || r['activity_title'];
                 let joined_at = r['ngày tham gia'] || r['joined_at'] || null;
 
-                const parseDateStr = (d) => {
-                    if (!d) return null;
-                    if (typeof d === 'string' && d.includes('/')) {
-                        const parts = d.split('/');
-                        if (parts.length === 3) return `${parts[2]}-${parts[1]}-${parts[0]}`;
-                    }
-                    return d;
-                };
-                joined_at = parseDateStr(joined_at);
+                joined_at = parseDateVal(joined_at);
 
                 if (!student_code) { errors.push(`Dòng ${i + 2}: Thiếu MSSV`); continue; }
                 if (!activity_id && !actTitle) { errors.push(`Dòng ${i + 2}: Thiếu thông tin hoạt động`); continue; }

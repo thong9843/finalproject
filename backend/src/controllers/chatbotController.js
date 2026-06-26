@@ -492,7 +492,7 @@ async function get_enterprise_list({ keyword, status, location, scale } = {}) {
 
 async function get_student_list({ keyword, status, enterprise_name, major, class: className, gpa_min, gpa_max } = {}) {
     let query = `
-        SELECT s.student_code, s.name, s.major, s.class, s.status, s.gpa,
+        SELECT s.student_code, s.name, s.major, s.class, s.status, s.gpa, s.advisor,
                e.name as enterprise_name, a.title as activity_title
         FROM students s
         LEFT JOIN enterprises e ON s.enterprise_id = e.id

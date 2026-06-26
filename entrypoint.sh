@@ -37,7 +37,7 @@ echo "Starting database server..."
 # Try starting using mysqld_safe directly to bypass init.d partition check (recommended for Docker)
 if command -v mysqld_safe >/dev/null 2>&1; then
     echo "✔ Starting mariadb via mysqld_safe..."
-    mysqld_safe --user=mysql --datadir=/var/lib/mysql > /var/log/mysql/error.log 2>&1 &
+    mysqld_safe --user=mysql --datadir=/var/lib/mysql --skip-syslog --log-error=/var/log/mysql/error.log --skip-name-resolve &
 else
     echo "mysqld_safe not found, falling back to service scripts..."
     if service mariadb start; then
@@ -57,8 +57,13 @@ fi
 # Wait for MySQL to be ready (robust to both blank and set passwords)
 echo "Waiting for database server to start..."
 counter=0
-until mysqladmin -u root ping --silent || mysqladmin -u root -prootpassword ping --silent; do
+while true; do
+    if mysqladmin -u root ping --silent || mysqladmin -u root -prootpassword ping --silent; do
+        break
+    fi
     echo "Database is starting up..."
+    # Print the actual error output to see why ping is failing (denied, socket error, etc.)
+    mysqladmin -u root ping || true
     sleep 1
     counter=$((counter+1))
     if [ $counter -gt 30 ]; then
