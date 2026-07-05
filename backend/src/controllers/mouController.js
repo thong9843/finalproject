@@ -68,7 +68,7 @@ exports.getById = async (req, res) => {
 
 exports.create = async (req, res) => {
     try {
-        const { mou_code, enterprise_id, signing_date, partner_contact, org_type, country,
+        const { mou_code, enterprise_id, signing_date, end_date, partner_contact, org_type, country,
             collaboration_scope, executing_unit_id, vlu_contact, tasks_ay24_25,
             next_steps, past_activities, related_data, working_dir, activity_id, file_url } = req.body;
 
@@ -102,11 +102,11 @@ exports.create = async (req, res) => {
         }
 
         const [result] = await pool.query(
-            `INSERT INTO mous (mou_code, enterprise_id, signing_date, partner_contact, org_type, country,
+            `INSERT INTO mous (mou_code, enterprise_id, signing_date, end_date, expiry_email_sent, partner_contact, org_type, country,
                 collaboration_scope, executing_unit_id, vlu_contact, tasks_ay24_25,
                 next_steps, past_activities, related_data, working_dir, activity_id, file_url, faculty_id)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-            [mou_code, enterprise_id, signing_date || null, partner_contact, org_type, country,
+             VALUES (?, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [mou_code, enterprise_id, signing_date || null, end_date || null, partner_contact, org_type, country,
                 collaboration_scope, executing_unit_id || null, vlu_contact, tasks_ay24_25,
                 next_steps, past_activities, related_data, working_dir, activity_id || null, file_url || null, faculty_id]
         );
@@ -133,7 +133,7 @@ exports.create = async (req, res) => {
 exports.update = async (req, res) => {
     try {
         const { id } = req.params;
-        const { mou_code, enterprise_id, signing_date, partner_contact, org_type, country,
+        const { mou_code, enterprise_id, signing_date, end_date, partner_contact, org_type, country,
             collaboration_scope, executing_unit_id, vlu_contact, tasks_ay24_25,
             next_steps, past_activities, related_data, working_dir, activity_id, file_url } = req.body;
 
@@ -176,12 +176,17 @@ exports.update = async (req, res) => {
 
         const oldValue = { mou: oldMou[0] };
 
+        let expiryEmailSent = oldMou[0].expiry_email_sent;
+        if (end_date !== oldMou[0].end_date) {
+            expiryEmailSent = 0;
+        }
+
         await pool.query(
-            `UPDATE mous SET mou_code=?, enterprise_id=?, signing_date=?, partner_contact=?,
+            `UPDATE mous SET mou_code=?, enterprise_id=?, signing_date=?, end_date=?, expiry_email_sent=?, partner_contact=?,
                 org_type=?, country=?, collaboration_scope=?, executing_unit_id=?, vlu_contact=?,
                 tasks_ay24_25=?, next_steps=?, past_activities=?, related_data=?, working_dir=?, activity_id=?, file_url=?, faculty_id=?
              WHERE id=?`,
-            [mou_code, enterprise_id, signing_date || null, partner_contact, org_type, country,
+            [mou_code, enterprise_id, signing_date || null, end_date || null, expiryEmailSent, partner_contact, org_type, country,
                 collaboration_scope, executing_unit_id || null, vlu_contact, tasks_ay24_25,
                 next_steps, past_activities, related_data, working_dir, activity_id || null, file_url || null, faculty_id, id]
         );
@@ -817,6 +822,47 @@ exports.restore = async (req, res) => {
         req.params.id = logRows[0].id;
         const historyController = require('./historyController');
         return historyController.restore(req, res);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+exports.getEmailLogs = async (req, res) => {
+    try {
+        const logDir = path.join(__dirname, '..', '..', 'uploads', 'email-logs');
+        if (!fs.existsSync(logDir)) {
+            return res.status(200).json([]);
+        }
+        const files = fs.readdirSync(logDir).filter(f => f.endsWith('.json'));
+        const logs = [];
+        for (const file of files) {
+            const filePath = path.join(logDir, file);
+            const content = fs.readFileSync(filePath, 'utf8');
+            try {
+                const email = JSON.parse(content);
+                // Admins see all, managers see emails sent to them
+                if (req.user.role === 'ADMIN' || email.to === req.user.email) {
+                    logs.push(email);
+                }
+            } catch (e) {
+                console.error('Error parsing email log:', file, e.message);
+            }
+        }
+        logs.sort((a, b) => new Date(b.sentAt) - new Date(a.sentAt));
+        res.status(200).json(logs);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+exports.triggerExpiryCheck = async (req, res) => {
+    try {
+        if (req.user.role !== 'ADMIN' && req.user.role !== 'FACULTY_MANAGER') {
+            return res.status(403).json({ message: 'Không có quyền thực hiện hành động này.' });
+        }
+        const { checkMOUExpirations } = require('../utils/scheduler');
+        const count = await checkMOUExpirations();
+        res.status(200).json({ message: 'Kích hoạt kiểm tra hoàn tất!', count });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }

@@ -15,6 +15,7 @@ import KanbanBoard from './pages/KanbanBoard';
 import CalendarView from './pages/CalendarView';
 import ActivityTypes from './pages/ActivityTypes';
 import MOUList from './pages/MOUList';
+import EmailLogs from './pages/EmailLogs';
 import UserList from './pages/UserList';
 import DuplicateDataTool from './pages/DuplicateDataTool';
 import AiImportTool from './pages/AiImportTool';
@@ -132,6 +133,7 @@ const App = () => {
                             <Route path="bulk-data" element={<AdminRoute><BulkDataTool /></AdminRoute>} />
                             <Route path="ai-import" element={<AdminOrManagerRoute><AiImportTool /></AdminOrManagerRoute>} />
                             <Route path="history" element={<AdminOrManagerRoute><HistoryLog /></AdminOrManagerRoute>} />
+                            <Route path="email-logs" element={<AdminOrManagerRoute><EmailLogs /></AdminOrManagerRoute>} />
                             <Route path="files" element={<AdminRoute><FileManager /></AdminRoute>} />
                         </Route>
                     </Routes>

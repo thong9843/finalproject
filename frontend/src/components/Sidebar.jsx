@@ -119,6 +119,10 @@ const Sidebar = ({ isOpen, onClose, collapsed }) => {
                         label: 'Lịch sử hệ thống',
                     },
                     {
+                        key: '/email-logs',
+                        label: 'Lịch sử gửi Email',
+                    },
+                    {
                         key: '/ai-import',
                         label: 'Import dữ liệu AI',
                     }

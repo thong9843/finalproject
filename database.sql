@@ -149,6 +149,8 @@ CREATE TABLE IF NOT EXISTS mous (
     mou_code VARCHAR(100) NOT NULL,
     enterprise_id INT NOT NULL,
     signing_date DATE,
+    end_date DATE,
+    expiry_email_sent TINYINT(1) DEFAULT 0,
     partner_contact VARCHAR(255),
     org_type VARCHAR(100),
     country VARCHAR(100),
@@ -314,7 +316,7 @@ INSERT IGNORE INTO faculties (id, cluster_id, name, code) VALUES
 INSERT IGNORE INTO users (id, full_name, email, password, role, faculty_id) VALUES
 (1, 'System Admin', 'admin@vlu.edu.vn', '$2b$10$NAO3LBQuVGlv/47lZGXsq.jVL0zAgF/SLuUL8uueNjgxWDY8A2Rn.', 'ADMIN', NULL),
 -- IT (id: 1)
-(2, 'Quản lý Khoa Công nghệ Thông tin', 'manager.it@vlu.edu.vn', '$2b$10$NAO3LBQuVGlv/47lZGXsq.jVL0zAgF/SLuUL8uueNjgxWDY8A2Rn.', 'FACULTY_MANAGER', 1),
+(2, 'Quản lý Khoa Công nghệ Thông tin', 'tam.ha.cm.ag@gmail.com', '$2b$10$NAO3LBQuVGlv/47lZGXsq.jVL0zAgF/SLuUL8uueNjgxWDY8A2Rn.', 'FACULTY_MANAGER', 1),
 (3, 'Giảng viên Khoa Công nghệ Thông tin', 'lecturer.it@vlu.edu.vn', '$2b$10$NAO3LBQuVGlv/47lZGXsq.jVL0zAgF/SLuUL8uueNjgxWDY8A2Rn.', 'LECTURER', 1),
 -- BA (id: 2)
 (4, 'Quản lý Khoa Quản trị Kinh doanh', 'manager.ba@vlu.edu.vn', '$2b$10$NAO3LBQuVGlv/47lZGXsq.jVL0zAgF/SLuUL8uueNjgxWDY8A2Rn.', 'FACULTY_MANAGER', 2),

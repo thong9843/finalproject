@@ -88,6 +88,18 @@ pool.on('connection', (connection) => {
             }
         }
 
+        // 2.1 Add end_date and expiry_email_sent columns to mous if they do not exist
+        const [end_dateColumns] = await pool.query("SHOW COLUMNS FROM `mous` LIKE 'end_date'");
+        if (end_dateColumns.length === 0) {
+            await pool.query("ALTER TABLE `mous` ADD COLUMN end_date DATE DEFAULT NULL");
+            console.log("✔ Added end_date column to mous table.");
+        }
+        const [expiry_emailColumns] = await pool.query("SHOW COLUMNS FROM `mous` LIKE 'expiry_email_sent'");
+        if (expiry_emailColumns.length === 0) {
+            await pool.query("ALTER TABLE `mous` ADD COLUMN expiry_email_sent TINYINT(1) DEFAULT 0");
+            console.log("✔ Added expiry_email_sent column to mous table.");
+        }
+
         // 3. Add tags column to users if it does not exist
         const [userColumns] = await pool.query("SHOW COLUMNS FROM `users` LIKE 'tags'");
         if (userColumns.length === 0) {

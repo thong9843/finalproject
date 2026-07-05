@@ -186,4 +186,8 @@ router.post('/:id/upload-file', upload.single('file'), verifyRole(['ADMIN', 'FAC
 // Generate PDF from MOU data, upload to Firebase and link
 router.post('/:id/generate-pdf-upload', verifyRole(['ADMIN', 'FACULTY_MANAGER']), mouController.generatePdfAndUpload);
 
+// Email logs and manual trigger check
+router.get('/email-logs/all', verifyRole(['ADMIN', 'FACULTY_MANAGER']), mouController.getEmailLogs);
+router.post('/trigger-expiry-check', verifyRole(['ADMIN', 'FACULTY_MANAGER']), mouController.triggerExpiryCheck);
+
 module.exports = router;

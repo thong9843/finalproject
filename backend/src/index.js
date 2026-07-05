@@ -76,4 +76,20 @@ app.use((err, req, res, next) => {
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
+    
+    // Start local SMTP server to catch sent emails
+    try {
+        const { startSmtpServer } = require('./utils/emailServer');
+        startSmtpServer();
+    } catch (e) {
+        console.error('✖ Failed to start local SMTP server:', e.message);
+    }
+
+    // Start background schedulers (cron jobs)
+    try {
+        const { initScheduler } = require('./utils/scheduler');
+        initScheduler();
+    } catch (e) {
+        console.error('✖ Failed to initialize background scheduler:', e.message);
+    }
 });

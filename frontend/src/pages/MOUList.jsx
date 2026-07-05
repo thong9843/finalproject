@@ -261,6 +261,7 @@ const MOUList = () => {
             const payload = {
                 ...values,
                 signing_date: values.signing_date ? values.signing_date.format('YYYY-MM-DD') : null,
+                end_date: values.end_date ? values.end_date.format('YYYY-MM-DD') : null,
             };
             if (editingId) {
                 await api.put(`/mous/${editingId}`, payload);
@@ -360,6 +361,7 @@ const MOUList = () => {
         form.setFieldsValue({
             ...record,
             signing_date: record.signing_date ? dayjs(record.signing_date) : null,
+            end_date: record.end_date ? dayjs(record.end_date) : null,
         });
         setIsModalOpen(true);
     };
@@ -444,6 +446,7 @@ const MOUList = () => {
             'Mã doanh nghiệp (ID)': item.enterprise_id || '',
             'Tên doanh nghiệp': item.enterprise_name || '',
             'Ngày ký': item.signing_date ? dayjs(item.signing_date).format('DD/MM/YYYY') : '',
+            'Ngày kết thúc': item.end_date ? dayjs(item.end_date).format('DD/MM/YYYY') : '',
             'Đầu mối đối tác': item.partner_contact || '',
             'Loại tổ chức': item.org_type || '',
             'Quốc gia': item.country || '',
@@ -634,6 +637,7 @@ const MOUList = () => {
             activity_id: finalActivityId || undefined,
             file_url: cloudFileUrl || undefined,
             signing_date: scanResult.signing_date ? dayjs(scanResult.signing_date) : null,
+            end_date: scanResult.end_date ? dayjs(scanResult.end_date) : null,
             partner_contact: scanResult.partner_contact,
             org_type: scanResult.org_type,
             country: scanResult.country,
@@ -837,6 +841,41 @@ const MOUList = () => {
             key: 'signing_date',
             width: 110,
             render: (date) => date ? dayjs(date).format('DD/MM/YYYY') : <span className="text-slate-400">---</span>
+        },
+        {
+            title: 'Ngày kết thúc',
+            dataIndex: 'end_date',
+            key: 'end_date',
+            width: 160,
+            render: (date, record) => {
+                if (!date) return <span className="text-slate-400">---</span>;
+                const end = dayjs(date);
+                const today = dayjs();
+                const diffDays = end.startOf('day').diff(today.startOf('day'), 'day');
+                const formattedDate = end.format('DD/MM/YYYY');
+                
+                if (diffDays < 0) {
+                    return (
+                        <div>
+                            <span className="text-red-500 font-medium">{formattedDate}</span>
+                            <br />
+                            <Tag color="error" className="m-0 text-[10px] scale-90 origin-left">Đã hết hạn</Tag>
+                        </div>
+                    );
+                } else if (diffDays <= 3) {
+                    return (
+                        <div>
+                            <span className="text-amber-600 font-medium">{formattedDate}</span>
+                            <br />
+                            <Tag color="warning" className="m-0 text-[10px] scale-90 origin-left">
+                                {diffDays === 0 ? 'Hết hạn hôm nay' : `Hết hạn sau ${diffDays} ngày`}
+                            </Tag>
+                        </div>
+                    );
+                } else {
+                    return <span className="text-slate-700 dark:text-gray-300">{formattedDate}</span>;
+                }
+            }
         },
         {
             title: 'Đơn vị triển khai',
@@ -1273,6 +1312,11 @@ const MOUList = () => {
                             </Form.Item>
                         </Col>
                         <Col span={8}>
+                            <Form.Item name="end_date" label="Ngày kết thúc hợp đồng">
+                                <DatePicker format="DD/MM/YYYY" className="w-full rounded-lg" />
+                            </Form.Item>
+                        </Col>
+                        <Col span={8}>
                             <Form.Item name="org_type" label="Loại tổ chức">
                                 <Input placeholder="VD: Tập đoàn, Trường ĐH..." className="rounded-lg" />
                             </Form.Item>
@@ -1552,6 +1596,7 @@ const MOUList = () => {
 
                             <Descriptions column={2} layout="vertical" size="small" bordered className="bg-white dark:bg-gray-800">
                                 <Descriptions.Item label="Ngày ký kết"><span className="font-medium">{selectedMOU.signing_date ? dayjs(selectedMOU.signing_date).format('DD/MM/YYYY') : '---'}</span></Descriptions.Item>
+                                <Descriptions.Item label="Ngày kết thúc"><span className="font-medium">{selectedMOU.end_date ? dayjs(selectedMOU.end_date).format('DD/MM/YYYY') : '---'}</span></Descriptions.Item>
                                 <Descriptions.Item label="Loại tổ chức"><Tag color="blue">{selectedMOU.org_type || '---'}</Tag></Descriptions.Item>
                                 <Descriptions.Item label="Đầu mối VLU" span={1}><span className="font-medium">{selectedMOU.vlu_contact || '---'}</span></Descriptions.Item>
                                 <Descriptions.Item label="Đầu mối Đối tác" span={1}><span className="font-medium">{selectedMOU.partner_contact || '---'}</span></Descriptions.Item>

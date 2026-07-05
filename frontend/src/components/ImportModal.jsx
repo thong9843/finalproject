@@ -66,6 +66,7 @@ const ALIAS_MAP = {
         'tên doanh nghiệp': ['tên doanh nghiệp', 'ten doanh nghiep', 'enterprise_name', 'doanh nghiệp', 'doanh nghiep', 'công ty', 'cong ty', 'đối tác', 'doi tac'],
         'mã doanh nghiệp (id)': ['mã doanh nghiệp (id)', 'enterprise_id', 'mã doanh nghiệp', 'ma doanh nghiep'],
         'ngày ký': ['ngày ký', 'ngay ky', 'signing_date', 'ngày ký kết', 'ngay ky ket'],
+        'ngày kết thúc': ['ngày kết thúc', 'ngay ket thuc', 'end_date', 'ngày hết hạn', 'ngay het han'],
         'đầu mối đối tác': ['đầu mối đối tác', 'dau moi doi tac', 'partner_contact', 'đại diện đối tác'],
         'loại tổ chức': ['loại tổ chức', 'loai to chuc', 'org_type', 'phân loại tổ chức'],
         'quốc gia': ['quốc gia', 'quoc gia', 'country'],
@@ -665,6 +666,11 @@ const ImportModal = ({ open, onClose, onSuccess, type, templateColumns }) => {
                     title: 'Ngày ký',
                     render: (_, r) => r.row['ngày ký'] || r.row['signing_date'] || '---',
                     width: 110,
+                },
+                {
+                    title: 'Ngày kết thúc',
+                    render: (_, r) => r.row['ngày kết thúc'] || r.row['end_date'] || r.row['ngày hết hạn'] || r.row['ngay_ket_thuc'] || '---',
+                    width: 120,
                 },
                 {
                     title: 'Đầu mối đối tác',

@@ -271,6 +271,18 @@ async function seed() {
             const mouCode = `MOU-IT-2025-${sequenceNum}`;
             const signingDate = '2025-02-15';
 
+            // Configure dynamic end dates for testing
+            let endDate = '2027-12-31';
+            if (insertedMOUs === 1) {
+                // First MOU expires in exactly 3 days (trigger target)
+                const targetDate = new Date();
+                targetDate.setDate(targetDate.getDate() + 3);
+                endDate = targetDate.toISOString().split('T')[0];
+            } else if (insertedMOUs === 2) {
+                // Second MOU is already expired
+                endDate = '2025-06-30';
+            }
+
             // Fetch representative
             const [repRows] = await conn.query(
                 'SELECT full_name, role FROM enterprise_representatives WHERE enterprise_id = ? LIMIT 1',
@@ -294,10 +306,10 @@ async function seed() {
 
             await conn.query(`
                 INSERT INTO mous (
-                    mou_code, enterprise_id, signing_date, partner_contact, org_type, country,
+                    mou_code, enterprise_id, signing_date, end_date, expiry_email_sent, partner_contact, org_type, country,
                     collaboration_scope, executing_unit_id, vlu_contact, tasks_ay24_25, next_steps, past_activities, related_data, activity_id, faculty_id
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
-            `, [mouCode, comp.id, signingDate, partnerContact, orgType, country, scope, comp.department_id, vluContact, tasks, nextSteps, pastActs, relatedData, linkedActId]);
+                ) VALUES (?, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
+            `, [mouCode, comp.id, signingDate, endDate, partnerContact, orgType, country, scope, comp.department_id, vluContact, tasks, nextSteps, pastActs, relatedData, linkedActId]);
         }
         console.log(`✔ Generated ${insertedMOUs} MOUs for Khoa CNTT.`);
 

@@ -126,6 +126,7 @@ const ALIAS_MAP = {
         'tên doanh nghiệp': ['tên doanh nghiệp', 'ten doanh nghiep', 'enterprise_name', 'doanh nghiệp', 'doanh nghiep', 'công ty', 'cong ty', 'đối tác', 'doi tac'],
         'mã doanh nghiệp (id)': ['mã doanh nghiệp (id)', 'enterprise_id', 'mã doanh nghiệp', 'ma doanh nghiep'],
         'ngày ký': ['ngày ký', 'ngay ky', 'signing_date', 'ngày ký kết', 'ngay ky ket'],
+        'ngày kết thúc': ['ngày kết thúc', 'ngay ket thuc', 'end_date', 'ngày hết hạn', 'ngay het han'],
         'đầu mối đối tác': ['đầu mối đối tác', 'dau moi doi tac', 'partner_contact', 'đại diện đối tác'],
         'loại tổ chức': ['loại tổ chức', 'loai to chuc', 'org_type', 'phân loại tổ chức'],
         'quốc gia': ['quốc gia', 'quoc gia', 'country'],
@@ -595,6 +596,9 @@ const importMous = async (req, res) => {
                 let signing_date = r['ngày ký'] || r['signing_date'] || null;
                 signing_date = parseDateVal(signing_date);
 
+                let end_date = r['ngày kết thúc'] || r['end_date'] || r['ngày hết hạn'] || r['ngay_ket_thuc'] || null;
+                end_date = parseDateVal(end_date);
+
                 const partner_contact = r['đầu mối đối tác'] || r['partner_contact'] || '';
                 const org_type = r['loại tổ chức'] || r['org_type'] || '';
                 const country = r['quốc gia'] || r['country'] || 'Việt Nam';
@@ -657,10 +661,10 @@ const importMous = async (req, res) => {
 
                 await conn.query(`
                     INSERT INTO mous (
-                        mou_code, enterprise_id, signing_date, partner_contact, org_type, country,
+                        mou_code, enterprise_id, signing_date, end_date, expiry_email_sent, partner_contact, org_type, country,
                         collaboration_scope, executing_unit_id, vlu_contact, tasks_ay24_25, next_steps, past_activities, related_data, working_dir, activity_id, file_url, faculty_id
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                `, [mou_code, enterprise_id, signing_date, partner_contact, org_type, country, collaboration_scope, executing_unit_id, vlu_contact, tasks_ay24_25, next_steps, past_activities, related_data, working_dir, activity_id, file_url, facultyId]);
+                    ) VALUES (?, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                `, [mou_code, enterprise_id, signing_date, end_date, partner_contact, org_type, country, collaboration_scope, executing_unit_id, vlu_contact, tasks_ay24_25, next_steps, past_activities, related_data, working_dir, activity_id, file_url, facultyId]);
                 
                 await conn.commit();
                 inserted++;
